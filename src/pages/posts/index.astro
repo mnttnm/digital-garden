@@ -1,0 +1,39 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getCollection } from 'astro:content';
+
+const allPosts = await getCollection('posts', ({ data }) => !data.draft);
+const posts = allPosts.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+
+function formatDate(date: Date) {
+  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+---
+
+<Base title="Writing" description="Long-form articles, tutorials, and essays">
+  <h1>Writing</h1>
+  <p class="muted">Long-form articles, tutorials, and essays.</p>
+
+  {posts.length === 0 ? (
+    <p><em>No posts yet. Check back soon!</em></p>
+  ) : (
+    <ul class="post-list">
+      {posts.map(post => (
+        <li class="post-item">
+          <h2 class="post-title">
+            <a href={`/digital-garden/posts/${post.slug}/`}>{post.data.title}</a>
+          </h2>
+          <p class="post-meta">{formatDate(post.data.date)}</p>
+          <p class="post-description">{post.data.description}</p>
+          {post.data.tags.length > 0 && (
+            <div class="tags">
+              {post.data.tags.map(tag => (
+                <a href={`/digital-garden/tags/${tag}/`} class="tag">#{tag}</a>
+              ))}
+            </div>
+          )}
+        </li>
+      ))}
+    </ul>
+  )}
+</Base>

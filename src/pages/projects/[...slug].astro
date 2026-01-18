@@ -1,0 +1,65 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getCollection } from 'astro:content';
+
+export async function getStaticPaths() {
+  const projects = await getCollection('projects');
+  return projects.map(project => ({
+    params: { slug: project.slug },
+    props: { project },
+  }));
+}
+
+const { project } = Astro.props;
+const { Content } = await project.render();
+
+function formatDate(date: Date) {
+  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+}
+
+const statusLabels: Record<string, string> = {
+  'in-progress': '🔨 In Progress',
+  'completed': '✅ Completed',
+  'idea': '💡 Idea',
+  'archived': '📦 Archived'
+};
+---
+
+<Base title={project.data.title} description={project.data.description}>
+  <article>
+    <header class="article-header">
+      <h1 class="article-title">{project.data.title}</h1>
+      <p class="post-meta">
+        <span class={`project-status ${project.data.status}`}>{statusLabels[project.data.status]}</span>
+        · Started {formatDate(project.data.date)}
+      </p>
+      <p class="post-meta">
+        {project.data.repo && (
+          <a href={project.data.repo} target="_blank" rel="noopener">View on GitHub</a>
+        )}
+        {project.data.repo && project.data.demo && ' · '}
+        {project.data.demo && (
+          <a href={project.data.demo} target="_blank" rel="noopener">Live Demo</a>
+        )}
+      </p>
+      {project.data.tags.length > 0 && (
+        <div class="tags">
+          {project.data.tags.map(tag => (
+            <span class="tag">#{tag}</span>
+          ))}
+        </div>
+      )}
+    </header>
+
+    {project.data.image && (
+      <img src={project.data.image} alt={project.data.title} />
+    )}
+
+    <div class="article-content">
+      <Content />
+    </div>
+  </article>
+
+  <hr />
+  <p><a href="/digital-garden/projects/">← Back to all projects</a></p>
+</Base>

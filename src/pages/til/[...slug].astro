@@ -1,0 +1,42 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getCollection } from 'astro:content';
+
+export async function getStaticPaths() {
+  const items = await getCollection('til');
+  return items.map(item => ({
+    params: { slug: item.slug },
+    props: { item },
+  }));
+}
+
+const { item } = Astro.props;
+const { Content } = await item.render();
+
+function formatDate(date: Date) {
+  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+}
+---
+
+<Base title={item.data.title}>
+  <article>
+    <header class="article-header">
+      <p class="til-date">{formatDate(item.data.date)}</p>
+      <h1 class="article-title">{item.data.title}</h1>
+      {item.data.tags.length > 0 && (
+        <div class="tags">
+          {item.data.tags.map(tag => (
+            <span class="tag">#{tag}</span>
+          ))}
+        </div>
+      )}
+    </header>
+
+    <div class="article-content">
+      <Content />
+    </div>
+  </article>
+
+  <hr />
+  <p><a href="/digital-garden/til/">← Back to all TILs</a></p>
+</Base>

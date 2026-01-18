@@ -1,0 +1,45 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getCollection } from 'astro:content';
+
+const allResources = await getCollection('resources', ({ data }) => !data.draft);
+const resources = allResources.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+
+// Group by category
+const categories = [...new Set(resources.map(r => r.data.category))];
+
+function formatDate(date: Date) {
+  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+---
+
+<Base title="Resources" description="Curated links, articles, tools, and more">
+  <h1>Resources</h1>
+  <p class="muted">
+    Curated links to articles, tools, videos, and other things I've found valuable.
+  </p>
+
+  {resources.length === 0 ? (
+    <p><em>No resources yet. Check back soon!</em></p>
+  ) : (
+    <ul class="post-list">
+      {resources.map(resource => (
+        <li class="resource-item">
+          <span class="resource-category">{resource.data.category}</span>
+          <span class="til-date" style="margin-left: 0.5rem;">{formatDate(resource.data.date)}</span>
+          <h3 class="post-title">
+            <a href={resource.data.url} target="_blank" rel="noopener">{resource.data.title} ↗</a>
+          </h3>
+          <p class="post-description">{resource.data.description}</p>
+          {resource.data.tags.length > 0 && (
+            <div class="tags">
+              {resource.data.tags.map(tag => (
+                <span class="tag">#{tag}</span>
+              ))}
+            </div>
+          )}
+        </li>
+      ))}
+    </ul>
+  )}
+</Base>

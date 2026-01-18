@@ -1,0 +1,22 @@
+{
+  "name": "digital-garden",
+  "type": "module",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "new:post": "node scripts/new-content.js post",
+    "new:til": "node scripts/new-content.js til",
+    "new:resource": "node scripts/new-content.js resource",
+    "new:project": "node scripts/new-content.js project"
+  },
+  "dependencies": {
+    "@astrojs/rss": "^4.0.1",
+    "astro": "^4.5.0"
+  },
+  "devDependencies": {
+    "@astrojs/sitemap": "^3.0.5"
+  }
+}

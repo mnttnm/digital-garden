@@ -1,0 +1,47 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getCollection } from 'astro:content';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('posts');
+  return posts.map(post => ({
+    params: { slug: post.slug },
+    props: { post },
+  }));
+}
+
+const { post } = Astro.props;
+const { Content } = await post.render();
+
+function formatDate(date: Date) {
+  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+}
+---
+
+<Base title={post.data.title} description={post.data.description}>
+  <article>
+    <header class="article-header">
+      <h1 class="article-title">{post.data.title}</h1>
+      <p class="post-meta">
+        {formatDate(post.data.date)}
+        {post.data.updated && (
+          <span> · Updated {formatDate(post.data.updated)}</span>
+        )}
+      </p>
+      {post.data.tags.length > 0 && (
+        <div class="tags">
+          {post.data.tags.map(tag => (
+            <a href={`/digital-garden/tags/${tag}/`} class="tag">#{tag}</a>
+          ))}
+        </div>
+      )}
+    </header>
+
+    <div class="article-content">
+      <Content />
+    </div>
+  </article>
+
+  <hr />
+  <p><a href="/digital-garden/posts/">← Back to all posts</a></p>
+</Base>

@@ -1,0 +1,66 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getCollection } from 'astro:content';
+
+const allProjects = await getCollection('projects', ({ data }) => !data.draft);
+const projects = allProjects.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+
+// Group by status
+const statusOrder = ['in-progress', 'completed', 'idea', 'archived'];
+const groupedProjects = statusOrder.map(status => ({
+  status,
+  projects: projects.filter(p => p.data.status === status)
+})).filter(g => g.projects.length > 0);
+
+function formatDate(date: Date) {
+  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+const statusLabels: Record<string, string> = {
+  'in-progress': '🔨 In Progress',
+  'completed': '✅ Completed',
+  'idea': '💡 Ideas',
+  'archived': '📦 Archived'
+};
+---
+
+<Base title="Projects" description="Personal projects and experiments">
+  <h1>Projects</h1>
+  <p class="muted">Personal projects, experiments, and things I'm building.</p>
+
+  {projects.length === 0 ? (
+    <p><em>No projects yet. Check back soon!</em></p>
+  ) : (
+    groupedProjects.map(group => (
+      <section>
+        <h2>{statusLabels[group.status] || group.status}</h2>
+        <ul class="post-list">
+          {group.projects.map(project => (
+            <li class="post-item">
+              <h3 class="post-title">
+                <a href={`/digital-garden/projects/${project.slug}/`}>{project.data.title}</a>
+              </h3>
+              <p class="post-meta">
+                {formatDate(project.data.date)}
+                {project.data.repo && (
+                  <span> · <a href={project.data.repo} target="_blank" rel="noopener">GitHub</a></span>
+                )}
+                {project.data.demo && (
+                  <span> · <a href={project.data.demo} target="_blank" rel="noopener">Demo</a></span>
+                )}
+              </p>
+              <p class="post-description">{project.data.description}</p>
+              {project.data.tags.length > 0 && (
+                <div class="tags">
+                  {project.data.tags.map(tag => (
+                    <span class="tag">#{tag}</span>
+                  ))}
+                </div>
+              )}
+            </li>
+          ))}
+        </ul>
+      </section>
+    ))
+  )}
+</Base>

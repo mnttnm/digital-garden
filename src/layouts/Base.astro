@@ -1,0 +1,49 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description = "Personal notes, learnings, and curated resources" } = Astro.props;
+const siteTitle = "Digital Garden";
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content={description}>
+  <title>{title} | {siteTitle}</title>
+  <link rel="alternate" type="application/rss+xml" title={siteTitle} href="/digital-garden/rss.xml" />
+  <link rel="icon" type="image/svg+xml" href="/digital-garden/favicon.svg" />
+</head>
+<body>
+  <div class="container">
+    <header class="site-header">
+      <h1 class="site-title"><a href="/digital-garden/">Digital Garden</a></h1>
+      <nav class="site-nav">
+        <a href="/digital-garden/">Home</a>
+        <a href="/digital-garden/posts/">Writing</a>
+        <a href="/digital-garden/til/">TIL</a>
+        <a href="/digital-garden/resources/">Resources</a>
+        <a href="/digital-garden/projects/">Projects</a>
+        <a href="/digital-garden/rss.xml">RSS</a>
+      </nav>
+    </header>
+
+    <main>
+      <slot />
+    </main>
+
+    <footer class="site-footer">
+      <p>
+        Subscribe via <a href="/digital-garden/rss.xml">RSS</a> ·
+        Built with <a href="https://astro.build">Astro</a>
+      </p>
+    </footer>
+  </div>
+</body>
+</html>

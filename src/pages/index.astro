@@ -1,0 +1,110 @@
+---
+import Base from '../layouts/Base.astro';
+import { getCollection } from 'astro:content';
+
+// Get recent content from all collections
+const allPosts = await getCollection('posts', ({ data }) => !data.draft);
+const allTil = await getCollection('til', ({ data }) => !data.draft);
+const allResources = await getCollection('resources', ({ data }) => !data.draft);
+const allProjects = await getCollection('projects', ({ data }) => !data.draft);
+
+// Sort by date and get recent items
+const recentPosts = allPosts.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf()).slice(0, 3);
+const recentTil = allTil.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf()).slice(0, 5);
+const recentResources = allResources.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf()).slice(0, 3);
+const activeProjects = allProjects.filter(p => p.data.status === 'in-progress').slice(0, 3);
+
+function formatDate(date: Date) {
+  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+---
+
+<Base title="Home">
+  <section>
+    <p>
+      Welcome to my digital garden — a collection of notes, learnings, and curated resources
+      that I find interesting or useful. Think of it as a public notebook where ideas grow over time.
+    </p>
+    <p>
+      Subscribe via <a href="/digital-garden/rss.xml">RSS</a> to get updates when I publish new content.
+    </p>
+  </section>
+
+  <hr />
+
+  {recentPosts.length > 0 && (
+    <section>
+      <div class="section-header">
+        <h2>Recent Writing</h2>
+        <a href="/digital-garden/posts/" class="view-all">View all →</a>
+      </div>
+      <ul class="post-list">
+        {recentPosts.map(post => (
+          <li class="post-item">
+            <h3 class="post-title">
+              <a href={`/digital-garden/posts/${post.slug}/`}>{post.data.title}</a>
+            </h3>
+            <p class="post-meta">{formatDate(post.data.date)}</p>
+            <p class="post-description">{post.data.description}</p>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )}
+
+  {recentTil.length > 0 && (
+    <section>
+      <div class="section-header">
+        <h2>Today I Learned</h2>
+        <a href="/digital-garden/til/" class="view-all">View all →</a>
+      </div>
+      <ul class="post-list">
+        {recentTil.map(item => (
+          <li class="til-item">
+            <span class="til-date">{formatDate(item.data.date)}</span>
+            <a href={`/digital-garden/til/${item.slug}/`}>{item.data.title}</a>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )}
+
+  {activeProjects.length > 0 && (
+    <section>
+      <div class="section-header">
+        <h2>Active Projects</h2>
+        <a href="/digital-garden/projects/" class="view-all">View all →</a>
+      </div>
+      <ul class="post-list">
+        {activeProjects.map(project => (
+          <li class="post-item">
+            <h3 class="post-title">
+              <a href={`/digital-garden/projects/${project.slug}/`}>{project.data.title}</a>
+            </h3>
+            <p class="post-description">{project.data.description}</p>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )}
+
+  {recentResources.length > 0 && (
+    <section>
+      <div class="section-header">
+        <h2>Recent Finds</h2>
+        <a href="/digital-garden/resources/" class="view-all">View all →</a>
+      </div>
+      <ul class="post-list">
+        {recentResources.map(resource => (
+          <li class="resource-item">
+            <span class="resource-category">{resource.data.category}</span>
+            <h3 class="post-title">
+              <a href={resource.data.url} target="_blank" rel="noopener">{resource.data.title}</a>
+            </h3>
+            <p class="post-description">{resource.data.description}</p>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )}
+</Base>

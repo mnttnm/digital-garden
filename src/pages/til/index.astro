@@ -1,0 +1,36 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getCollection } from 'astro:content';
+
+const allTil = await getCollection('til', ({ data }) => !data.draft);
+const items = allTil.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+
+function formatDate(date: Date) {
+  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+---
+
+<Base title="Today I Learned" description="Quick notes and small discoveries">
+  <h1>Today I Learned</h1>
+  <p class="muted">Quick notes and small discoveries. Things I learn day-to-day.</p>
+
+  {items.length === 0 ? (
+    <p><em>No TILs yet. Check back soon!</em></p>
+  ) : (
+    <ul class="post-list">
+      {items.map(item => (
+        <li class="til-item">
+          <span class="til-date">{formatDate(item.data.date)}</span>
+          <a href={`/digital-garden/til/${item.slug}/`}>{item.data.title}</a>
+          {item.data.tags.length > 0 && (
+            <div class="tags">
+              {item.data.tags.map(tag => (
+                <span class="tag">#{tag}</span>
+              ))}
+            </div>
+          )}
+        </li>
+      ))}
+    </ul>
+  )}
+</Base>
