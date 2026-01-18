@@ -30,11 +30,13 @@ import Base from '../layouts/Base.astro';
       </ul>
     </section>
 
-    <section class="contact">
-      <h2>Get in touch</h2>
+    <section class="work-with-me">
+      <h2>Work with me</h2>
+      <div class="cta-row">
+        <span class="availability">Available for projects</span>
+      </div>
       <p>
-        I'm currently available for freelance projects. If you're working on something
-        interesting and think I could help, I'd love to hear from you.
+        If you're working on something interesting and think I could help, I'd love to hear from you.
       </p>
       <ul class="contact-links">
         <li>
@@ -86,8 +88,37 @@ import Base from '../layouts/Base.astro';
     line-height: 1.6;
   }
 
-  .contact h2 {
+  .work-with-me {
+    margin-bottom: 2.5rem;
+  }
+
+  .work-with-me h2 {
     margin-top: 0;
+    margin-bottom: 0.75rem;
+  }
+
+  .cta-row {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+  }
+
+  .availability {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--color-text-muted);
+  }
+
+  .availability::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    background: #22c55e;
+    border-radius: 50%;
   }
 
   .contact-links {
