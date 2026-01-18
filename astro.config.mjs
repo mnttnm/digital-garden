@@ -1,10 +1,11 @@
 import { defineConfig } from 'astro/config';
-import sitemap from '@astrojs/sitemap';
+import vercel from '@astrojs/vercel/serverless';
 
 export default defineConfig({
-  site: 'https://YOUR_USERNAME.github.io',
-  base: '/digital-garden', // Remove this line if using custom domain
-  integrations: [sitemap()],
+  site: 'https://your-domain.vercel.app',
+  base: '/digital-garden',
+  output: 'hybrid',
+  adapter: vercel(),
   markdown: {
     shikiConfig: {
       theme: 'github-light',

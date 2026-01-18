@@ -1,10 +1,11 @@
 ---
 title: "Astro Documentation"
-description: "The official Astro docs are exceptionally well-written and comprehensive. Great for learning the framework."
 date: 2025-01-13
-category: "article"
-url: "https://docs.astro.build"
 tags: ["astro", "web-dev", "documentation"]
+featured: false
+type: "link"
+link: "https://docs.astro.build"
+takeaway: "One of the best framework docs I've seen — clear, well-organized, with practical examples."
 draft: false
 ---
 

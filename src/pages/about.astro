@@ -1,0 +1,108 @@
+---
+import Base from '../layouts/Base.astro';
+---
+
+<Base title="About" description="Learn more about me and how to get in touch.">
+  <article class="about-page">
+    <header class="page-header">
+      <h1>About</h1>
+    </header>
+
+    <section class="bio">
+      <p>
+        I'm Mohit — a builder focused on AI-powered products and workflow automation.
+        I help teams ship faster by building custom tools, prototypes, and systems that
+        leverage the latest in AI and automation.
+      </p>
+      <p>
+        My background spans product development, software engineering, and AI applications.
+        I enjoy taking complex problems and turning them into simple, effective solutions.
+      </p>
+    </section>
+
+    <section class="services">
+      <h2>What I help with</h2>
+      <ul>
+        <li><strong>AI product development</strong> — Building products that use LLMs, computer vision, or other AI capabilities</li>
+        <li><strong>Workflow automation</strong> — Streamlining processes with custom integrations and tools</li>
+        <li><strong>Rapid prototyping</strong> — Quickly validating ideas with working prototypes</li>
+        <li><strong>Technical consulting</strong> — Advising on architecture, tooling, and AI strategy</li>
+      </ul>
+    </section>
+
+    <section class="contact">
+      <h2>Get in touch</h2>
+      <p>
+        I'm currently available for freelance projects. If you're working on something
+        interesting and think I could help, I'd love to hear from you.
+      </p>
+      <ul class="contact-links">
+        <li>
+          <strong>Email:</strong> <a href="mailto:your@email.com">your@email.com</a>
+        </li>
+        <li>
+          <strong>Twitter/X:</strong> <a href="https://twitter.com/yourhandle" target="_blank" rel="noopener">@yourhandle</a>
+        </li>
+        <li>
+          <strong>Schedule a call:</strong> <a href="https://calendly.com/yourhandle" target="_blank" rel="noopener">Calendly</a>
+        </li>
+      </ul>
+    </section>
+  </article>
+</Base>
+
+<style>
+  .about-page {
+    max-width: 600px;
+  }
+
+  .page-header h1 {
+    margin-top: 0;
+  }
+
+  .bio {
+    margin-bottom: 2.5rem;
+  }
+
+  .bio p {
+    font-size: 1.05rem;
+    line-height: 1.7;
+  }
+
+  .services {
+    margin-bottom: 2.5rem;
+  }
+
+  .services h2 {
+    margin-top: 0;
+  }
+
+  .services ul {
+    padding-left: 1.25rem;
+  }
+
+  .services li {
+    margin-bottom: 0.75rem;
+    line-height: 1.6;
+  }
+
+  .contact h2 {
+    margin-top: 0;
+  }
+
+  .contact-links {
+    list-style: none;
+    padding: 0;
+  }
+
+  .contact-links li {
+    margin-bottom: 0.75rem;
+  }
+
+  .contact-links strong {
+    display: inline-block;
+    width: 120px;
+    color: var(--color-text-muted);
+    font-weight: normal;
+  }
+</style>

@@ -1,0 +1,203 @@
+---
+interface Props {
+  variant?: 'inline' | 'card';
+}
+
+const { variant = 'card' } = Astro.props;
+---
+
+<div class:list={['subscribe-form', variant]} id="subscribe">
+  <form id="newsletter-form">
+    <div class="form-header">
+      <p class="form-title">Get my notes in your inbox</p>
+    </div>
+    <div class="form-fields">
+      <input
+        type="email"
+        name="email"
+        placeholder="you@example.com"
+        required
+        autocomplete="email"
+      />
+      <div class="frequency-options">
+        <label class="frequency-option">
+          <input type="radio" name="frequency" value="daily" />
+          <span>Daily</span>
+        </label>
+        <label class="frequency-option">
+          <input type="radio" name="frequency" value="weekly" checked />
+          <span>Weekly</span>
+        </label>
+      </div>
+      <button type="submit">Subscribe</button>
+    </div>
+    <p class="form-message" id="form-message"></p>
+  </form>
+</div>
+
+<script>
+  const form = document.getElementById('newsletter-form') as HTMLFormElement;
+  const message = document.getElementById('form-message') as HTMLParagraphElement;
+
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const formData = new FormData(form);
+    const email = formData.get('email');
+    const frequency = formData.get('frequency');
+
+    // Update button state
+    const button = form.querySelector('button') as HTMLButtonElement;
+    const originalText = button.textContent;
+    button.textContent = 'Subscribing...';
+    button.disabled = true;
+    message.textContent = '';
+    message.className = 'form-message';
+
+    try {
+      const response = await fetch('/digital-garden/api/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, frequency }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        message.textContent = data.message || 'Subscribed!';
+        message.className = 'form-message success';
+        form.reset();
+      } else {
+        message.textContent = data.error || 'Something went wrong';
+        message.className = 'form-message error';
+      }
+    } catch (error) {
+      message.textContent = 'Network error. Please try again.';
+      message.className = 'form-message error';
+    } finally {
+      button.textContent = originalText;
+      button.disabled = false;
+    }
+  });
+</script>
+
+<style>
+  .subscribe-form {
+    margin: 2rem 0;
+  }
+
+  .subscribe-form.card {
+    padding: 1.5rem;
+    background: var(--color-code-bg);
+    border-radius: 8px;
+  }
+
+  .subscribe-form.inline {
+    padding: 0;
+    background: none;
+  }
+
+  .form-header {
+    margin-bottom: 1rem;
+  }
+
+  .form-title {
+    font-weight: 500;
+    margin: 0;
+  }
+
+  .form-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  input[type="email"] {
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    background: var(--color-bg);
+    color: var(--color-text);
+  }
+
+  input[type="email"]:focus {
+    outline: none;
+    border-color: var(--color-text);
+  }
+
+  .frequency-options {
+    display: flex;
+    gap: 1.25rem;
+  }
+
+  .frequency-option {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: var(--color-text-muted);
+  }
+
+  .frequency-option input[type="radio"] {
+    accent-color: var(--color-text);
+  }
+
+  .frequency-option:has(input:checked) {
+    color: var(--color-text);
+  }
+
+  button {
+    padding: 0.6rem 1rem;
+    background: var(--color-text);
+    color: var(--color-bg);
+    border: none;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+
+  button:hover {
+    opacity: 0.85;
+  }
+
+  button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .form-message {
+    margin: 0.75rem 0 0;
+    font-size: 0.85rem;
+    min-height: 1.2em;
+  }
+
+  .form-message.success {
+    color: #22c55e;
+  }
+
+  .form-message.error {
+    color: #ef4444;
+  }
+
+  @media (min-width: 480px) {
+    .form-fields {
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    input[type="email"] {
+      flex: 1;
+      min-width: 200px;
+    }
+
+    button {
+      flex-shrink: 0;
+    }
+  }
+</style>

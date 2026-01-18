@@ -1,0 +1,63 @@
+name: Send Newsletter
+
+on:
+  schedule:
+    # Daily at 8am UTC
+    - cron: '0 8 * * *'
+    # Weekly on Monday at 8am UTC
+    - cron: '0 8 * * 1'
+  workflow_dispatch:
+    inputs:
+      type:
+        description: 'Newsletter type'
+        required: true
+        default: 'daily'
+        type: choice
+        options:
+          - daily
+          - weekly
+
+jobs:
+  send-newsletter:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Determine newsletter type
+        id: type
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "type=${{ inputs.type }}" >> $GITHUB_OUTPUT
+          elif [ "$(date +%u)" == "1" ]; then
+            # Monday - send both daily and weekly
+            echo "type=both" >> $GITHUB_OUTPUT
+          else
+            echo "type=daily" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Send daily newsletter
+        if: steps.type.outputs.type == 'daily' || steps.type.outputs.type == 'both'
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          RESEND_AUDIENCE_ID: ${{ secrets.RESEND_AUDIENCE_ID }}
+        run: |
+          echo "TODO: Implement daily newsletter sending script"
+          # node scripts/send-newsletter.js --type=daily
+
+      - name: Send weekly newsletter
+        if: steps.type.outputs.type == 'weekly' || steps.type.outputs.type == 'both'
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          RESEND_AUDIENCE_ID: ${{ secrets.RESEND_AUDIENCE_ID }}
+        run: |
+          echo "TODO: Implement weekly newsletter sending script"
+          # node scripts/send-newsletter.js --type=weekly
