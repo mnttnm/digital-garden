@@ -2,6 +2,9 @@
 title: "Astro Content Collections make managing blog content a breeze"
 date: 2025-01-13
 tags: ["astro", "web-dev"]
+featured: false
+type: "thought"
+takeaway: "Type-safe frontmatter, automatic routing, and built-in Markdown support in one simple API."
 draft: false
 ---
 

@@ -1,43 +1,13 @@
 # Digital Garden - Claude Code Guide
 
-This is an Astro-based blog/digital garden. This file helps Claude Code understand and manage this project effectively.
+Personal site for sharing notes and showcasing projects. Built with Astro, deployed to Vercel.
 
 ## Project Overview
 
-A minimal, text-focused blog for sharing notes, learnings, and curated resources. Built with Astro and deployed to GitHub Pages.
-
----
-
-## Slash Commands
-
-This project includes custom slash commands for easy content management. Type `/` in Claude Code to see all available commands.
-
-### Content Creation
-
-| Command | Description | Example |
-|---------|-------------|---------|
-| `/post` | Create a new blog post | `/post Getting Started with Rust` |
-| `/til` | Create a TIL entry | `/til Git stash accepts a message` |
-| `/resource` | Add a curated link | `/resource https://example.com/article` |
-| `/project` | Create/update a project | `/project My Side Project` |
-
-### Publishing
-
-| Command | Description | Example |
-|---------|-------------|---------|
-| `/publish` | Commit and push to deploy | `/publish` |
-| `/build` | Build site, check for errors | `/build` |
-| `/preview` | Start local dev server | `/preview` |
-| `/status` | Show git status & content counts | `/status` |
-
-### Management
-
-| Command | Description | Example |
-|---------|-------------|---------|
-| `/drafts` | List all unpublished drafts | `/drafts` |
-| `/recent` | Show recently modified content | `/recent` |
-| `/tags` | List all tags with counts | `/tags` |
-| `/find` | Search content by keyword | `/find async await` |
+A minimal, editorial-style site with:
+- **Notes** — Essays, links, code snippets, and quick thoughts
+- **Projects** — Things I've built with outcomes and tech stacks
+- **Newsletter** — Resend-powered email subscription (daily/weekly)
 
 ---
 
@@ -53,131 +23,93 @@ npm run build          # Build for production
 
 ## Content Structure
 
-All content lives in `src/content/` with four collections:
+All content lives in `src/content/` with two collections:
 
-### 1. Posts (`src/content/posts/`)
-Long-form articles and tutorials.
+### Notes (`src/content/notes/`)
+Unified collection for all written content.
 
 ```markdown
 ---
-title: "Article Title"
-description: "Brief description for previews and SEO"
+title: "Note Title"
 date: 2025-01-13
-tags: ["tag1", "tag2"]
+tags: ["topic"]
+featured: false
+type: "essay"  # essay | link | snippet | thought
+link: "https://..."  # required for type: link
+takeaway: "One-sentence key insight"
 draft: false
-image: "/images/optional-hero.jpg"  # optional
 ---
 
 Content here...
 ```
 
-### 2. TIL - Today I Learned (`src/content/til/`)
-Quick notes and small discoveries.
-
-```markdown
----
-title: "Short descriptive title"
-date: 2025-01-13
-tags: ["topic"]
-draft: false
----
-
-Brief content...
-```
-
-### 3. Resources (`src/content/resources/`)
-Curated links with commentary.
-
-```markdown
----
-title: "Resource Title"
-description: "Why this is valuable"
-date: 2025-01-13
-category: "article"  # article | video | tool | book | course | other
-url: "https://example.com"
-tags: ["topic"]
-draft: false
----
-
-Your notes/commentary about this resource...
-```
-
-### 4. Projects (`src/content/projects/`)
-Personal projects and experiments.
+### Projects (`src/content/projects/`)
+Project showcases with outcomes.
 
 ```markdown
 ---
 title: "Project Name"
 description: "What this project does"
 date: 2025-01-13
-status: "in-progress"  # idea | in-progress | completed | archived
-repo: "https://github.com/user/repo"  # optional
-demo: "https://demo-url.com"  # optional
-tags: ["tech-used"]
-image: "/images/project-screenshot.png"  # optional
+featured: false
+github: "https://github.com/..."
+live: "https://..."
+stack: ["Astro", "Resend", "Vercel"]
+outcome: "Shipped in 2 weeks"
+tags: ["tech"]
 draft: false
 ---
 
-Detailed description, updates, learnings...
+Detailed description, learnings...
 ```
 
 ---
 
-## File Naming Conventions
+## File Naming
 
-- **Posts:** `YYYY-MM-DD-slug-title.md` (e.g., `2025-01-13-getting-started-with-rust.md`)
-- **TIL:** `YYYY-MM-DD-short-description.md` (e.g., `2025-01-13-git-stash-pop.md`)
-- **Resources:** `YYYY-MM-DD-resource-name.md` (e.g., `2025-01-13-designing-data-intensive-apps.md`)
-- **Projects:** `project-name.md` (e.g., `digital-garden.md`)
+- **Notes:** `YYYY-MM-DD-slug-title.md`
+- **Projects:** `project-name.md`
 
 ---
 
-## Images
+## Pages
 
-Store images in `public/images/` and reference them as `/digital-garden/images/filename.jpg` in markdown.
-
----
-
-## Tags
-
-Use lowercase, hyphenated tags for consistency:
-- ✅ Good: `machine-learning`, `web-dev`, `rust`, `til`
-- ❌ Avoid: `Machine Learning`, `webDev`, `RUST`
-
----
-
-## Drafts
-
-Set `draft: true` in frontmatter to hide content from the site while working on it.
+| Route | Description |
+|-------|-------------|
+| `/` | Home with intro, featured notes & projects |
+| `/notes/` | Chronological feed of all notes |
+| `/notes/[slug]/` | Individual note |
+| `/projects/` | All projects |
+| `/projects/[slug]/` | Individual project |
+| `/about/` | Bio and contact info |
+| `/rss.xml` | RSS feed |
+| `/api/subscribe` | Newsletter subscription endpoint |
 
 ---
 
-## Typical Workflows
+## Newsletter Setup
 
-### Quick TIL
-```
-/til I learned that CSS :has() selector can style parent elements
-/publish
-```
+1. Create a Resend account at https://resend.com
+2. Create an API key and Audience
+3. Set environment variables:
+   ```
+   RESEND_API_KEY=re_xxxxxxxxxxxx
+   RESEND_AUDIENCE_ID=aud_xxxxxxxxxxxx
+   ```
+4. Add these as secrets in Vercel and GitHub
 
-### Add a resource
-```
-/resource https://example.com/great-article
-/publish
-```
+---
 
-### Write an article
-```
-/post How I Built My Digital Garden
-# Edit the created file...
-/publish
-```
+## Deployment
 
-### Check what needs attention
-```
-/status
-/drafts
-```
+Deployed to Vercel with hybrid rendering:
+- Static pages (notes, projects) are pre-rendered
+- API routes (`/api/subscribe`) run as serverless functions
+
+To deploy:
+1. Connect repo to Vercel
+2. Set environment variables in Vercel dashboard
+3. Push to main branch
 
 ---
 
@@ -186,18 +118,17 @@ Set `draft: true` in frontmatter to hide content from the site while working on 
 | Setting | Location |
 |---------|----------|
 | Site URL | `astro.config.mjs` → `site` |
-| Site title | `src/layouts/Base.astro` |
+| Base path | `astro.config.mjs` → `base` |
+| Typography | `src/styles/global.css` |
 | Navigation | `src/layouts/Base.astro` |
-| Styling | `src/styles/global.css` |
 
 ---
 
-## Deployment
+## Slash Commands
 
-This site auto-deploys to GitHub Pages when you push to `main`. The workflow is in `.github/workflows/deploy.yml`.
-
-To deploy manually:
-```bash
-npm run build
-# Upload dist/ folder to your hosting
-```
+| Command | Description |
+|---------|-------------|
+| `/publish` | Commit and push to deploy |
+| `/preview` | Start local dev server |
+| `/status` | Show git status |
+| `/build` | Build and check for errors |

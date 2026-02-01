@@ -1,8 +1,10 @@
 ---
 title: "Welcome to My Digital Garden"
-description: "An introduction to this space and what you'll find here."
 date: 2025-01-13
 tags: ["meta", "writing"]
+featured: true
+type: "essay"
+takeaway: "This is a space where ideas grow over time, not a traditional blog with polished posts."
 draft: false
 ---
 
@@ -14,13 +16,11 @@ Unlike a traditional blog with polished, finished posts, a digital garden is mor
 
 ## What You'll Find Here
 
-- **Writing** — Longer articles and tutorials on topics I'm exploring
-- **TIL (Today I Learned)** — Quick notes on small discoveries
-- **Resources** — Curated links to articles, tools, and videos I recommend
-- **Projects** — Updates on things I'm building
+- **Notes** — Essays, links, code snippets, and quick thoughts
+- **Projects** — Things I'm building with learnings and outcomes
 
 ## Stay Updated
 
-You can subscribe via [RSS](/digital-garden/rss.xml) to get notified when I publish something new.
+Subscribe to get my notes in your inbox (daily or weekly digest).
 
 Thanks for visiting! Feel free to explore.

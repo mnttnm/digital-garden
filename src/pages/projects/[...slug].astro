@@ -17,35 +17,29 @@ function formatDate(date: Date) {
   return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
-const statusLabels: Record<string, string> = {
-  'in-progress': '🔨 In Progress',
-  'completed': '✅ Completed',
-  'idea': '💡 Idea',
-  'archived': '📦 Archived'
-};
+const base = import.meta.env.BASE_URL;
 ---
 
 <Base title={project.data.title} description={project.data.description}>
   <article>
     <header class="article-header">
       <h1 class="article-title">{project.data.title}</h1>
-      <p class="post-meta">
-        <span class={`project-status ${project.data.status}`}>{statusLabels[project.data.status]}</span>
-        · Started {formatDate(project.data.date)}
-      </p>
-      <p class="post-meta">
-        {project.data.repo && (
-          <a href={project.data.repo} target="_blank" rel="noopener">View on GitHub</a>
+      <p class="project-description">{project.data.description}</p>
+      {project.data.outcome && (
+        <p class="project-outcome">{project.data.outcome}</p>
+      )}
+      <div class="project-links">
+        {project.data.github && (
+          <a href={project.data.github} target="_blank" rel="noopener">View on GitHub →</a>
         )}
-        {project.data.repo && project.data.demo && ' · '}
-        {project.data.demo && (
-          <a href={project.data.demo} target="_blank" rel="noopener">Live Demo</a>
+        {project.data.live && (
+          <a href={project.data.live} target="_blank" rel="noopener">Live Demo →</a>
         )}
-      </p>
-      {project.data.tags.length > 0 && (
-        <div class="tags">
-          {project.data.tags.map(tag => (
-            <span class="tag">#{tag}</span>
+      </div>
+      {project.data.stack && project.data.stack.length > 0 && (
+        <div class="project-stack">
+          {project.data.stack.map(tech => (
+            <span class="stack-tag">{tech}</span>
           ))}
         </div>
       )}
@@ -58,8 +52,99 @@ const statusLabels: Record<string, string> = {
     <div class="article-content">
       <Content />
     </div>
+
+    {project.data.tags && project.data.tags.length > 0 && (
+      <footer class="article-footer">
+        <div class="tags">
+          {project.data.tags.map(tag => (
+            <span class="tag">{tag}</span>
+          ))}
+        </div>
+      </footer>
+    )}
   </article>
 
-  <hr />
-  <p><a href="/digital-garden/projects/">← Back to all projects</a></p>
+  <nav class="back-link">
+    <a href={`${base}projects/`}>← All projects</a>
+  </nav>
 </Base>
+
+<style>
+  .article-header {
+    margin-bottom: 2.5rem;
+  }
+
+  .article-title {
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+  }
+
+  .project-description {
+    font-size: 1.1rem;
+    color: var(--color-text-muted);
+    margin-bottom: 0.75rem;
+  }
+
+  .project-outcome {
+    font-size: 0.95rem;
+    color: var(--color-accent);
+    margin-bottom: 1rem;
+  }
+
+  .project-links {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .project-links a {
+    font-size: 0.9rem;
+  }
+
+  .project-stack {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .stack-tag {
+    font-size: 0.75rem;
+    background: var(--color-code-bg);
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    color: var(--color-text-muted);
+  }
+
+  .article-content {
+    margin-bottom: 3rem;
+  }
+
+  .article-footer {
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--color-border);
+    margin-bottom: 2rem;
+  }
+
+  .tags {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .tag {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    background: var(--color-code-bg);
+    padding: 0.1rem 0.5rem;
+    border-radius: 4px;
+  }
+
+  .back-link {
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .back-link a {
+    font-size: 0.9rem;
+  }
+</style>

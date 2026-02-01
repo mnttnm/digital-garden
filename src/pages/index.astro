@@ -2,109 +2,213 @@
 import Base from '../layouts/Base.astro';
 import { getCollection } from 'astro:content';
 
-// Get recent content from all collections
-const allPosts = await getCollection('posts', ({ data }) => !data.draft);
-const allTil = await getCollection('til', ({ data }) => !data.draft);
-const allResources = await getCollection('resources', ({ data }) => !data.draft);
+// Get featured content
+const allNotes = await getCollection('notes', ({ data }) => !data.draft);
 const allProjects = await getCollection('projects', ({ data }) => !data.draft);
 
-// Sort by date and get recent items
-const recentPosts = allPosts.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf()).slice(0, 3);
-const recentTil = allTil.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf()).slice(0, 5);
-const recentResources = allResources.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf()).slice(0, 3);
-const activeProjects = allProjects.filter(p => p.data.status === 'in-progress').slice(0, 3);
+// Get featured items, fallback to recent if none marked featured
+const featuredNotes = allNotes
+  .filter(n => n.data.featured)
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
+  .slice(0, 3);
+
+const featuredProjects = allProjects
+  .filter(p => p.data.featured)
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
+  .slice(0, 3);
+
+// Fallback to recent if no featured items
+const displayNotes = featuredNotes.length > 0
+  ? featuredNotes
+  : allNotes.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf()).slice(0, 3);
+
+const displayProjects = featuredProjects.length > 0
+  ? featuredProjects
+  : allProjects.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf()).slice(0, 3);
 
 function formatDate(date: Date) {
   return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 }
+
+function getTypeLabel(type: string) {
+  const labels: Record<string, string> = {
+    'essay': 'Essay',
+    'link': 'Link',
+    'snippet': 'Code',
+    'thought': 'Note'
+  };
+  return labels[type] || type;
+}
+
+const base = import.meta.env.BASE_URL;
 ---
 
 <Base title="Home">
-  <section>
-    <p>
-      Welcome to my digital garden — a collection of notes, learnings, and curated resources
-      that I find interesting or useful. Think of it as a public notebook where ideas grow over time.
-    </p>
-    <p>
-      Subscribe via <a href="/digital-garden/rss.xml">RSS</a> to get updates when I publish new content.
+  <section class="intro">
+    <p class="intro-lead">
+      I'm Mohit. This is where I share notes, learnings, and things I'm building.
     </p>
   </section>
 
   <hr />
 
-  {recentPosts.length > 0 && (
+  {displayNotes.length > 0 && (
     <section>
       <div class="section-header">
-        <h2>Recent Writing</h2>
-        <a href="/digital-garden/posts/" class="view-all">View all →</a>
+        <h2>Notes</h2>
+        <a href={`${base}notes/`} class="view-all">View all →</a>
       </div>
-      <ul class="post-list">
-        {recentPosts.map(post => (
-          <li class="post-item">
-            <h3 class="post-title">
-              <a href={`/digital-garden/posts/${post.slug}/`}>{post.data.title}</a>
+      <ul class="note-list">
+        {displayNotes.map(note => (
+          <li class="note-item">
+            <div class="note-header">
+              <span class="note-type">{getTypeLabel(note.data.type)}</span>
+              <span class="note-date">{formatDate(note.data.date)}</span>
+            </div>
+            <h3 class="note-title">
+              {note.data.type === 'link' && note.data.link ? (
+                <a href={note.data.link} target="_blank" rel="noopener">{note.data.title} ↗</a>
+              ) : (
+                <a href={`${base}notes/${note.slug}/`}>{note.data.title}</a>
+              )}
             </h3>
-            <p class="post-meta">{formatDate(post.data.date)}</p>
-            <p class="post-description">{post.data.description}</p>
+            {note.data.takeaway && (
+              <p class="note-takeaway">{note.data.takeaway}</p>
+            )}
           </li>
         ))}
       </ul>
     </section>
   )}
 
-  {recentTil.length > 0 && (
+  {displayProjects.length > 0 && (
     <section>
       <div class="section-header">
-        <h2>Today I Learned</h2>
-        <a href="/digital-garden/til/" class="view-all">View all →</a>
+        <h2>Projects</h2>
+        <a href={`${base}projects/`} class="view-all">View all →</a>
       </div>
-      <ul class="post-list">
-        {recentTil.map(item => (
-          <li class="til-item">
-            <span class="til-date">{formatDate(item.data.date)}</span>
-            <a href={`/digital-garden/til/${item.slug}/`}>{item.data.title}</a>
-          </li>
-        ))}
-      </ul>
-    </section>
-  )}
-
-  {activeProjects.length > 0 && (
-    <section>
-      <div class="section-header">
-        <h2>Active Projects</h2>
-        <a href="/digital-garden/projects/" class="view-all">View all →</a>
-      </div>
-      <ul class="post-list">
-        {activeProjects.map(project => (
-          <li class="post-item">
-            <h3 class="post-title">
-              <a href={`/digital-garden/projects/${project.slug}/`}>{project.data.title}</a>
+      <ul class="project-list">
+        {displayProjects.map(project => (
+          <li class="project-item">
+            <h3 class="project-title">
+              <a href={`${base}projects/${project.slug}/`}>{project.data.title}</a>
             </h3>
-            <p class="post-description">{project.data.description}</p>
-          </li>
-        ))}
-      </ul>
-    </section>
-  )}
-
-  {recentResources.length > 0 && (
-    <section>
-      <div class="section-header">
-        <h2>Recent Finds</h2>
-        <a href="/digital-garden/resources/" class="view-all">View all →</a>
-      </div>
-      <ul class="post-list">
-        {recentResources.map(resource => (
-          <li class="resource-item">
-            <span class="resource-category">{resource.data.category}</span>
-            <h3 class="post-title">
-              <a href={resource.data.url} target="_blank" rel="noopener">{resource.data.title}</a>
-            </h3>
-            <p class="post-description">{resource.data.description}</p>
+            <p class="project-description">{project.data.description}</p>
+            {project.data.outcome && (
+              <p class="project-outcome">{project.data.outcome}</p>
+            )}
+            {project.data.stack && project.data.stack.length > 0 && (
+              <div class="project-stack">
+                {project.data.stack.map(tech => (
+                  <span class="stack-tag">{tech}</span>
+                ))}
+              </div>
+            )}
           </li>
         ))}
       </ul>
     </section>
   )}
 </Base>
+
+<style>
+  .intro {
+    margin-bottom: 2rem;
+  }
+
+  .intro-lead {
+    font-size: 1.15rem;
+    line-height: 1.5;
+    color: var(--color-text-muted);
+  }
+
+  .note-list, .project-list {
+    list-style: none;
+    padding: 0;
+  }
+
+  .note-item {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .note-item:last-child {
+    border-bottom: none;
+  }
+
+  .note-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .note-type {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-accent);
+    font-weight: 500;
+  }
+
+  .note-date {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    font-family: var(--font-mono);
+  }
+
+  .note-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0 0 0.25rem 0;
+  }
+
+  .note-takeaway {
+    color: var(--color-text-muted);
+    font-size: 0.95rem;
+    margin: 0;
+  }
+
+  .project-item {
+    margin-bottom: 2rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .project-item:last-child {
+    border-bottom: none;
+  }
+
+  .project-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0 0 0.25rem 0;
+  }
+
+  .project-description {
+    color: var(--color-text-muted);
+    font-size: 0.95rem;
+    margin: 0 0 0.5rem 0;
+  }
+
+  .project-outcome {
+    font-size: 0.85rem;
+    color: var(--color-accent);
+    margin: 0 0 0.5rem 0;
+  }
+
+  .project-stack {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .stack-tag {
+    font-size: 0.75rem;
+    background: var(--color-code-bg);
+    padding: 0.15rem 0.5rem;
+    border-radius: 3px;
+    color: var(--color-text-muted);
+  }
+</style>

@@ -1,0 +1,154 @@
+---
+import Base from '../../layouts/Base.astro';
+import SubscribeForm from '../../components/SubscribeForm.astro';
+import { getCollection } from 'astro:content';
+
+const allNotes = await getCollection('notes', ({ data }) => !data.draft);
+const notes = allNotes.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+
+function formatDate(date: Date) {
+  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+function getTypeLabel(type: string) {
+  const labels: Record<string, string> = {
+    'essay': 'Essay',
+    'link': 'Link',
+    'snippet': 'Code',
+    'thought': 'Note'
+  };
+  return labels[type] || type;
+}
+
+// Get unique tags for filtering
+const allTags = [...new Set(notes.flatMap(n => n.data.tags))].sort();
+const base = import.meta.env.BASE_URL;
+---
+
+<Base title="Notes" description="Essays, links, code snippets, and quick thoughts.">
+  <header class="page-header">
+    <h1>Notes</h1>
+    <p class="page-description">
+      Essays, links, code snippets, and quick thoughts I find worth sharing.
+    </p>
+  </header>
+
+  <SubscribeForm variant="card" />
+
+  <hr />
+
+  {notes.length === 0 ? (
+    <p class="empty-state">No notes yet. Check back soon!</p>
+  ) : (
+    <ul class="note-list">
+      {notes.map(note => (
+        <li class="note-item">
+          <div class="note-header">
+            <span class="note-type">{getTypeLabel(note.data.type)}</span>
+            <span class="note-date">{formatDate(note.data.date)}</span>
+          </div>
+          <h2 class="note-title">
+            {note.data.type === 'link' && note.data.link ? (
+              <a href={note.data.link} target="_blank" rel="noopener">{note.data.title} ↗</a>
+            ) : (
+              <a href={`${base}notes/${note.slug}/`}>{note.data.title}</a>
+            )}
+          </h2>
+          {note.data.takeaway && (
+            <p class="note-takeaway">{note.data.takeaway}</p>
+          )}
+          {note.data.tags && note.data.tags.length > 0 && (
+            <div class="note-tags">
+              {note.data.tags.map(tag => (
+                <span class="tag">{tag}</span>
+              ))}
+            </div>
+          )}
+        </li>
+      ))}
+    </ul>
+  )}
+</Base>
+
+<style>
+  .page-header {
+    margin-bottom: 1.5rem;
+  }
+
+  .page-header h1 {
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+  }
+
+  .page-description {
+    color: var(--color-text-muted);
+    margin-bottom: 0;
+  }
+
+  .empty-state {
+    color: var(--color-text-muted);
+    font-style: italic;
+  }
+
+  .note-list {
+    list-style: none;
+    padding: 0;
+  }
+
+  .note-item {
+    margin-bottom: 2rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .note-item:last-child {
+    border-bottom: none;
+  }
+
+  .note-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .note-type {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-accent);
+    font-weight: 500;
+  }
+
+  .note-date {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    font-family: var(--font-mono);
+  }
+
+  .note-title {
+    font-size: 1.15rem;
+    font-weight: 600;
+    margin: 0 0 0.5rem 0;
+  }
+
+  .note-takeaway {
+    color: var(--color-text-muted);
+    font-size: 0.95rem;
+    margin: 0 0 0.5rem 0;
+  }
+
+  .note-tags {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .tag {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    background: var(--color-code-bg);
+    padding: 0.1rem 0.5rem;
+    border-radius: 3px;
+  }
+</style>

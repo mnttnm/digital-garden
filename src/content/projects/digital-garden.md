@@ -1,9 +1,11 @@
 ---
 title: "Digital Garden"
-description: "This website! A minimal, text-focused blog built with Astro for sharing notes and learnings."
+description: "A minimal, text-focused personal site for sharing notes and showcasing projects."
 date: 2025-01-13
-status: "in-progress"
-repo: "https://github.com/YOUR_USERNAME/digital-garden"
+featured: true
+github: "https://github.com/YOUR_USERNAME/digital-garden"
+stack: ["Astro", "Resend", "Vercel"]
+outcome: "Shipped MVP in a day with Claude Code"
 tags: ["astro", "blog", "web-dev"]
 draft: false
 ---
@@ -14,26 +16,20 @@ This digital garden is built with [Astro](https://astro.build) and designed to b
 
 - **Minimal** — Focus on content, not flashy design
 - **Fast** — Static HTML, minimal JavaScript
-- **Claude Code friendly** — Easy to manage with AI assistance
+- **Newsletter-ready** — Resend-powered email subscriptions
 
 ## Features
 
-- Four content types: posts, TIL, resources, projects
-- RSS feed for subscribers
-- Dark mode support
-- Clean, readable typography
-- Automatic GitHub Pages deployment
+- Unified notes collection (essays, links, snippets, thoughts)
+- Projects with outcomes and tech stack
+- Email newsletter with daily/weekly digest
+- Clean, editorial typography with Google Sans
+- Vercel deployment with API routes
 
 ## Tech Stack
 
 - **Framework:** Astro
 - **Styling:** Plain CSS (no framework)
-- **Deployment:** GitHub Pages
+- **Email:** Resend
+- **Deployment:** Vercel
 - **Content:** Markdown with frontmatter
-
-## Roadmap
-
-- [ ] Add search functionality
-- [ ] Add tag pages
-- [ ] Improve mobile experience
-- [ ] Add related posts section
