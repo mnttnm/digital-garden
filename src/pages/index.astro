@@ -39,6 +39,8 @@ function getTypeLabel(type: string) {
   };
   return labels[type] || type;
 }
+
+const base = import.meta.env.BASE_URL;
 ---
 
 <Base title="Home">
@@ -54,7 +56,7 @@ function getTypeLabel(type: string) {
     <section>
       <div class="section-header">
         <h2>Notes</h2>
-        <a href="/digital-garden/notes/" class="view-all">View all →</a>
+        <a href={`${base}notes/`} class="view-all">View all →</a>
       </div>
       <ul class="note-list">
         {displayNotes.map(note => (
@@ -67,7 +69,7 @@ function getTypeLabel(type: string) {
               {note.data.type === 'link' && note.data.link ? (
                 <a href={note.data.link} target="_blank" rel="noopener">{note.data.title} ↗</a>
               ) : (
-                <a href={`/digital-garden/notes/${note.slug}/`}>{note.data.title}</a>
+                <a href={`${base}notes/${note.slug}/`}>{note.data.title}</a>
               )}
             </h3>
             {note.data.takeaway && (
@@ -83,13 +85,13 @@ function getTypeLabel(type: string) {
     <section>
       <div class="section-header">
         <h2>Projects</h2>
-        <a href="/digital-garden/projects/" class="view-all">View all →</a>
+        <a href={`${base}projects/`} class="view-all">View all →</a>
       </div>
       <ul class="project-list">
         {displayProjects.map(project => (
           <li class="project-item">
             <h3 class="project-title">
-              <a href={`/digital-garden/projects/${project.slug}/`}>{project.data.title}</a>
+              <a href={`${base}projects/${project.slug}/`}>{project.data.title}</a>
             </h3>
             <p class="project-description">{project.data.description}</p>
             {project.data.outcome && (

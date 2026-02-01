@@ -22,6 +22,7 @@ function getTypeLabel(type: string) {
 
 // Get unique tags for filtering
 const allTags = [...new Set(notes.flatMap(n => n.data.tags))].sort();
+const base = import.meta.env.BASE_URL;
 ---
 
 <Base title="Notes" description="Essays, links, code snippets, and quick thoughts.">
@@ -50,7 +51,7 @@ const allTags = [...new Set(notes.flatMap(n => n.data.tags))].sort();
             {note.data.type === 'link' && note.data.link ? (
               <a href={note.data.link} target="_blank" rel="noopener">{note.data.title} ↗</a>
             ) : (
-              <a href={`/digital-garden/notes/${note.slug}/`}>{note.data.title}</a>
+              <a href={`${base}notes/${note.slug}/`}>{note.data.title}</a>
             )}
           </h2>
           {note.data.takeaway && (

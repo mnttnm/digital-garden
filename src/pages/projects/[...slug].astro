@@ -16,6 +16,8 @@ const { Content } = await project.render();
 function formatDate(date: Date) {
   return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 }
+
+const base = import.meta.env.BASE_URL;
 ---
 
 <Base title={project.data.title} description={project.data.description}>
@@ -63,7 +65,7 @@ function formatDate(date: Date) {
   </article>
 
   <nav class="back-link">
-    <a href="/digital-garden/projects/">← All projects</a>
+    <a href={`${base}projects/`}>← All projects</a>
   </nav>
 </Base>
 
