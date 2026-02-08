@@ -1,14 +1,51 @@
 ---
 import '../styles/global.css';
+import { getLearningLogItems } from '../lib/learning-log';
 
 interface Props {
   title: string;
   description?: string;
 }
 
-const { title, description = "Notes, learnings, and projects from Mohit" } = Astro.props;
+const { title, description = "learning.log: project updates and discoveries from Mohit" } = Astro.props;
 const siteTitle = "Mohit Tater";
+const brandTitle = "Mohit Tater - learning.log";
 const base = import.meta.env.BASE_URL;
+const normalizedBase = base.endsWith('/') ? base : `${base}/`;
+const homeHref = normalizedBase;
+const aboutHref = `${normalizedBase}about/`;
+const currentPath = Astro.url.pathname.endsWith('/')
+  ? Astro.url.pathname
+  : `${Astro.url.pathname}/`;
+const latestLogItem = (await getLearningLogItems())[0];
+const lastUpdatedLabel = latestLogItem
+  ? latestLogItem.date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    })
+  : null;
+
+function getRelativeTimeLabel(date: Date) {
+  const ms = Date.now() - date.getTime();
+  const day = 1000 * 60 * 60 * 24;
+  const days = Math.round(ms / day);
+
+  if (days <= 0) return 'today';
+  if (days === 1) return '1d ago';
+  if (days < 7) return `${days}d ago`;
+
+  const weeks = Math.round(days / 7);
+  if (weeks < 5) return `${weeks}w ago`;
+
+  const months = Math.round(days / 30);
+  if (months < 12) return `${months}mo ago`;
+
+  const years = Math.round(days / 365);
+  return `${years}y ago`;
+}
+
+const lastUpdatedRelativeLabel = latestLogItem ? getRelativeTimeLabel(latestLogItem.date) : null;
 ---
 
 <!DOCTYPE html>
@@ -18,11 +55,27 @@ const base = import.meta.env.BASE_URL;
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content={description}>
   <title>{title} | {siteTitle}</title>
+  <script is:inline>
+    (() => {
+      try {
+        const root = document.documentElement;
+        const appearance = localStorage.getItem('learning-log-appearance')
+          || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        const warmth = localStorage.getItem('learning-log-warmth') || 'warm';
+        const font = localStorage.getItem('learning-log-font') || 'serif';
+        root.dataset.appearance = appearance;
+        root.dataset.warmth = warmth;
+        root.dataset.font = font;
+      } catch {
+        // no-op: localStorage can fail in strict privacy contexts
+      }
+    })();
+  </script>
 
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
   <link rel="alternate" type="application/rss+xml" title={siteTitle} href={`${base}rss.xml`} />
   <link rel="icon" type="image/svg+xml" href={`${base}favicon.svg`} />
@@ -30,13 +83,58 @@ const base = import.meta.env.BASE_URL;
 <body>
   <div class="container">
     <header class="site-header">
-      <a href={base} class="site-title">{siteTitle}</a>
-      <nav class="site-nav">
-        <a href={base}>Home</a>
-        <a href={`${base}notes/`}>Notes</a>
-        <a href={`${base}projects/`}>Projects</a>
-        <a href={`${base}about/`}>About</a>
-      </nav>
+      <div class="site-brand">
+        <a href={homeHref} class="site-title">{brandTitle}</a>
+        {lastUpdatedLabel && (
+          <p class="site-updated">
+            Updated {lastUpdatedLabel}
+            {lastUpdatedRelativeLabel && <span class="site-updated-sep"> · </span>}
+            {lastUpdatedRelativeLabel}
+          </p>
+        )}
+      </div>
+      <div class="site-header-actions">
+        <nav class="site-nav">
+          <a href={homeHref} class:list={['nav-link', { active: currentPath === homeHref }]}>learning.log</a>
+          <a href={aboutHref} class:list={['nav-link', { active: currentPath === aboutHref }]}>About</a>
+        </nav>
+
+        <div class="theme-controls" data-theme-controls>
+          <button
+            class="theme-toggle-button"
+            type="button"
+            aria-label="Open theme settings"
+            aria-expanded="false"
+            data-theme-toggle
+          >
+            Theme
+          </button>
+          <section class="theme-panel" hidden data-theme-panel aria-label="Theme settings">
+            <div class="theme-row">
+              <span class="theme-label">Warmth</span>
+              <div class="theme-swatch-group" role="radiogroup" aria-label="Warmth">
+                <button class="theme-swatch warmth-cool" type="button" data-warmth="cool" aria-label="Cool"></button>
+                <button class="theme-swatch warmth-warm" type="button" data-warmth="warm" aria-label="Warm"></button>
+                <button class="theme-swatch warmth-warmer" type="button" data-warmth="warmer" aria-label="Warmer"></button>
+              </div>
+            </div>
+            <div class="theme-row">
+              <span class="theme-label">Font</span>
+              <div class="theme-segmented" role="radiogroup" aria-label="Entry title font">
+                <button type="button" data-font="serif">Serif</button>
+                <button type="button" data-font="sans">Sans</button>
+              </div>
+            </div>
+            <div class="theme-row">
+              <span class="theme-label">Appearance</span>
+              <button class="theme-appearance-button" type="button" data-appearance-toggle>
+                <span data-appearance-icon>☀</span>
+                <span data-appearance-label>Light</span>
+              </button>
+            </div>
+          </section>
+        </div>
+      </div>
     </header>
 
     <main>
@@ -51,5 +149,119 @@ const base = import.meta.env.BASE_URL;
       </p>
     </footer>
   </div>
+
+  <script>
+    (() => {
+      const root = document.documentElement;
+      const controls = document.querySelector('[data-theme-controls]');
+      const toggle = document.querySelector('[data-theme-toggle]');
+      const panel = document.querySelector('[data-theme-panel]');
+      const warmthButtons = Array.from(document.querySelectorAll('[data-warmth]'));
+      const fontButtons = Array.from(document.querySelectorAll('[data-font]'));
+      const appearanceToggle = document.querySelector('[data-appearance-toggle]');
+      const appearanceIcon = document.querySelector('[data-appearance-icon]');
+      const appearanceLabel = document.querySelector('[data-appearance-label]');
+
+      if (!controls || !toggle || !panel || !appearanceToggle || !appearanceIcon || !appearanceLabel) {
+        return;
+      }
+
+      const STORAGE_KEYS = {
+        warmth: 'learning-log-warmth',
+        font: 'learning-log-font',
+        appearance: 'learning-log-appearance'
+      };
+
+      const state = {
+        warmth: localStorage.getItem(STORAGE_KEYS.warmth) || 'warm',
+        font: localStorage.getItem(STORAGE_KEYS.font) || 'serif',
+        appearance: localStorage.getItem(STORAGE_KEYS.appearance)
+          || root.dataset.appearance
+          || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+      };
+
+      function applyState() {
+        root.dataset.warmth = state.warmth;
+        root.dataset.font = state.font;
+        root.dataset.appearance = state.appearance;
+
+        warmthButtons.forEach((button) => {
+          button.classList.toggle('active', button.getAttribute('data-warmth') === state.warmth);
+        });
+
+        fontButtons.forEach((button) => {
+          button.classList.toggle('active', button.getAttribute('data-font') === state.font);
+        });
+
+        appearanceIcon.textContent = state.appearance === 'dark' ? '☾' : '☀';
+        appearanceLabel.textContent = state.appearance === 'dark' ? 'Dark' : 'Light';
+      }
+
+      function persistState() {
+        localStorage.setItem(STORAGE_KEYS.warmth, state.warmth);
+        localStorage.setItem(STORAGE_KEYS.font, state.font);
+        localStorage.setItem(STORAGE_KEYS.appearance, state.appearance);
+      }
+
+      function closePanel() {
+        panel.hidden = true;
+        panel.classList.remove('open');
+        toggle.setAttribute('aria-expanded', 'false');
+      }
+
+      function openPanel() {
+        panel.hidden = false;
+        requestAnimationFrame(() => panel.classList.add('open'));
+        toggle.setAttribute('aria-expanded', 'true');
+      }
+
+      toggle.addEventListener('click', () => {
+        if (panel.hidden) {
+          openPanel();
+        } else {
+          closePanel();
+        }
+      });
+
+      warmthButtons.forEach((button) => {
+        button.addEventListener('click', () => {
+          state.warmth = button.getAttribute('data-warmth') || 'warm';
+          applyState();
+          persistState();
+        });
+      });
+
+      fontButtons.forEach((button) => {
+        button.addEventListener('click', () => {
+          state.font = button.getAttribute('data-font') || 'serif';
+          applyState();
+          persistState();
+        });
+      });
+
+      appearanceToggle.addEventListener('click', () => {
+        state.appearance = state.appearance === 'dark' ? 'light' : 'dark';
+        applyState();
+        persistState();
+      });
+
+      document.addEventListener('click', (event) => {
+        if (panel.hidden) return;
+        const target = event.target;
+        if (!(target instanceof Node)) return;
+        if (!controls.contains(target)) {
+          closePanel();
+        }
+      });
+
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+          closePanel();
+        }
+      });
+
+      applyState();
+    })();
+  </script>
 </body>
 </html>
