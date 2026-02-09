@@ -1,9 +1,15 @@
 ---
 import Base from '../../layouts/Base.astro';
+import type { CollectionEntry } from 'astro:content';
 import { getCollection } from 'astro:content';
+import { getProjectEventAnchor } from '../../lib/learning-log';
+
+type ProjectActivity = CollectionEntry<'projects'>['data']['activity'][number];
+
+export const prerender = true;
 
 export async function getStaticPaths() {
-  const projects = await getCollection('projects');
+  const projects = await getCollection('projects', ({ data }) => !data.draft);
   return projects.map(project => ({
     params: { slug: project.slug },
     props: { project },
@@ -17,17 +23,69 @@ function formatDate(date: Date) {
   return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
+function formatEntryDate(date: Date) {
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function formatTime(date: Date) {
+  return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+}
+
+function formatRelativeDate(date: Date) {
+  const msInDay = 1000 * 60 * 60 * 24;
+  const differenceInDays = Math.round((Date.now() - date.getTime()) / msInDay);
+  const absoluteDifference = Math.abs(differenceInDays);
+
+  if (absoluteDifference === 0) return 'today';
+  if (absoluteDifference === 1) return differenceInDays > 0 ? '1 day ago' : 'in 1 day';
+  if (absoluteDifference < 30) return differenceInDays > 0 ? `${absoluteDifference} days ago` : `in ${absoluteDifference} days`;
+
+  const differenceInMonths = Math.round(absoluteDifference / 30);
+  if (differenceInMonths < 12) return differenceInDays > 0 ? `${differenceInMonths} months ago` : `in ${differenceInMonths} months`;
+
+  const differenceInYears = Math.round(absoluteDifference / 365);
+  return differenceInDays > 0 ? `${differenceInYears} years ago` : `in ${differenceInYears} years`;
+}
+
+const activityTypeLabels: Record<ProjectActivity['type'], string> = {
+  update: 'Update',
+  learning: 'Learning',
+  discovery: 'Discovery',
+  milestone: 'Milestone',
+  experiment: 'Experiment',
+  fix: 'Fix',
+};
+
+function getEventDotClass(type: ProjectActivity['type']) {
+  const dots: Record<ProjectActivity['type'], string> = {
+    update: 'dot-project',
+    learning: 'dot-learning',
+    discovery: 'dot-resource',
+    milestone: 'dot-project',
+    experiment: 'dot-thought',
+    fix: 'dot-project',
+  };
+  return dots[type];
+}
+
+const activity = [...project.data.activity].sort((a, b) => b.date.valueOf() - a.date.valueOf());
+const latestActivityDate = activity[0]?.date ?? project.data.date;
+const learningCount = activity.filter(event => event.type === 'learning' || event.type === 'discovery').length;
+const activeMonths = new Set(activity.map(event => `${event.date.getFullYear()}-${event.date.getMonth()}`)).size;
 const base = import.meta.env.BASE_URL;
 ---
 
 <Base title={project.data.title} description={project.data.description}>
-  <article>
+  <article class="project-article">
     <header class="article-header">
       <h1 class="article-title">{project.data.title}</h1>
       <p class="project-description">{project.data.description}</p>
       {project.data.outcome && (
         <p class="project-outcome">{project.data.outcome}</p>
       )}
+      <p class="project-meta-line">
+        Last updated {formatDate(latestActivityDate)} ({formatRelativeDate(latestActivityDate)}) · {activity.length} events · {learningCount} learnings/discoveries · {activeMonths} active months
+      </p>
       <div class="project-links">
         {project.data.github && (
           <a href={project.data.github} target="_blank" rel="noopener">View on GitHub →</a>
@@ -53,6 +111,97 @@ const base = import.meta.env.BASE_URL;
       <Content />
     </div>
 
+    <section class="activity-feed" aria-label="Project activity feed">
+      <header class="feed-header">
+        <h2>Activity Feed</h2>
+        <p>
+          A running log of what changed, what I learned, and what I am exploring next.
+        </p>
+      </header>
+
+      {activity.length === 0 ? (
+        <p class="feed-empty">No events logged yet. Add entries in this project's frontmatter under <code>activity</code>.</p>
+      ) : (
+        <ul class="feed-list">
+          {activity.map(event => (
+            <li
+              class="feed-item reveal"
+              id={getProjectEventAnchor(project.slug, event.date, event.title)}
+            >
+              <article class="feed-grid">
+                <aside class="feed-margin">
+                  <time datetime={event.date.toISOString()}>
+                    {formatEntryDate(event.date)}
+                  </time>
+                  <p class="feed-type">
+                    {activityTypeLabels[event.type].toUpperCase()}
+                    <span class:list={['entry-dot', getEventDotClass(event.type)]} aria-hidden="true"></span>
+                  </p>
+                </aside>
+                <div class="feed-content">
+                <h3 class="feed-title">{event.title}</h3>
+                <p class="feed-summary">{event.summary}</p>
+                {event.highlights.length > 0 && (
+                  <ul class="feed-highlights">
+                    {event.highlights.map(highlight => (
+                      <li>{highlight}</li>
+                    ))}
+                  </ul>
+                )}
+                {event.image && (
+                  <figure class="feed-media">
+                    <img src={event.image} alt={event.imageAlt || event.title} loading="lazy" />
+                    {event.imageCaption && <figcaption>{event.imageCaption}</figcaption>}
+                  </figure>
+                )}
+                {event.code && (
+                  <div class="code-block">
+                    <div class="code-block-header">
+                      <span>{(event.codeLanguage || 'text').toLowerCase()}</span>
+                      <span>code</span>
+                    </div>
+                    <pre><code>{event.code}</code></pre>
+                  </div>
+                )}
+                {event.links.length > 0 && (
+                  <ul class="feed-link-list">
+                    {event.links.map(link => (
+                      <li>
+                        <a class="link-preview" href={link.url} target="_blank" rel="noopener">
+                          <div class="link-preview-main">
+                            <span class="link-icon" aria-hidden="true">◌</span>
+                            <div class="link-copy">
+                              <p class="link-title">{link.label}</p>
+                              <p class="link-domain">{new URL(link.url).hostname.replace(/^www\./, '')}</p>
+                            </div>
+                          </div>
+                          <span class="link-arrow" aria-hidden="true">↗</span>
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {event.actionLabel && event.actionUrl && (
+                  <p class="feed-action">
+                    <a href={event.actionUrl} target={event.actionUrl.startsWith('http') ? '_blank' : undefined} rel={event.actionUrl.startsWith('http') ? 'noopener' : undefined}>
+                      {event.actionLabel} →
+                    </a>
+                  </p>
+                )}
+                <p class="feed-footer">
+                  <span>{formatRelativeDate(event.date)}</span>
+                  <span aria-hidden="true">·</span>
+                  <span>{formatTime(event.date)}</span>
+                </p>
+                <div class="entry-separator" aria-hidden="true"></div>
+                </div>
+              </article>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+
     {project.data.tags && project.data.tags.length > 0 && (
       <footer class="article-footer">
         <div class="tags">
@@ -65,8 +214,29 @@ const base = import.meta.env.BASE_URL;
   </article>
 
   <nav class="back-link">
-    <a href={`${base}projects/`}>← All projects</a>
+    <a href={base}>← Back to learning.log</a>
   </nav>
+
+  <script>
+    (() => {
+      const entries = document.querySelectorAll('.reveal');
+      if (!('IntersectionObserver' in window) || entries.length === 0) {
+        entries.forEach(entry => entry.classList.add('visible'));
+        return;
+      }
+
+      const observer = new IntersectionObserver((entryList) => {
+        entryList.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.15 });
+
+      entries.forEach(entry => observer.observe(entry));
+    })();
+  </script>
 </Base>
 
 <style>
@@ -87,36 +257,383 @@ const base = import.meta.env.BASE_URL;
 
   .project-outcome {
     font-size: 0.95rem;
-    color: var(--color-accent);
+    color: var(--accent);
     margin-bottom: 1rem;
+  }
+
+  .project-meta-line {
+    margin: 0 0 1rem 0;
+    color: var(--text-tertiary);
+    font-size: 0.8rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
   }
 
   .project-links {
     display: flex;
-    gap: 1.5rem;
+    gap: 1rem;
     margin-bottom: 1rem;
+    flex-wrap: wrap;
   }
 
   .project-links a {
-    font-size: 0.9rem;
+    color: var(--text-secondary);
+    font-size: 0.88rem;
+    border-bottom: 1px solid transparent;
+    padding-bottom: 0.08rem;
+  }
+
+  .project-links a:hover {
+    color: var(--accent);
+    border-bottom-color: var(--border-primary);
   }
 
   .project-stack {
     display: flex;
     gap: 0.5rem;
     flex-wrap: wrap;
+    margin-bottom: 1rem;
   }
 
   .stack-tag {
-    font-size: 0.75rem;
-    background: var(--color-code-bg);
-    padding: 0.2rem 0.5rem;
-    border-radius: 4px;
-    color: var(--color-text-muted);
+    display: inline-flex;
+    align-items: center;
+    padding: 0.15rem 0.45rem;
+    border-radius: 999px;
+    border: 1px solid var(--border-primary);
+    background: var(--bg-card);
+    font-size: 0.68rem;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 500;
   }
 
   .article-content {
     margin-bottom: 3rem;
+  }
+
+  .activity-feed {
+    margin-bottom: 3rem;
+  }
+
+  .feed-header {
+    margin-bottom: 2rem;
+  }
+
+  .feed-header h2 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.4rem;
+  }
+
+  .feed-header p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 1rem;
+    max-width: 54ch;
+  }
+
+  .feed-empty {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-style: italic;
+  }
+
+  .feed-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .feed-item {
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+
+  .feed-item.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .feed-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.72rem;
+    padding: 1.7rem 0;
+  }
+
+  .feed-margin {
+    display: flex;
+    align-items: baseline;
+    gap: 0.65rem;
+    color: var(--text-tertiary);
+  }
+
+  .feed-margin time {
+    font-size: 0.85rem;
+    color: var(--text-tertiary);
+  }
+
+  .feed-type {
+    margin: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.69rem;
+    font-weight: 500;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+  }
+
+  .entry-dot {
+    width: 0.4rem;
+    height: 0.4rem;
+    border-radius: 999px;
+  }
+
+  .dot-project { background: #94a3b8; }
+  .dot-learning { background: #fbbf24; }
+  .dot-resource { background: #10b981; }
+  .dot-thought { background: #c084fc; }
+
+  .feed-content {
+    min-width: 0;
+  }
+
+  .feed-title {
+    margin: 0 0 0.7rem 0;
+    font-size: clamp(1.55rem, 2.8vw, 2rem);
+    line-height: 1.22;
+    font-family: var(--entry-title-font);
+    font-weight: 500;
+  }
+
+  .feed-summary {
+    margin: 0 0 1rem 0;
+    font-size: 1.02rem;
+    line-height: 1.65;
+    color: var(--text-secondary);
+    max-width: 62ch;
+  }
+
+  .feed-footer {
+    margin: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.74rem;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 500;
+  }
+
+  .feed-highlights {
+    margin: 0 0 1rem 0;
+    padding-left: 1.1rem;
+    max-width: 62ch;
+  }
+
+  .feed-highlights li {
+    margin-bottom: 0.35rem;
+    color: var(--color-text);
+    font-size: 0.93rem;
+  }
+
+  .feed-link-list {
+    list-style: none;
+    display: grid;
+    gap: 0.7rem;
+    padding: 0;
+    margin: 0 0 0.9rem 0;
+  }
+
+  .feed-link-list li {
+    margin: 0;
+  }
+
+  .feed-media {
+    margin: 0 0 0.9rem 0;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.65rem;
+    background: var(--bg-card);
+    overflow: hidden;
+  }
+
+  .feed-media img {
+    width: 100%;
+    display: block;
+    margin: 0;
+    border-radius: 0;
+  }
+
+  .feed-media figcaption {
+    margin: 0;
+    padding: 0.5rem 0.7rem 0.62rem;
+    color: var(--text-tertiary);
+    font-size: 0.73rem;
+    text-align: center;
+    font-family: var(--font-serif);
+    font-style: italic;
+  }
+
+  .feed-action {
+    margin: 0 0 0.85rem 0;
+  }
+
+  .feed-action a {
+    font-size: 0.84rem;
+    color: var(--accent);
+    border-bottom: 1px solid transparent;
+    padding-bottom: 0.05rem;
+  }
+
+  .feed-action a:hover {
+    color: var(--accent-hover);
+    border-bottom-color: var(--border-primary);
+  }
+
+  .code-block {
+    border-radius: 0.7rem;
+    overflow: hidden;
+    border: 1px solid #2a2a2a;
+    background: #1e1e1e;
+    margin-bottom: 0.9rem;
+  }
+
+  .code-block-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.42rem 0.78rem;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: #b4b4ac;
+    text-transform: lowercase;
+    border-bottom: 1px solid #2a2a2a;
+  }
+
+  .code-block pre {
+    margin: 0;
+    background: transparent;
+    padding: 0.8rem;
+    font-size: 0.84rem;
+    line-height: 1.7;
+    color: #d4d4d4;
+  }
+
+  .link-preview {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.65rem;
+    background: var(--bg-card);
+    padding: 0.8rem 1rem;
+    color: var(--text-primary);
+    text-decoration: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .link-preview:hover {
+    border-color: color-mix(in srgb, var(--accent) 35%, var(--border-primary));
+    box-shadow: 0 10px 20px -18px rgba(0, 0, 0, 0.35);
+  }
+
+  .link-preview-main {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    min-width: 0;
+  }
+
+  .link-icon {
+    width: 1.6rem;
+    height: 1.6rem;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-subtle);
+    color: var(--text-tertiary);
+    font-size: 0.85rem;
+    flex-shrink: 0;
+  }
+
+  .link-copy {
+    min-width: 0;
+  }
+
+  .link-title {
+    margin: 0;
+    font-size: 0.93rem;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .link-domain {
+    margin: 0.1rem 0 0 0;
+    font-size: 0.78rem;
+    color: var(--text-tertiary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .link-arrow {
+    color: var(--text-tertiary);
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+  }
+
+  .link-preview:hover .link-arrow {
+    transform: translate(0.5px, -0.5px);
+  }
+
+  .entry-separator {
+    margin-top: clamp(2rem, 4vw, 2.5rem);
+    width: 66%;
+    border-top: 1px solid color-mix(in srgb, var(--border-primary) 40%, transparent);
+  }
+
+  .feed-item:last-child .entry-separator {
+    display: none;
+  }
+
+  @media (min-width: 768px) {
+    .feed-grid {
+      grid-template-columns: 140px minmax(0, 1fr);
+      gap: 3rem;
+      align-items: start;
+    }
+
+    .feed-margin {
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: flex-end;
+      gap: 0.35rem;
+      text-align: right;
+      padding-top: 0.3rem;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .feed-title {
+      font-size: 1.4rem;
+    }
+
+    .feed-summary {
+      font-size: 0.96rem;
+    }
+
+    .project-meta-line {
+      font-size: 0.73rem;
+    }
   }
 
   .article-footer {
