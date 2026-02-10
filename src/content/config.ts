@@ -10,6 +10,7 @@ const notes = defineCollection({
     featured: z.boolean().default(false),
     type: z.enum(['link', 'snippet', 'essay', 'thought']),
     link: z.string().url().optional(),
+    linkTitle: z.string().optional(),
     takeaway: z.string().optional(),
     draft: z.boolean().default(false),
   }),
@@ -28,6 +29,29 @@ const projects = defineCollection({
     stack: z.array(z.string()).default([]),
     outcome: z.string().optional(),
     tags: z.array(z.string()).default([]),
+    activity: z.array(
+      z.object({
+        date: z.coerce.date(),
+        title: z.string(),
+        summary: z.string(),
+        tags: z.array(z.string()).default([]),
+        type: z.enum(['update', 'learning', 'discovery', 'milestone', 'experiment', 'fix']).default('update'),
+        highlights: z.array(z.string()).default([]),
+        image: z.string().url().optional(),
+        imageAlt: z.string().optional(),
+        imageCaption: z.string().optional(),
+        actionLabel: z.string().optional(),
+        actionUrl: z.string().optional(),
+        code: z.string().optional(),
+        codeLanguage: z.string().optional(),
+        links: z.array(
+          z.object({
+            label: z.string(),
+            url: z.string().url(),
+          })
+        ).default([]),
+      })
+    ).default([]),
     image: z.string().optional(),
     draft: z.boolean().default(false),
   }),

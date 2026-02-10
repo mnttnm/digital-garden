@@ -1,214 +1,665 @@
 ---
 import Base from '../layouts/Base.astro';
-import { getCollection } from 'astro:content';
+import SubscribeForm from '../components/SubscribeForm.astro';
+import {
+  getLearningLogItems,
+  type LearningLogCategory,
+  type LearningLogItem,
+} from '../lib/learning-log';
 
-// Get featured content
-const allNotes = await getCollection('notes', ({ data }) => !data.draft);
-const allProjects = await getCollection('projects', ({ data }) => !data.draft);
-
-// Get featured items, fallback to recent if none marked featured
-const featuredNotes = allNotes
-  .filter(n => n.data.featured)
-  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
-  .slice(0, 3);
-
-const featuredProjects = allProjects
-  .filter(p => p.data.featured)
-  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
-  .slice(0, 3);
-
-// Fallback to recent if no featured items
-const displayNotes = featuredNotes.length > 0
-  ? featuredNotes
-  : allNotes.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf()).slice(0, 3);
-
-const displayProjects = featuredProjects.length > 0
-  ? featuredProjects
-  : allProjects.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf()).slice(0, 3);
-
-function formatDate(date: Date) {
-  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-}
-
-function getTypeLabel(type: string) {
-  const labels: Record<string, string> = {
-    'essay': 'Essay',
-    'link': 'Link',
-    'snippet': 'Code',
-    'thought': 'Note'
-  };
-  return labels[type] || type;
-}
-
+const ITEMS_PER_PAGE = 30;
 const base = import.meta.env.BASE_URL;
+const visibleFilters = ['all', 'projects', 'discoveries'] as const;
+type VisibleFilter = (typeof visibleFilters)[number];
+type Filter = VisibleFilter;
+
+const bucketFallback = Astro.url.searchParams.get('bucket');
+const rawFilter = (
+  Astro.url.searchParams.get('filter')
+  ?? (bucketFallback === 'project-updates' ? 'projects' : null)
+  ?? (bucketFallback === 'what-i-discovered' ? 'discoveries' : null)
+  ?? 'all'
+).toLowerCase();
+
+const filterAliases: Record<string, Filter> = {
+  all: 'all',
+  projects: 'projects',
+  project: 'projects',
+  'project-updates': 'projects',
+  discoveries: 'discoveries',
+  'what-i-discovered': 'discoveries',
+  learnings: 'discoveries',
+  resources: 'discoveries',
+  thoughts: 'discoveries',
+};
+
+const activeFilter: Filter = filterAliases[rawFilter] ?? 'all';
+
+const requestedPage = Number.parseInt(Astro.url.searchParams.get('page') ?? '1', 10);
+const currentPage = Number.isFinite(requestedPage) && requestedPage > 0 ? requestedPage : 1;
+
+const allItems = await getLearningLogItems();
+const filteredItems = activeFilter === 'all'
+  ? allItems
+  : activeFilter === 'projects'
+    ? allItems.filter(item => item.category === 'projects')
+    : allItems.filter(item => item.category !== 'projects');
+
+const visibleCount = currentPage * ITEMS_PER_PAGE;
+const visibleItems = filteredItems.slice(0, visibleCount);
+const hasMore = filteredItems.length > visibleCount;
+
+function formatEntryDate(date: Date) {
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function buildUrl(filter: Filter, page = 1) {
+  const params = new URLSearchParams();
+
+  if (filter !== 'all') {
+    params.set('filter', filter);
+  }
+
+  if (page > 1) {
+    params.set('page', String(page));
+  }
+
+  const query = params.toString();
+  return query ? `${base}?${query}` : base;
+}
+
+function getFilterLabel(filter: Filter) {
+  const labels: Record<Filter, string> = {
+    all: 'All',
+    projects: 'Projects',
+    discoveries: 'What I discovered',
+  };
+  return labels[filter];
+}
+
+function getFilterCount(filter: Filter) {
+  if (filter === 'all') return allItems.length;
+  if (filter === 'projects') return allItems.filter(item => item.category === 'projects').length;
+  return allItems.filter(item => item.category !== 'projects').length;
+}
+
+function resolveHref(href: string, isExternal: boolean) {
+  if (isExternal) return href;
+  const normalized = href.startsWith('/') ? href.slice(1) : href;
+  return `${base}${normalized}`;
+}
+
+function resolveInternalHref(href: string) {
+  const normalized = href.startsWith('/') ? href.slice(1) : href;
+  return `${base}${normalized}`;
+}
+
+function getCategoryLabel(item: LearningLogItem) {
+  const labels: Record<LearningLogCategory, string> = {
+    projects: 'PROJECT UPDATE',
+    learnings: 'LEARNING',
+    resources: 'RESOURCE',
+    thoughts: 'THOUGHT',
+  };
+  return labels[item.category];
+}
+
+function getCategoryDotClass(item: LearningLogItem) {
+  const dotClasses: Record<LearningLogCategory, string> = {
+    projects: 'dot-project',
+    learnings: 'dot-learning',
+    resources: 'dot-resource',
+    thoughts: 'dot-thought',
+  };
+  return dotClasses[item.category];
+}
+
+function getTags(item: LearningLogItem) {
+  return item.tags.slice(0, 3);
+}
 ---
 
-<Base title="Home">
-  <section class="intro">
-    <p class="intro-lead">
-      I'm Mohit. This is where I share notes, learnings, and things I'm building.
-    </p>
-  </section>
+<Base title="learning.log" description="A digital journal for thoughts in progress.">
+  <main class="journal-page">
+    <nav class="filter-tabs content-offset" aria-label="Filter entries">
+      {visibleFilters.map((filter) => (
+        <a
+          href={buildUrl(filter, 1)}
+          class:list={['filter-tab', { active: activeFilter === filter }]}
+        >
+          <span>{getFilterLabel(filter)}</span>
+          <span class="tab-count">{getFilterCount(filter)}</span>
+        </a>
+      ))}
+    </nav>
+    <p class="journal-subtitle content-offset">What I shipped, learned, and bookmarked.</p>
 
-  <hr />
+    {visibleItems.length === 0 ? (
+      <p class="empty-state content-offset">No entries found for this category.</p>
+    ) : (
+      <ul class="entries" aria-label="Journal entries">
+        {visibleItems.map((item, index) => (
+          <li
+            class="entry-item reveal"
+            style={`--reveal-delay: ${Math.min(index * 42, 260)}ms;`}
+          >
+            <article class="entry-grid">
+              <aside class="entry-margin">
+                <time datetime={item.date.toISOString()}>{formatEntryDate(item.date)}</time>
+                <p class="entry-category">
+                  {getCategoryLabel(item)}
+                  <span class:list={['entry-dot', getCategoryDotClass(item)]} aria-hidden="true"></span>
+                </p>
+              </aside>
 
-  {displayNotes.length > 0 && (
-    <section>
-      <div class="section-header">
-        <h2>Notes</h2>
-        <a href={`${base}notes/`} class="view-all">View all →</a>
-      </div>
-      <ul class="note-list">
-        {displayNotes.map(note => (
-          <li class="note-item">
-            <div class="note-header">
-              <span class="note-type">{getTypeLabel(note.data.type)}</span>
-              <span class="note-date">{formatDate(note.data.date)}</span>
-            </div>
-            <h3 class="note-title">
-              {note.data.type === 'link' && note.data.link ? (
-                <a href={note.data.link} target="_blank" rel="noopener">{note.data.title} ↗</a>
-              ) : (
-                <a href={`${base}notes/${note.slug}/`}>{note.data.title}</a>
-              )}
-            </h3>
-            {note.data.takeaway && (
-              <p class="note-takeaway">{note.data.takeaway}</p>
-            )}
-          </li>
-        ))}
-      </ul>
-    </section>
-  )}
+              <div class="entry-main">
+                <h2 class="entry-title">
+                  <a
+                    href={resolveHref(item.href, item.isExternal)}
+                    target={item.isExternal ? '_blank' : undefined}
+                    rel={item.isExternal ? 'noopener' : undefined}
+                  >
+                    {item.title}
+                  </a>
+                </h2>
 
-  {displayProjects.length > 0 && (
-    <section>
-      <div class="section-header">
-        <h2>Projects</h2>
-        <a href={`${base}projects/`} class="view-all">View all →</a>
-      </div>
-      <ul class="project-list">
-        {displayProjects.map(project => (
-          <li class="project-item">
-            <h3 class="project-title">
-              <a href={`${base}projects/${project.slug}/`}>{project.data.title}</a>
-            </h3>
-            <p class="project-description">{project.data.description}</p>
-            {project.data.outcome && (
-              <p class="project-outcome">{project.data.outcome}</p>
-            )}
-            {project.data.stack && project.data.stack.length > 0 && (
-              <div class="project-stack">
-                {project.data.stack.map(tech => (
-                  <span class="stack-tag">{tech}</span>
-                ))}
+                <p class="entry-body">{item.crux}</p>
+
+                {item.imagePreview && (
+                  <figure class="entry-media">
+                    <img
+                      src={item.imagePreview.src}
+                      alt={item.imagePreview.alt}
+                      loading="lazy"
+                    />
+                    {item.imagePreview.caption && (
+                      <figcaption>{item.imagePreview.caption}</figcaption>
+                    )}
+                  </figure>
+                )}
+
+                {item.linkPreview && (
+                  <a
+                    class="link-preview"
+                    href={item.linkPreview.url}
+                    target="_blank"
+                    rel="noopener"
+                    aria-label={`Open ${item.linkPreview.title}`}
+                  >
+                    <div class="link-preview-main">
+                      <span class="link-icon" aria-hidden="true">◌</span>
+                      <div class="link-copy">
+                        <p class="link-title">{item.linkPreview.title}</p>
+                        <p class="link-domain">{item.linkPreview.domain}</p>
+                      </div>
+                    </div>
+                    <span class="link-arrow" aria-hidden="true">↗</span>
+                  </a>
+                )}
+
+                {item.codePreview && (
+                  <div class="code-block">
+                    <div class="code-block-header">
+                      <span>{item.codePreview.language}</span>
+                      <span>code</span>
+                    </div>
+                    <pre><code>{item.codePreview.code}</code></pre>
+                  </div>
+                )}
+
+                {item.actionLink && (
+                  <p class="entry-action">
+                    <a
+                      href={item.actionLink.isExternal ? item.actionLink.href : resolveInternalHref(item.actionLink.href)}
+                      target={item.actionLink.isExternal ? '_blank' : undefined}
+                      rel={item.actionLink.isExternal ? 'noopener' : undefined}
+                    >
+                      {item.actionLink.label} →
+                    </a>
+                  </p>
+                )}
+
+                {getTags(item).length > 0 && (
+                  <p class="entry-tags">
+                    {getTags(item).map((tag, index) => (
+                      <span>
+                        #{tag.toUpperCase()}
+                        {index < getTags(item).length - 1 && <span class="tag-dot"> • </span>}
+                      </span>
+                    ))}
+                  </p>
+                )}
+
+                <div class="entry-separator" aria-hidden="true"></div>
               </div>
-            )}
+            </article>
           </li>
         ))}
       </ul>
+    )}
+
+    {hasMore && (
+      <div class="content-offset load-more-wrap">
+        <a class="load-more" href={buildUrl(activeFilter, currentPage + 1)}>Load more entries</a>
+      </div>
+    )}
+
+    <section class="subscribe-section content-offset" aria-label="Newsletter subscription">
+      <p class="subscribe-heading">Get new entries in your inbox</p>
+      <SubscribeForm variant="inline" />
     </section>
-  )}
+  </main>
+
+  <script>
+    (() => {
+      const entries = document.querySelectorAll('.reveal');
+      if (!('IntersectionObserver' in window) || entries.length === 0) {
+        entries.forEach(entry => entry.classList.add('visible'));
+        return;
+      }
+
+      const observer = new IntersectionObserver((entryList) => {
+        entryList.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.15 });
+
+      entries.forEach(entry => observer.observe(entry));
+    })();
+  </script>
 </Base>
 
 <style>
-  .intro {
-    margin-bottom: 2rem;
+  .journal-page {
+    padding-top: clamp(0.1rem, 0.7vw, 0.42rem);
+    padding-bottom: clamp(1.4rem, 2.8vw, 2.2rem);
   }
 
-  .intro-lead {
-    font-size: 1.15rem;
-    line-height: 1.5;
-    color: var(--color-text-muted);
+  .content-offset {
+    padding-left: 0;
   }
 
-  .note-list, .project-list {
+  .journal-subtitle {
+    margin: 0 0 clamp(0.95rem, 2.1vw, 1.4rem) 0;
+    font-size: 0.82rem;
+    color: var(--text-tertiary);
+    letter-spacing: 0.012em;
+  }
+
+  .filter-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 1.2rem;
+    margin-bottom: 0.55rem;
+    border-bottom: 1px solid var(--border-primary);
+    padding-bottom: 0.55rem;
+  }
+
+  .filter-tab {
+    position: relative;
+    font-family: var(--font-serif);
+    font-size: 0.98rem;
+    color: var(--text-secondary);
+    text-decoration: none;
+    padding-bottom: 0.45rem;
+    display: inline-flex;
+    gap: 0.38rem;
+    align-items: baseline;
+  }
+
+  .tab-count {
+    font-family: var(--font-sans);
+    font-size: 0.72rem;
+    color: var(--text-tertiary);
+  }
+
+  .filter-tab::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -0.72rem;
+    height: 2px;
+    background: transparent;
+    transform: translateY(0);
+    transition: background-color 0.2s ease, transform 0.2s ease;
+  }
+
+  .filter-tab:hover {
+    color: var(--text-primary);
+  }
+
+  .filter-tab.active {
+    color: var(--accent);
+  }
+
+  .filter-tab.active::after {
+    background: var(--accent);
+    transform: translateY(2px);
+  }
+
+  .entries {
     list-style: none;
     padding: 0;
-  }
-
-  .note-item {
-    margin-bottom: 1.5rem;
-    padding-bottom: 1.5rem;
-    border-bottom: 1px solid var(--color-border);
-  }
-
-  .note-item:last-child {
-    border-bottom: none;
-  }
-
-  .note-header {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    margin-bottom: 0.25rem;
-  }
-
-  .note-type {
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--color-accent);
-    font-weight: 500;
-  }
-
-  .note-date {
-    font-size: 0.8rem;
-    color: var(--color-text-muted);
-    font-family: var(--font-mono);
-  }
-
-  .note-title {
-    font-size: 1.1rem;
-    font-weight: 600;
-    margin: 0 0 0.25rem 0;
-  }
-
-  .note-takeaway {
-    color: var(--color-text-muted);
-    font-size: 0.95rem;
     margin: 0;
   }
 
-  .project-item {
-    margin-bottom: 2rem;
-    padding-bottom: 2rem;
-    border-bottom: 1px solid var(--color-border);
+  .entry-item {
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity 0.58s ease, transform 0.58s ease;
+    transition-delay: var(--reveal-delay, 0ms);
+    padding-bottom: clamp(1rem, 1.8vw, 1.45rem);
   }
 
-  .project-item:last-child {
-    border-bottom: none;
+  .entry-item.visible {
+    opacity: 1;
+    transform: translateY(0);
   }
 
-  .project-title {
-    font-size: 1.1rem;
-    font-weight: 600;
-    margin: 0 0 0.25rem 0;
+  .entry-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.72rem;
   }
 
-  .project-description {
-    color: var(--color-text-muted);
-    font-size: 0.95rem;
-    margin: 0 0 0.5rem 0;
-  }
-
-  .project-outcome {
-    font-size: 0.85rem;
-    color: var(--color-accent);
-    margin: 0 0 0.5rem 0;
-  }
-
-  .project-stack {
+  .entry-margin {
     display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.65rem;
+    color: var(--text-tertiary);
   }
 
-  .stack-tag {
+  .entry-margin time {
+    font-size: 0.85rem;
+    color: var(--text-tertiary);
+  }
+
+  .entry-category {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin: 0;
+    font-size: 0.69rem;
+    font-weight: 500;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+  }
+
+  .entry-dot {
+    width: 0.4rem;
+    height: 0.4rem;
+    border-radius: 999px;
+  }
+
+  .dot-project { background: #94a3b8; }
+  .dot-learning { background: #fbbf24; }
+  .dot-resource { background: #10b981; }
+  .dot-thought { background: #c084fc; }
+
+  .entry-main {
+    min-width: 0;
+  }
+
+  .entry-title {
+    margin: 0 0 0.7rem 0;
+    font-size: clamp(1.18rem, 2vw, 1.52rem);
+    line-height: 1.22;
+    font-family: var(--entry-title-font);
+    font-weight: 500;
+    letter-spacing: -0.012em;
+  }
+
+  .entry-title a {
+    color: var(--text-primary);
+    text-decoration: none;
+  }
+
+  .entry-title a:hover {
+    color: var(--accent-hover);
+  }
+
+  .entry-body {
+    margin: 0 0 1rem 0;
+    font-size: 1.02rem;
+    line-height: 1.65;
+    color: var(--text-secondary);
+    max-width: 62ch;
+  }
+
+  .link-preview {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.65rem;
+    background: var(--bg-card);
+    padding: 0.8rem 1rem;
+    margin-bottom: 0.9rem;
+    color: var(--text-primary);
+    text-decoration: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .link-preview:hover {
+    border-color: color-mix(in srgb, var(--accent) 35%, var(--border-primary));
+    box-shadow: 0 10px 20px -18px rgba(0, 0, 0, 0.35);
+  }
+
+  .link-preview-main {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    min-width: 0;
+  }
+
+  .link-icon {
+    width: 1.6rem;
+    height: 1.6rem;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-subtle);
+    color: var(--text-tertiary);
+    font-size: 0.85rem;
+    flex-shrink: 0;
+  }
+
+  .link-copy {
+    min-width: 0;
+  }
+
+  .link-title {
+    margin: 0;
+    font-size: 0.93rem;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .link-domain {
+    margin: 0.1rem 0 0 0;
+    font-size: 0.78rem;
+    color: var(--text-tertiary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .link-arrow {
+    color: var(--text-tertiary);
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+  }
+
+  .link-preview:hover .link-arrow {
+    transform: translate(0.5px, -0.5px);
+  }
+
+  .code-block {
+    border-radius: 0.7rem;
+    overflow: hidden;
+    border: 1px solid #2a2a2a;
+    background: #1e1e1e;
+    margin-bottom: 0.9rem;
+  }
+
+  .code-block-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.42rem 0.78rem;
+    font-family: var(--font-mono);
     font-size: 0.75rem;
-    background: var(--color-code-bg);
-    padding: 0.15rem 0.5rem;
-    border-radius: 3px;
-    color: var(--color-text-muted);
+    color: #b4b4ac;
+    text-transform: lowercase;
+    border-bottom: 1px solid #2a2a2a;
+  }
+
+  .code-block pre {
+    margin: 0;
+    background: transparent;
+    padding: 0.8rem;
+    font-size: 0.84rem;
+    line-height: 1.7;
+    color: #d4d4d4;
+  }
+
+  .entry-tags {
+    margin: 0;
+    color: var(--text-tertiary);
+    font-size: 0.69rem;
+    font-weight: 500;
+    letter-spacing: 0.07em;
+  }
+
+  .tag-dot {
+    color: var(--text-tertiary);
+  }
+
+  .entry-media {
+    margin: 0 0 1rem 0;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.65rem;
+    background: var(--bg-card);
+    overflow: hidden;
+  }
+
+  .entry-media img {
+    width: 100%;
+    display: block;
+    margin: 0;
+    border-radius: 0;
+  }
+
+  .entry-media figcaption {
+    margin: 0;
+    padding: 0.52rem 0.7rem 0.62rem;
+    font-size: 0.72rem;
+    color: var(--text-tertiary);
+    font-family: var(--font-serif);
+    font-style: italic;
+    text-align: center;
+  }
+
+  .entry-action {
+    margin: 0 0 0.95rem 0;
+  }
+
+  .entry-action a {
+    font-size: 0.84rem;
+    color: var(--accent);
+    border-bottom: 1px solid transparent;
+    padding-bottom: 0.05rem;
+    text-decoration: none;
+  }
+
+  .entry-action a:hover {
+    color: var(--accent-hover);
+    border-bottom-color: var(--border-primary);
+  }
+
+  .entry-separator {
+    margin-top: clamp(2.6rem, 5.2vw, 3.45rem);
+    width: 66%;
+    border-top: 1px solid color-mix(in srgb, var(--border-primary) 40%, transparent);
+  }
+
+  .entry-item:last-child .entry-separator {
+    display: none;
+  }
+
+  .load-more-wrap {
+    margin-top: clamp(2.2rem, 5vw, 3rem);
+    margin-bottom: clamp(1.8rem, 4vw, 2.4rem);
+  }
+
+  .load-more {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-secondary);
+    border-bottom: 1px solid transparent;
+    padding-bottom: 0.15rem;
+    text-decoration: none;
+  }
+
+  .load-more:hover {
+    color: var(--accent);
+    border-bottom-color: var(--border-primary);
+  }
+
+  .empty-state {
+    color: var(--text-secondary);
+    text-align: center;
+    font-style: italic;
+    padding: 2.2rem 0;
+  }
+
+  .subscribe-section {
+    margin-top: clamp(1.4rem, 3vw, 2.2rem);
+    padding-top: clamp(1.2rem, 2.4vw, 1.8rem);
+    border-top: 1px solid color-mix(in srgb, var(--border-primary) 60%, transparent);
+  }
+
+  .subscribe-heading {
+    margin: 0 0 0.7rem 0;
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    font-weight: 500;
+  }
+
+  .subscribe-section :global(.subscribe-form.inline) {
+    margin: 0;
+  }
+
+  @media (min-width: 768px) {
+    .content-offset {
+      padding-left: 188px;
+    }
+
+    .entry-grid {
+      grid-template-columns: 140px minmax(0, 1fr);
+      gap: 3rem;
+      align-items: start;
+    }
+
+    .entry-margin {
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: flex-end;
+      gap: 0.35rem;
+      text-align: right;
+      padding-top: 0.3rem;
+    }
   }
 </style>

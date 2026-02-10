@@ -1,9 +1,15 @@
 ---
 import Base from '../../layouts/Base.astro';
+import type { CollectionEntry } from 'astro:content';
 import { getCollection } from 'astro:content';
+import { getProjectEventAnchor } from '../../lib/learning-log';
+
+type ProjectActivity = CollectionEntry<'projects'>['data']['activity'][number];
+
+export const prerender = true;
 
 export async function getStaticPaths() {
-  const projects = await getCollection('projects');
+  const projects = await getCollection('projects', ({ data }) => !data.draft);
   return projects.map(project => ({
     params: { slug: project.slug },
     props: { project },
@@ -17,41 +23,228 @@ function formatDate(date: Date) {
   return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
+function formatEntryDate(date: Date) {
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function formatTime(date: Date) {
+  return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+}
+
+function formatRelativeDate(date: Date) {
+  const msInDay = 1000 * 60 * 60 * 24;
+  const differenceInDays = Math.round((Date.now() - date.getTime()) / msInDay);
+  const absoluteDifference = Math.abs(differenceInDays);
+
+  if (absoluteDifference === 0) return 'today';
+  if (absoluteDifference === 1) return differenceInDays > 0 ? '1 day ago' : 'in 1 day';
+  if (absoluteDifference < 30) return differenceInDays > 0 ? `${absoluteDifference} days ago` : `in ${absoluteDifference} days`;
+
+  const differenceInMonths = Math.round(absoluteDifference / 30);
+  if (differenceInMonths < 12) return differenceInDays > 0 ? `${differenceInMonths} months ago` : `in ${differenceInMonths} months`;
+
+  const differenceInYears = Math.round(absoluteDifference / 365);
+  return differenceInDays > 0 ? `${differenceInYears} years ago` : `in ${differenceInYears} years`;
+}
+
+const activityTypeLabels: Record<ProjectActivity['type'], string> = {
+  update: 'Update',
+  learning: 'Learning',
+  discovery: 'Discovery',
+  milestone: 'Milestone',
+  experiment: 'Experiment',
+  fix: 'Fix',
+};
+
+function getEventDotClass(type: ProjectActivity['type']) {
+  const dots: Record<ProjectActivity['type'], string> = {
+    update: 'dot-project',
+    learning: 'dot-learning',
+    discovery: 'dot-resource',
+    milestone: 'dot-project',
+    experiment: 'dot-thought',
+    fix: 'dot-project',
+  };
+  return dots[type];
+}
+
+const activity = [...project.data.activity].sort((a, b) => b.date.valueOf() - a.date.valueOf());
 const base = import.meta.env.BASE_URL;
+
+// Tab logic
+const rawTab = Astro.url.searchParams.get('tab') || 'feed';
+const activeTab = ['feed', 'key'].includes(rawTab) ? rawTab : 'feed';
+
+const keyUpdateTypes = ['milestone', 'learning', 'discovery'];
+const keyUpdates = activity.filter(e => keyUpdateTypes.includes(e.type));
 ---
 
 <Base title={project.data.title} description={project.data.description}>
-  <article>
-    <header class="article-header">
-      <h1 class="article-title">{project.data.title}</h1>
-      <p class="project-description">{project.data.description}</p>
-      {project.data.outcome && (
-        <p class="project-outcome">{project.data.outcome}</p>
-      )}
-      <div class="project-links">
-        {project.data.github && (
-          <a href={project.data.github} target="_blank" rel="noopener">View on GitHub →</a>
-        )}
-        {project.data.live && (
-          <a href={project.data.live} target="_blank" rel="noopener">Live Demo →</a>
-        )}
+  <article class="project-article">
+    <header class="project-header">
+      <div class="header-row">
+        <h1 class="project-title">{project.data.title}</h1>
+        <div class="project-actions">
+          {project.data.github && (
+            <a href={project.data.github} class="action-btn" target="_blank" rel="noopener">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+              </svg>
+              Code
+            </a>
+          )}
+          {project.data.live && (
+            <a href={project.data.live} class="action-btn primary" target="_blank" rel="noopener">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                <polyline points="15 3 21 3 21 9"></polyline>
+                <line x1="10" y1="14" x2="21" y2="3"></line>
+              </svg>
+              Live
+            </a>
+          )}
+        </div>
       </div>
+      <p class="project-tagline">{project.data.description}</p>
       {project.data.stack && project.data.stack.length > 0 && (
-        <div class="project-stack">
+        <div class="project-stack-inline">
           {project.data.stack.map(tech => (
-            <span class="stack-tag">{tech}</span>
+            <span class="chip">{tech}</span>
           ))}
         </div>
       )}
     </header>
 
-    {project.data.image && (
-      <img src={project.data.image} alt={project.data.title} />
+    <nav class="project-tabs" role="tablist">
+      <a
+        href="?tab=feed"
+        role="tab"
+        aria-selected={activeTab === 'feed'}
+        class:list={['tab', { active: activeTab === 'feed' }]}
+      >
+        Feed <span class="tab-count">{activity.length}</span>
+      </a>
+      <a
+        href="?tab=key"
+        role="tab"
+        aria-selected={activeTab === 'key'}
+        class:list={['tab', { active: activeTab === 'key' }]}
+      >
+        Key Updates <span class="tab-count">{keyUpdates.length}</span>
+      </a>
+    </nav>
+
+    {activeTab === 'feed' && (
+      <section class="tab-panel" aria-label="Project activity feed">
+        {activity.length === 0 ? (
+          <p class="feed-empty">No events logged yet.</p>
+        ) : (
+          <ul class="feed-list">
+            {activity.map(event => (
+              <li
+                class="feed-item reveal"
+                id={getProjectEventAnchor(project.slug, event.date, event.title)}
+              >
+                <article class="feed-grid">
+                  <aside class="feed-margin">
+                    <time datetime={event.date.toISOString()}>
+                      {formatEntryDate(event.date)}
+                    </time>
+                    <span class:list={['type-badge', `type-${event.type}`]}>
+                      {activityTypeLabels[event.type]}
+                    </span>
+                  </aside>
+                  <div class="feed-content">
+                    <h3 class="feed-title">{event.title}</h3>
+                    <p class="feed-summary">{event.summary}</p>
+                    {event.highlights.length > 0 && (
+                      <ul class="feed-highlights">
+                        {event.highlights.slice(0, 3).map(highlight => (
+                          <li>{highlight}</li>
+                        ))}
+                        {event.highlights.length > 3 && (
+                          <li class="more-highlights">+{event.highlights.length - 3} more</li>
+                        )}
+                      </ul>
+                    )}
+                    {event.image && (
+                      <figure class="feed-media">
+                        <img src={event.image} alt={event.imageAlt || event.title} loading="lazy" />
+                        {event.imageCaption && <figcaption>{event.imageCaption}</figcaption>}
+                      </figure>
+                    )}
+                    {event.code && (
+                      <div class="code-block">
+                        <div class="code-block-header">
+                          <span>{(event.codeLanguage || 'text').toLowerCase()}</span>
+                          <span>code</span>
+                        </div>
+                        <pre><code>{event.code}</code></pre>
+                      </div>
+                    )}
+                    {event.links.length > 0 && (
+                      <ul class="feed-link-list">
+                        {event.links.map(link => (
+                          <li>
+                            <a class="link-preview" href={link.url} target="_blank" rel="noopener">
+                              <div class="link-preview-main">
+                                <span class="link-icon" aria-hidden="true">◌</span>
+                                <div class="link-copy">
+                                  <p class="link-title">{link.label}</p>
+                                  <p class="link-domain">{new URL(link.url).hostname.replace(/^www\./, '')}</p>
+                                </div>
+                              </div>
+                              <span class="link-arrow" aria-hidden="true">↗</span>
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    {event.actionLabel && event.actionUrl && (
+                      <p class="feed-action">
+                        <a href={event.actionUrl} target={event.actionUrl.startsWith('http') ? '_blank' : undefined} rel={event.actionUrl.startsWith('http') ? 'noopener' : undefined}>
+                          {event.actionLabel} →
+                        </a>
+                      </p>
+                    )}
+                  </div>
+                </article>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     )}
 
-    <div class="article-content">
-      <Content />
-    </div>
+    {activeTab === 'key' && (
+      <section class="tab-panel" aria-label="Key project updates">
+        {keyUpdates.length === 0 ? (
+          <p class="empty-state">No key updates yet. Milestones, learnings, and discoveries will appear here.</p>
+        ) : (
+          <div class="key-updates">
+            {keyUpdates.map(event => (
+              <article class="key-card" id={getProjectEventAnchor(project.slug, event.date, event.title)}>
+                <header class="key-card-header">
+                  <span class:list={['type-badge', `type-${event.type}`]}>
+                    {activityTypeLabels[event.type]}
+                  </span>
+                  <time datetime={event.date.toISOString()}>
+                    {formatEntryDate(event.date)}
+                  </time>
+                </header>
+                <h3 class="key-card-title">{event.title}</h3>
+                <p class="key-card-summary">{event.summary}</p>
+                {event.highlights.length > 0 && (
+                  <p class="key-takeaway">
+                    <strong>Key insight:</strong> {event.highlights[0]}
+                  </p>
+                )}
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+    )}
 
     {project.data.tags && project.data.tags.length > 0 && (
       <footer class="article-footer">
@@ -65,63 +258,538 @@ const base = import.meta.env.BASE_URL;
   </article>
 
   <nav class="back-link">
-    <a href={`${base}projects/`}>← All projects</a>
+    <a href={base}>← Back to learning.log</a>
   </nav>
+
+  <script>
+    (() => {
+      const entries = document.querySelectorAll('.reveal');
+      if (!('IntersectionObserver' in window) || entries.length === 0) {
+        entries.forEach(entry => entry.classList.add('visible'));
+        return;
+      }
+
+      const observer = new IntersectionObserver((entryList) => {
+        entryList.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.15 });
+
+      entries.forEach(entry => observer.observe(entry));
+    })();
+  </script>
 </Base>
 
 <style>
-  .article-header {
-    margin-bottom: 2.5rem;
+  /* Compact Header */
+  .project-header {
+    margin-bottom: 1.5rem;
   }
 
-  .article-title {
-    margin-top: 0;
+  .header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    flex-wrap: wrap;
     margin-bottom: 0.5rem;
   }
 
-  .project-description {
-    font-size: 1.1rem;
-    color: var(--color-text-muted);
-    margin-bottom: 0.75rem;
+  .project-title {
+    font-size: clamp(1.4rem, 2.5vw, 1.8rem);
+    margin: 0;
+    line-height: 1.2;
   }
 
-  .project-outcome {
-    font-size: 0.95rem;
-    color: var(--color-accent);
-    margin-bottom: 1rem;
-  }
-
-  .project-links {
-    display: flex;
-    gap: 1.5rem;
-    margin-bottom: 1rem;
-  }
-
-  .project-links a {
-    font-size: 0.9rem;
-  }
-
-  .project-stack {
+  .project-actions {
     display: flex;
     gap: 0.5rem;
+    flex-shrink: 0;
+  }
+
+  .action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.4rem 0.75rem;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.4rem;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+
+  .action-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .action-btn.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+  }
+
+  .action-btn.primary:hover {
+    background: var(--accent-hover);
+    border-color: var(--accent-hover);
+    color: white;
+  }
+
+  .action-btn svg {
+    flex-shrink: 0;
+  }
+
+  .project-tagline {
+    font-size: 0.92rem;
+    color: var(--text-secondary);
+    margin: 0 0 0.6rem 0;
+    max-width: 60ch;
+  }
+
+  .project-stack-inline {
+    display: flex;
+    gap: 0.4rem;
     flex-wrap: wrap;
   }
 
-  .stack-tag {
+  .chip {
+    font-size: 0.62rem;
+    padding: 0.12rem 0.4rem;
+    border: 1px solid var(--border-primary);
+    border-radius: 999px;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 500;
+  }
+
+  /* Tab Navigation */
+  .project-tabs {
+    display: flex;
+    gap: 1.5rem;
+    border-bottom: 1px solid var(--border-primary);
+    padding-bottom: 0.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .tab {
+    font-family: var(--font-serif);
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    text-decoration: none;
+    position: relative;
+    padding-bottom: 0.4rem;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.35rem;
+  }
+
+  .tab::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -0.6rem;
+    height: 2px;
+    background: transparent;
+    transition: background-color 0.2s ease;
+  }
+
+  .tab:hover {
+    color: var(--text-primary);
+  }
+
+  .tab.active {
+    color: var(--accent);
+  }
+
+  .tab.active::after {
+    background: var(--accent);
+  }
+
+  .tab-count {
+    font-family: var(--font-sans);
+    font-size: 0.7rem;
+    color: var(--text-tertiary);
+  }
+
+  /* Tab Panels */
+  .tab-panel {
+    min-height: 200px;
+  }
+
+  .feed-empty,
+  .empty-state {
+    margin: 0;
+    padding: 2rem 0;
+    color: var(--text-tertiary);
+    font-style: italic;
+    text-align: center;
+  }
+
+  /* Dense Feed List */
+  .feed-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .feed-item {
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+
+  .feed-item.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .feed-item:target {
+    animation: highlight-fade 2s ease-out;
+  }
+
+  @keyframes highlight-fade {
+    0%, 15% {
+      background: color-mix(in srgb, var(--accent) 12%, transparent);
+    }
+    100% {
+      background: transparent;
+    }
+  }
+
+  .feed-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+    padding: 1rem 0;
+    border-bottom: 1px solid color-mix(in srgb, var(--border-primary) 30%, transparent);
+  }
+
+  .feed-item:last-child .feed-grid {
+    border-bottom: none;
+  }
+
+  .feed-margin {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    color: var(--text-tertiary);
+  }
+
+  .feed-margin time {
+    font-size: 0.78rem;
+    color: var(--text-tertiary);
+  }
+
+  /* Type Badges */
+  .type-badge {
+    font-size: 0.62rem;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 0.12rem 0.4rem;
+    border-radius: 3px;
+    background: var(--bg-subtle);
+    color: var(--text-secondary);
+  }
+
+  .type-badge.type-milestone {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  .type-badge.type-learning {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  .type-badge.type-discovery {
+    background: #d1fae5;
+    color: #065f46;
+  }
+
+  .type-badge.type-experiment {
+    background: #f3e8ff;
+    color: #7c3aed;
+  }
+
+  :root[data-appearance="dark"] .type-badge.type-milestone,
+  :root[data-appearance="dark"] .type-badge.type-learning {
+    background: #422006;
+    color: #fbbf24;
+  }
+
+  :root[data-appearance="dark"] .type-badge.type-discovery {
+    background: #064e3b;
+    color: #34d399;
+  }
+
+  :root[data-appearance="dark"] .type-badge.type-experiment {
+    background: #2e1065;
+    color: #c084fc;
+  }
+
+  .feed-content {
+    min-width: 0;
+  }
+
+  .feed-title {
+    margin: 0 0 0.4rem 0;
+    font-size: 1.05rem;
+    line-height: 1.3;
+    font-family: var(--entry-title-font);
+    font-weight: 500;
+  }
+
+  .feed-summary {
+    margin: 0 0 0.6rem 0;
+    font-size: 0.88rem;
+    line-height: 1.55;
+    color: var(--text-secondary);
+    max-width: 58ch;
+  }
+
+  .feed-highlights {
+    margin: 0 0 0.6rem 0;
+    padding-left: 1rem;
+    max-width: 58ch;
+  }
+
+  .feed-highlights li {
+    margin-bottom: 0.2rem;
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+  }
+
+  .more-highlights {
+    color: var(--text-tertiary);
+    font-style: italic;
+    list-style: none;
+    margin-left: -1rem;
+  }
+
+  .feed-link-list {
+    list-style: none;
+    display: grid;
+    gap: 0.5rem;
+    padding: 0;
+    margin: 0 0 0.6rem 0;
+  }
+
+  .feed-link-list li {
+    margin: 0;
+  }
+
+  .feed-media {
+    margin: 0 0 0.6rem 0;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.5rem;
+    background: var(--bg-card);
+    overflow: hidden;
+  }
+
+  .feed-media img {
+    width: 100%;
+    display: block;
+    margin: 0;
+    border-radius: 0;
+  }
+
+  .feed-media figcaption {
+    margin: 0;
+    padding: 0.4rem 0.6rem;
+    color: var(--text-tertiary);
+    font-size: 0.7rem;
+    text-align: center;
+    font-family: var(--font-serif);
+    font-style: italic;
+  }
+
+  .feed-action {
+    margin: 0 0 0.5rem 0;
+  }
+
+  .feed-action a {
+    font-size: 0.8rem;
+    color: var(--accent);
+    border-bottom: 1px solid transparent;
+    padding-bottom: 0.05rem;
+    text-decoration: none;
+  }
+
+  .feed-action a:hover {
+    color: var(--accent-hover);
+    border-bottom-color: var(--border-primary);
+  }
+
+  .code-block {
+    border-radius: 0.5rem;
+    overflow: hidden;
+    border: 1px solid #2a2a2a;
+    background: #1e1e1e;
+    margin-bottom: 0.6rem;
+  }
+
+  .code-block-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.35rem 0.65rem;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: #b4b4ac;
+    text-transform: lowercase;
+    border-bottom: 1px solid #2a2a2a;
+  }
+
+  .code-block pre {
+    margin: 0;
+    background: transparent;
+    padding: 0.65rem;
+    font-size: 0.78rem;
+    line-height: 1.6;
+    color: #d4d4d4;
+  }
+
+  .link-preview {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.8rem;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.5rem;
+    background: var(--bg-card);
+    padding: 0.6rem 0.8rem;
+    color: var(--text-primary);
+    text-decoration: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .link-preview:hover {
+    border-color: color-mix(in srgb, var(--accent) 35%, var(--border-primary));
+    box-shadow: 0 8px 16px -14px rgba(0, 0, 0, 0.3);
+  }
+
+  .link-preview-main {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    min-width: 0;
+  }
+
+  .link-icon {
+    width: 1.4rem;
+    height: 1.4rem;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-subtle);
+    color: var(--text-tertiary);
     font-size: 0.75rem;
-    background: var(--color-code-bg);
-    padding: 0.2rem 0.5rem;
-    border-radius: 4px;
-    color: var(--color-text-muted);
+    flex-shrink: 0;
   }
 
-  .article-content {
-    margin-bottom: 3rem;
+  .link-copy {
+    min-width: 0;
   }
 
+  .link-title {
+    margin: 0;
+    font-size: 0.85rem;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .link-domain {
+    margin: 0.05rem 0 0 0;
+    font-size: 0.72rem;
+    color: var(--text-tertiary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .link-arrow {
+    color: var(--text-tertiary);
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+  }
+
+  .link-preview:hover .link-arrow {
+    transform: translate(0.5px, -0.5px);
+  }
+
+  /* Key Updates Cards */
+  .key-updates {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .key-card {
+    padding: 1rem 1.2rem;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.5rem;
+    background: var(--bg-card);
+  }
+
+  .key-card:target {
+    animation: highlight-fade 2s ease-out;
+  }
+
+  .key-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+  }
+
+  .key-card-header time {
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+  }
+
+  .key-card-title {
+    font-size: 1rem;
+    font-weight: 500;
+    margin: 0 0 0.3rem 0;
+    font-family: var(--entry-title-font);
+  }
+
+  .key-card-summary {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  .key-takeaway {
+    font-size: 0.8rem;
+    color: var(--accent);
+    margin: 0.6rem 0 0;
+    padding-top: 0.5rem;
+    border-top: 1px dashed var(--border-primary);
+    line-height: 1.45;
+  }
+
+  .key-takeaway strong {
+    font-weight: 500;
+  }
+
+  /* Footer */
   .article-footer {
     padding-top: 1.5rem;
-    border-top: 1px solid var(--color-border);
+    border-top: 1px solid var(--border-primary);
+    margin-top: 2rem;
     margin-bottom: 2rem;
   }
 
@@ -132,19 +800,75 @@ const base = import.meta.env.BASE_URL;
   }
 
   .tag {
-    font-size: 0.8rem;
-    color: var(--color-text-muted);
-    background: var(--color-code-bg);
-    padding: 0.1rem 0.5rem;
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+    background: var(--bg-subtle);
+    padding: 0.15rem 0.5rem;
     border-radius: 4px;
   }
 
   .back-link {
     padding-top: 1.5rem;
-    border-top: 1px solid var(--color-border);
+    border-top: 1px solid var(--border-primary);
   }
 
   .back-link a {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    text-decoration: none;
+  }
+
+  .back-link a:hover {
+    color: var(--accent);
+  }
+
+  /* Responsive */
+  @media (min-width: 768px) {
+    .feed-grid {
+      grid-template-columns: 100px minmax(0, 1fr);
+      gap: 1.5rem;
+      align-items: start;
+    }
+
+    .feed-margin {
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: flex-end;
+      gap: 0.3rem;
+      text-align: right;
+      padding-top: 0.15rem;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .header-row {
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .project-actions {
+      width: 100%;
+    }
+
+    .action-btn {
+      flex: 1;
+      justify-content: center;
+    }
+
+    .feed-title {
+      font-size: 0.98rem;
+    }
+
+    .feed-summary {
+      font-size: 0.84rem;
+    }
+
+    .project-tabs {
+      gap: 1rem;
+    }
+
+    .tab {
+      font-size: 0.9rem;
+    }
   }
 </style>

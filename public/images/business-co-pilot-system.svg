@@ -1,0 +1,53 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FBF7F0"/>
+      <stop offset="1" stop-color="#F3EBE0"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#FFFCF7"/>
+      <stop offset="1" stop-color="#F9F2E8"/>
+    </linearGradient>
+    <linearGradient id="accentBand" x1="0" y1="0" x2="1060" y2="0" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#C4704B"/>
+      <stop offset="1" stop-color="#D28B68"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect x="70" y="65" width="1060" height="500" rx="22" fill="url(#panel)" stroke="#DCCA9C" stroke-width="2"/>
+  <rect x="70" y="65" width="1060" height="8" rx="4" fill="url(#accentBand)"/>
+
+  <text x="110" y="145" fill="#2C2418" font-size="42" font-family="'Source Serif 4', Georgia, serif" font-weight="600">
+    Business Co-Pilot System
+  </text>
+  <text x="110" y="185" fill="#5C544A" font-size="24" font-family="'Inter', -apple-system, Segoe UI, Helvetica, Arial, sans-serif">
+    Claude Code + structured context + daily operating loop
+  </text>
+
+  <rect x="110" y="235" width="300" height="250" rx="14" fill="#FAF5EF" stroke="#DCCA9C"/>
+  <text x="130" y="272" fill="#9A3412" font-size="19" font-family="'JetBrains Mono', 'Fira Code', monospace">Inputs</text>
+  <text x="130" y="308" fill="#2C2418" font-size="18" font-family="'Inter', -apple-system, Segoe UI, Helvetica, Arial, sans-serif">Goals.md</text>
+  <text x="130" y="338" fill="#2C2418" font-size="18" font-family="'Inter', -apple-system, Segoe UI, Helvetica, Arial, sans-serif">Life-Context.md</text>
+  <text x="130" y="368" fill="#2C2418" font-size="18" font-family="'Inter', -apple-system, Segoe UI, Helvetica, Arial, sans-serif">Dashboard.md</text>
+  <text x="130" y="398" fill="#2C2418" font-size="18" font-family="'Inter', -apple-system, Segoe UI, Helvetica, Arial, sans-serif">Plan.md</text>
+  <text x="130" y="428" fill="#2C2418" font-size="18" font-family="'Inter', -apple-system, Segoe UI, Helvetica, Arial, sans-serif">Log.md</text>
+  <text x="130" y="458" fill="#2C2418" font-size="18" font-family="'Inter', -apple-system, Segoe UI, Helvetica, Arial, sans-serif">CLAUDE.md</text>
+
+  <rect x="450" y="235" width="300" height="250" rx="14" fill="#FAF5EF" stroke="#DCCA9C"/>
+  <text x="470" y="272" fill="#9A3412" font-size="19" font-family="'JetBrains Mono', 'Fira Code', monospace">Engine</text>
+  <text x="470" y="320" fill="#2C2418" font-size="28" font-family="'Source Serif 4', Georgia, serif" font-weight="600">/daily</text>
+  <text x="470" y="352" fill="#5C544A" font-size="18" font-family="'Inter', -apple-system, Segoe UI, Helvetica, Arial, sans-serif">Reads context</text>
+  <text x="470" y="380" fill="#5C544A" font-size="18" font-family="'Inter', -apple-system, Segoe UI, Helvetica, Arial, sans-serif">Proposes 1-3 actions</text>
+  <text x="470" y="408" fill="#5C544A" font-size="18" font-family="'Inter', -apple-system, Segoe UI, Helvetica, Arial, sans-serif">Balances delivery + pipeline</text>
+
+  <rect x="790" y="235" width="300" height="250" rx="14" fill="#FAF5EF" stroke="#DCCA9C"/>
+  <text x="810" y="272" fill="#9A3412" font-size="19" font-family="'JetBrains Mono', 'Fira Code', monospace">Outputs</text>
+  <text x="810" y="320" fill="#2C2418" font-size="18" font-family="'Inter', -apple-system, Segoe UI, Helvetica, Arial, sans-serif">Prioritized tasks</text>
+  <text x="810" y="350" fill="#2C2418" font-size="18" font-family="'Inter', -apple-system, Segoe UI, Helvetica, Arial, sans-serif">Next best action</text>
+  <text x="810" y="380" fill="#2C2418" font-size="18" font-family="'Inter', -apple-system, Segoe UI, Helvetica, Arial, sans-serif">Updated daily log</text>
+  <text x="810" y="410" fill="#2C2418" font-size="18" font-family="'Inter', -apple-system, Segoe UI, Helvetica, Arial, sans-serif">Decision traceability</text>
+
+  <path d="M410 360H450" stroke="#B29373" stroke-width="3"/>
+  <path d="M750 360H790" stroke="#B29373" stroke-width="3"/>
+</svg>

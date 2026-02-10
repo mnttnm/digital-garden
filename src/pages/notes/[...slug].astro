@@ -2,8 +2,10 @@
 import Base from '../../layouts/Base.astro';
 import { getCollection } from 'astro:content';
 
+export const prerender = true;
+
 export async function getStaticPaths() {
-  const notes = await getCollection('notes');
+  const notes = await getCollection('notes', ({ data }) => !data.draft);
   return notes.map((note) => ({
     params: { slug: note.slug },
     props: { note },
@@ -68,7 +70,7 @@ const base = import.meta.env.BASE_URL;
   </article>
 
   <nav class="back-link">
-    <a href={`${base}notes/`}>← All notes</a>
+    <a href={base}>← Back to learning.log</a>
   </nav>
 </Base>
 

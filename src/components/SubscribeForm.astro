@@ -10,7 +10,8 @@ const base = import.meta.env.BASE_URL;
 <div class:list={['subscribe-form', variant]} id="subscribe">
   <form id="newsletter-form" data-base={base}>
     <div class="form-header">
-      <p class="form-title">Get my notes in your inbox</p>
+      <p class="form-title">Subscribe</p>
+      <p class="form-note">You’ll get a weekly email. The site updates daily.</p>
     </div>
     <div class="form-fields">
       <input
@@ -20,6 +21,8 @@ const base = import.meta.env.BASE_URL;
         required
         autocomplete="email"
       />
+      <input type="hidden" name="frequency" value="weekly" />
+      <!--
       <div class="frequency-options">
         <label class="frequency-option">
           <input type="radio" name="frequency" value="daily" />
@@ -30,6 +33,7 @@ const base = import.meta.env.BASE_URL;
           <span>Weekly</span>
         </label>
       </div>
+      -->
       <button type="submit">Subscribe</button>
     </div>
     <p class="form-message" id="form-message"></p>
@@ -106,6 +110,12 @@ const base = import.meta.env.BASE_URL;
   .form-title {
     font-weight: 500;
     margin: 0;
+  }
+
+  .form-note {
+    margin: 0.35rem 0 0;
+    font-size: 0.82rem;
+    color: var(--text-tertiary);
   }
 
   .form-fields {
