@@ -2,61 +2,85 @@
 import Base from '../layouts/Base.astro';
 ---
 
-<Base title="About" description="Learn more about me and how to get in touch.">
-  <article class="about-page">
-    <header class="page-header">
+<Base title="About" description="Builder and tinkerer sharing notes on AI, tools, and side projects.">
+  <main class="about-page">
+    <header class="page-header content-offset">
       <h1 class="page-title">About</h1>
-      <p class="page-subtitle">Learn more about me and how to get in touch.</p>
+      <p class="page-subtitle">A little context on who's writing all this.</p>
     </header>
 
-    <section class="bio">
-      <p>
-        I'm Mohit — a builder focused on AI-powered products and workflow automation.
-        I help teams ship faster by building custom tools, prototypes, and systems that
-        leverage the latest in AI and automation.
-      </p>
-      <p>
-        My background spans product development, software engineering, and AI applications.
-        I enjoy taking complex problems and turning them into simple, effective solutions.
-      </p>
-    </section>
+    <div class="about-sections">
+      <section class="about-row">
+        <aside class="section-label">
+          <span>BIO</span>
+        </aside>
+        <div class="section-content">
+          <p>
+            I'm Mohit — a developer and designer based in Bengaluru. I've been building
+            things for the web for 10+ years, and these days I'm mostly obsessed with
+            AI-assisted workflows, agentic development, and finding the right tool for
+            every job.
+          </p>
+          <p>
+            This site is where I share what I'm learning, tools I discover, resources I
+            find useful, and updates on whatever I'm building. Think of it as my public
+            notebook.
+          </p>
+          <p>
+            By day I do freelance consulting — helping teams build AI-powered products
+            and sort out their frontend and UX. The rest of the time I'm usually
+            tinkering with side projects or going down some new rabbit hole.
+          </p>
+          <div class="section-separator" aria-hidden="true"></div>
+        </div>
+      </section>
 
-    <section class="services">
-      <h2>What I help with</h2>
-      <ul>
-        <li><strong>AI product development</strong> — Building products that use LLMs, computer vision, or other AI capabilities</li>
-        <li><strong>Workflow automation</strong> — Streamlining processes with custom integrations and tools</li>
-        <li><strong>Rapid prototyping</strong> — Quickly validating ideas with working prototypes</li>
-        <li><strong>Technical consulting</strong> — Advising on architecture, tooling, and AI strategy</li>
-      </ul>
-    </section>
+      <section class="about-row">
+        <aside class="section-label">
+          <span>INTERESTS</span>
+        </aside>
+        <div class="section-content">
+          <p>
+            Compound engineering, AI agents, skillifying workflows into reusable systems,
+            and how small teams can punch way above their weight with the right tools.
+          </p>
+          <div class="section-separator" aria-hidden="true"></div>
+        </div>
+      </section>
 
-    <section class="work-with-me">
-      <h2>Work with me</h2>
-      <div class="cta-row">
-        <span class="availability">Available for projects</span>
-      </div>
-      <p>
-        If you're working on something interesting and think I could help, I'd love to hear from you.
-      </p>
-      <ul class="contact-links">
-        <li>
-          <strong>Email:</strong> <a href="mailto:your@email.com">your@email.com</a>
-        </li>
-        <li>
-          <strong>Twitter/X:</strong> <a href="https://twitter.com/yourhandle" target="_blank" rel="noopener">@yourhandle</a>
-        </li>
-        <li>
-          <strong>Schedule a call:</strong> <a href="https://calendly.com/yourhandle" target="_blank" rel="noopener">Calendly</a>
-        </li>
-      </ul>
-    </section>
-  </article>
+      <section class="about-row">
+        <aside class="section-label">
+          <span>CONTACT</span>
+        </aside>
+        <div class="section-content">
+          <p>
+            If something here resonated or you just want to say hi — I'm always happy to chat.
+          </p>
+          <ul class="contact-links">
+            <li>
+              <a href="https://x.com/tatermohit" target="_blank" rel="noopener">Twitter/X</a>
+            </li>
+            <li>
+              <a href="https://www.linkedin.com/in/tatermohit/" target="_blank" rel="noopener">LinkedIn</a>
+            </li>
+            <li>
+              <a href="https://github.com/mnttnm" target="_blank" rel="noopener">GitHub</a>
+            </li>
+          </ul>
+        </div>
+      </section>
+    </div>
+  </main>
 </Base>
 
 <style>
   .about-page {
-    max-width: 600px;
+    padding-top: clamp(0.1rem, 0.7vw, 0.42rem);
+    padding-bottom: clamp(1.4rem, 2.8vw, 2.2rem);
+  }
+
+  .content-offset {
+    padding-left: 0;
   }
 
   .page-header {
@@ -79,78 +103,93 @@ import Base from '../layouts/Base.astro';
     letter-spacing: 0.012em;
   }
 
-  .bio {
-    margin-bottom: 2.5rem;
-  }
-
-  .bio p {
-    font-size: 1.05rem;
-    line-height: 1.7;
-  }
-
-  .services {
-    margin-bottom: 2.5rem;
-  }
-
-  .services h2 {
-    margin-top: 0;
-  }
-
-  .services ul {
-    padding-left: 1.25rem;
-  }
-
-  .services li {
-    margin-bottom: 0.75rem;
-    line-height: 1.6;
-  }
-
-  .work-with-me {
-    margin-bottom: 2.5rem;
-  }
-
-  .work-with-me h2 {
-    margin-top: 0;
-    margin-bottom: 0.75rem;
-  }
-
-  .cta-row {
+  .about-sections {
     display: flex;
-    align-items: center;
-    gap: 1.5rem;
-    flex-wrap: wrap;
-    margin-bottom: 1rem;
+    flex-direction: column;
   }
 
-  .availability {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.9rem;
-    color: var(--color-text-muted);
+  .about-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.72rem;
+    padding-bottom: clamp(1rem, 1.8vw, 1.45rem);
   }
 
-  .availability::before {
-    content: '';
-    width: 8px;
-    height: 8px;
-    background: #22c55e;
-    border-radius: 50%;
+  .section-label {
+    display: flex;
+    align-items: baseline;
+    color: var(--text-tertiary);
+  }
+
+  .section-label span {
+    font-size: 0.69rem;
+    font-weight: 500;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+  }
+
+  .section-content {
+    min-width: 0;
+  }
+
+  .section-content p {
+    margin: 0 0 1rem 0;
+    font-size: 1.02rem;
+    line-height: 1.65;
+    color: var(--text-secondary);
+    max-width: 62ch;
+  }
+
+  .section-content p:last-of-type {
+    margin-bottom: 0;
+  }
+
+  .section-separator {
+    margin-top: clamp(2.2rem, 4.5vw, 3rem);
+    width: 66%;
+    border-top: 1px solid color-mix(in srgb, var(--border-primary) 40%, transparent);
   }
 
   .contact-links {
     list-style: none;
     padding: 0;
+    margin: 1rem 0 0 0;
+    display: flex;
+    gap: 1.2rem;
+    flex-wrap: wrap;
   }
 
-  .contact-links li {
-    margin-bottom: 0.75rem;
+  .contact-links a {
+    font-size: 0.84rem;
+    color: var(--accent);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    padding-bottom: 0.05rem;
   }
 
-  .contact-links strong {
-    display: inline-block;
-    width: 120px;
-    color: var(--color-text-muted);
-    font-weight: normal;
+  .contact-links a:hover {
+    color: var(--accent-hover);
+    border-bottom-color: var(--border-primary);
+  }
+
+  @media (min-width: 768px) {
+    .content-offset {
+      padding-left: 188px;
+    }
+
+    .about-row {
+      grid-template-columns: 140px minmax(0, 1fr);
+      gap: 3rem;
+      align-items: start;
+    }
+
+    .section-label {
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: flex-end;
+      text-align: right;
+      padding-top: 0.3rem;
+    }
   }
 </style>
