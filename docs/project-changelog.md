@@ -24,3 +24,12 @@ A timeline of changes made to the digital garden project.
 - Enables quick visual scanning to distinguish project updates from other entries
 
 ---
+
+## 2026-02-02
+
+### Newsletter workflow planning
+
+- Created `docs/newsletter-workflow.md` with detailed newsletter integration plan
+- Documents subscription flow, email content strategy, and Resend integration approach
+
+---
