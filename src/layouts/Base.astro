@@ -97,8 +97,8 @@ const lastUpdatedRelativeLabel = latestLogItem ? getRelativeTimeLabel(latestLogI
       <div class="site-header-actions">
         <nav class="site-nav">
           <a href={homeHref} class:list={['nav-link', { active: currentPath === homeHref }]}>learning.log</a>
-          <a href={projectsHref} class:list={['nav-link', { active: currentPath.startsWith(projectsHref) }]}>Projects</a>
-          <a href={aboutHref} class:list={['nav-link', { active: currentPath === aboutHref }]}>About</a>
+          <a href={projectsHref} class:list={['nav-link', { active: currentPath.startsWith(projectsHref) }]}>projects</a>
+          <a href={aboutHref} class:list={['nav-link', { active: currentPath === aboutHref }]}>about</a>
         </nav>
 
         <div class="theme-controls" data-theme-controls>
@@ -109,7 +109,7 @@ const lastUpdatedRelativeLabel = latestLogItem ? getRelativeTimeLabel(latestLogI
             aria-expanded="false"
             data-theme-toggle
           >
-            Theme
+            theme
           </button>
           <section class="theme-panel" hidden data-theme-panel aria-label="Theme settings">
             <div class="theme-row">
