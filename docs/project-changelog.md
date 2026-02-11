@@ -16,4 +16,8 @@ A timeline of changes made to the digital garden project.
 - Removed placeholder resource notes (css-grid, oklch, react server components)
 - Kept only user-created notes
 
+### Added
+- New TIL: "Compound Engineering plugin for AI-assisted dev workflows"
+- Newsletter workflow plan document (`docs/newsletter-workflow.md`) with 4-phase implementation strategy for personalized newsletters with content preferences
+
 ---
