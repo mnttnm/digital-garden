@@ -76,7 +76,7 @@ function getTags(item: LearningLogItem) {
       <ul class="entries" aria-label="Journal entries">
         {visibleItems.map((item, index) => (
           <li
-            class="entry-item reveal"
+            class:list={['entry-item', 'reveal', { 'entry-project': item.category === 'projects' }]}
             style={`--reveal-delay: ${Math.min(index * 42, 260)}ms;`}
           >
             <article class="entry-grid">
@@ -284,6 +284,13 @@ function getTags(item: LearningLogItem) {
   .dot-learning { background: #fbbf24; }
   .dot-resource { background: #10b981; }
   .dot-thought { background: #c084fc; }
+
+  /* Project entry left border accent */
+  .entry-item.entry-project {
+    border-left: 3px solid var(--accent);
+    padding-left: 0.75rem;
+    margin-left: -0.75rem;
+  }
 
   .entry-main {
     min-width: 0;
