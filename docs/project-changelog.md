@@ -6,6 +6,20 @@ A timeline of changes made to the digital garden project.
 
 ## 2026-02-11
 
+### Updated About page content and styling
+- Refreshed bio description with personal context (10+ years web development, AI-assisted workflows, agentic development)
+- Changed meta description from service-focused to "Builder and tinkerer sharing notes on AI, tools, and side projects"
+- Updated page subtitle to "A little context on who's writing all this"
+- Replaced "What I help with" services section with "Currently interested in" section
+- Simplified "Work with me" to "Get in touch" with updated contact links (Twitter/X, LinkedIn, GitHub)
+- Removed "Available for projects" status indicator and Calendly link
+- Adjusted font sizes and spacing throughout for better visual hierarchy
+- Updated link styling with accent colors and hover states
+
+---
+
+## 2026-02-11
+
 ### Refactored projects listing display
 - Updated `getLatestActivityDate` to return full activity object instead of just date
 - Changed project margin layout to show only relative timestamp without stack display
