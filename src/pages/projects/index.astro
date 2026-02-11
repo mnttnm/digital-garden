@@ -1,0 +1,301 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getCollection } from 'astro:content';
+
+export const prerender = true;
+
+const projects = await getCollection('projects', ({ data }) => !data.draft);
+
+// Sort: featured first, then by date descending
+const sortedProjects = projects.sort((a, b) => {
+  if (a.data.featured !== b.data.featured) {
+    return a.data.featured ? -1 : 1;
+  }
+  return b.data.date.valueOf() - a.data.date.valueOf();
+});
+
+const base = import.meta.env.BASE_URL;
+
+function getLatestActivityDate(project: typeof projects[0]) {
+  const activities = project.data.activity;
+  if (!activities || activities.length === 0) return project.data.date;
+  return [...activities].sort((a, b) => b.date.valueOf() - a.date.valueOf())[0].date;
+}
+
+function formatRelativeDate(date: Date) {
+  const msInDay = 1000 * 60 * 60 * 24;
+  const days = Math.round((Date.now() - date.getTime()) / msInDay);
+
+  if (days <= 0) return 'today';
+  if (days === 1) return '1d ago';
+  if (days < 7) return `${days}d ago`;
+
+  const weeks = Math.round(days / 7);
+  if (weeks < 5) return `${weeks}w ago`;
+
+  const months = Math.round(days / 30);
+  if (months < 12) return `${months}mo ago`;
+
+  const years = Math.round(days / 365);
+  return `${years}y ago`;
+}
+---
+
+<Base title="Projects" description="Things I'm building and exploring">
+  <main class="projects-page">
+    <p class="page-subtitle content-offset">Things I'm building and exploring.</p>
+
+    {sortedProjects.length === 0 ? (
+      <p class="empty-state content-offset">No projects yet.</p>
+    ) : (
+      <ul class="projects-list" aria-label="Projects">
+        {sortedProjects.map((project, index) => {
+          const latestDate = getLatestActivityDate(project);
+          const stack = project.data.stack?.slice(0, 3) || [];
+
+          return (
+            <li
+              class="project-item reveal"
+              style={`--reveal-delay: ${Math.min(index * 50, 300)}ms;`}
+            >
+              <article class="project-grid">
+                <aside class="project-margin">
+                  {stack.length > 0 && (
+                    <p class="project-stack">
+                      {stack.map((tech, i) => (
+                        <span>
+                          {tech.toUpperCase()}
+                          {i < stack.length - 1 && <span class="stack-sep"> · </span>}
+                        </span>
+                      ))}
+                    </p>
+                  )}
+                  <p class="project-updated">
+                    Updated {formatRelativeDate(latestDate)}
+                  </p>
+                </aside>
+
+                <div class="project-main">
+                  <h2 class="project-title">
+                    {project.data.featured && <span class="featured-star" aria-label="Featured">★</span>}
+                    <a href={`${base}projects/${project.slug}/`}>
+                      {project.data.title}
+                    </a>
+                  </h2>
+
+                  <p class="project-description">{project.data.description}</p>
+
+                  {(project.data.github || project.data.live) && (
+                    <p class="project-links">
+                      {project.data.github && (
+                        <a href={project.data.github} target="_blank" rel="noopener">
+                          Code ↗
+                        </a>
+                      )}
+                      {project.data.github && project.data.live && (
+                        <span class="link-sep"> · </span>
+                      )}
+                      {project.data.live && (
+                        <a href={project.data.live} target="_blank" rel="noopener">
+                          Live ↗
+                        </a>
+                      )}
+                    </p>
+                  )}
+
+                  <div class="project-separator" aria-hidden="true"></div>
+                </div>
+              </article>
+            </li>
+          );
+        })}
+      </ul>
+    )}
+  </main>
+
+  <script>
+    (() => {
+      const entries = document.querySelectorAll('.reveal');
+      if (!('IntersectionObserver' in window) || entries.length === 0) {
+        entries.forEach(entry => entry.classList.add('visible'));
+        return;
+      }
+
+      const observer = new IntersectionObserver((entryList) => {
+        entryList.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.15 });
+
+      entries.forEach(entry => observer.observe(entry));
+    })();
+  </script>
+</Base>
+
+<style>
+  .projects-page {
+    padding-top: clamp(0.1rem, 0.7vw, 0.42rem);
+    padding-bottom: clamp(1.4rem, 2.8vw, 2.2rem);
+  }
+
+  .content-offset {
+    padding-left: 0;
+  }
+
+  .page-subtitle {
+    margin: 0 0 clamp(1.2rem, 2.4vw, 1.8rem) 0;
+    font-size: 0.82rem;
+    color: var(--text-tertiary);
+    letter-spacing: 0.012em;
+  }
+
+  .empty-state {
+    color: var(--text-secondary);
+    text-align: center;
+    font-style: italic;
+    padding: 2.2rem 0;
+  }
+
+  .projects-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .project-item {
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity 0.58s ease, transform 0.58s ease;
+    transition-delay: var(--reveal-delay, 0ms);
+    padding-bottom: clamp(1rem, 1.8vw, 1.45rem);
+  }
+
+  .project-item.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .project-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.72rem;
+  }
+
+  .project-margin {
+    display: flex;
+    align-items: baseline;
+    gap: 0.65rem;
+    color: var(--text-tertiary);
+  }
+
+  .project-stack {
+    margin: 0;
+    font-size: 0.69rem;
+    font-weight: 500;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+  }
+
+  .stack-sep {
+    color: var(--text-tertiary);
+    opacity: 0.5;
+  }
+
+  .project-updated {
+    margin: 0;
+    font-size: 0.78rem;
+    color: var(--text-tertiary);
+  }
+
+  .project-main {
+    min-width: 0;
+  }
+
+  .project-title {
+    margin: 0 0 0.7rem 0;
+    font-size: clamp(1.18rem, 2vw, 1.52rem);
+    line-height: 1.22;
+    font-family: var(--entry-title-font);
+    font-weight: 500;
+    letter-spacing: -0.012em;
+  }
+
+  .featured-star {
+    color: #fbbf24;
+    margin-right: 0.35rem;
+    font-size: 0.85em;
+  }
+
+  .project-title a {
+    color: var(--text-primary);
+    text-decoration: none;
+  }
+
+  .project-title a:hover {
+    color: var(--accent-hover);
+  }
+
+  .project-description {
+    margin: 0 0 1rem 0;
+    font-size: 1.02rem;
+    line-height: 1.65;
+    color: var(--text-secondary);
+    max-width: 62ch;
+  }
+
+  .project-links {
+    margin: 0 0 0.95rem 0;
+  }
+
+  .project-links a {
+    font-size: 0.84rem;
+    color: var(--accent);
+    border-bottom: 1px solid transparent;
+    padding-bottom: 0.05rem;
+    text-decoration: none;
+  }
+
+  .project-links a:hover {
+    color: var(--accent-hover);
+    border-bottom-color: var(--border-primary);
+  }
+
+  .link-sep {
+    color: var(--text-tertiary);
+  }
+
+  .project-separator {
+    margin-top: clamp(2.6rem, 5.2vw, 3.45rem);
+    width: 66%;
+    border-top: 1px solid color-mix(in srgb, var(--border-primary) 40%, transparent);
+  }
+
+  .project-item:last-child .project-separator {
+    display: none;
+  }
+
+  @media (min-width: 768px) {
+    .content-offset {
+      padding-left: 188px;
+    }
+
+    .project-grid {
+      grid-template-columns: 140px minmax(0, 1fr);
+      gap: 3rem;
+      align-items: start;
+    }
+
+    .project-margin {
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: flex-end;
+      gap: 0.35rem;
+      text-align: right;
+      padding-top: 0.3rem;
+    }
+  }
+</style>

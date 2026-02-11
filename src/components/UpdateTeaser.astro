@@ -1,0 +1,150 @@
+---
+interface Update {
+  date: Date;
+  type: 'shipped' | 'learning' | 'discovery' | 'milestone' | 'update' | 'idea';
+  title?: string;
+  content: string;
+}
+
+interface Props {
+  updates: Update[];
+}
+
+const { updates } = Astro.props;
+
+// Sort updates by date (newest first) and get the latest
+const sortedUpdates = [...updates].sort((a, b) =>
+  new Date(b.date).getTime() - new Date(a.date).getTime()
+);
+
+const latestUpdate = sortedUpdates[0];
+
+function getRelativeTime(date: Date) {
+  const now = new Date();
+  const diff = now.getTime() - new Date(date).getTime();
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+  if (days === 0) return 'today';
+  if (days === 1) return 'yesterday';
+  if (days < 7) return `${days}d ago`;
+  if (days < 30) return `${Math.floor(days / 7)}w ago`;
+  return `${Math.floor(days / 30)}mo ago`;
+}
+
+const typeEmoji: Record<Update['type'], string> = {
+  shipped: '🚀',
+  learning: '💡',
+  discovery: '🔍',
+  milestone: '🎯',
+  update: '📝',
+  idea: '💭',
+};
+
+// Truncate content to ~80 chars
+function truncate(str: string, maxLength: number = 80) {
+  if (str.length <= maxLength) return str;
+  return str.slice(0, maxLength).trim() + '...';
+}
+---
+
+{latestUpdate && (
+  <a href="#activity-feed" class="update-teaser">
+    <div class="teaser-badge">
+      <span class="badge-icon">{typeEmoji[latestUpdate.type]}</span>
+      <span class="badge-label">Latest</span>
+    </div>
+    <div class="teaser-content">
+      <span class="teaser-text">
+        {latestUpdate.title || truncate(latestUpdate.content)}
+      </span>
+      <span class="teaser-meta">
+        {getRelativeTime(latestUpdate.date)}
+        {updates.length > 1 && ` · ${updates.length} updates`}
+      </span>
+    </div>
+    <span class="teaser-arrow">↓</span>
+  </a>
+)}
+
+<style>
+  .update-teaser {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: var(--color-code-bg);
+    border-radius: 8px;
+    margin-bottom: 2rem;
+    text-decoration: none;
+    transition: background 0.15s ease, transform 0.15s ease;
+    border: 1px solid transparent;
+  }
+
+  .update-teaser:hover {
+    background: var(--color-bg);
+    border-color: var(--color-border);
+    transform: translateY(-1px);
+  }
+
+  .teaser-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex-shrink: 0;
+  }
+
+  .badge-icon {
+    font-size: 0.9rem;
+    line-height: 1;
+  }
+
+  .badge-label {
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-accent);
+  }
+
+  .teaser-content {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  .teaser-text {
+    font-size: 0.85rem;
+    color: var(--color-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .teaser-meta {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+  }
+
+  .teaser-arrow {
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    flex-shrink: 0;
+    transition: transform 0.15s ease;
+  }
+
+  .update-teaser:hover .teaser-arrow {
+    transform: translateY(2px);
+  }
+
+  /* Pulse animation for fresh updates (less than 2 days old) */
+  @keyframes subtle-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+
+  .update-teaser[data-fresh="true"] .badge-label {
+    animation: subtle-pulse 2s ease-in-out infinite;
+  }
+</style>

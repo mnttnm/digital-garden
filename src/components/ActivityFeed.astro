@@ -1,0 +1,232 @@
+---
+interface Update {
+  date: Date;
+  type: 'shipped' | 'learning' | 'discovery' | 'milestone' | 'update' | 'idea';
+  title?: string;
+  content: string;
+}
+
+interface Props {
+  updates: Update[];
+  limit?: number;
+  showViewAll?: boolean;
+}
+
+const { updates, limit, showViewAll = false } = Astro.props;
+
+// Sort updates by date (newest first)
+const sortedUpdates = [...updates].sort((a, b) =>
+  new Date(b.date).getTime() - new Date(a.date).getTime()
+);
+
+const displayUpdates = limit ? sortedUpdates.slice(0, limit) : sortedUpdates;
+
+function formatDate(date: Date) {
+  return new Date(date).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  });
+}
+
+function getRelativeTime(date: Date) {
+  const now = new Date();
+  const diff = now.getTime() - new Date(date).getTime();
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+  if (days === 0) return 'Today';
+  if (days === 1) return 'Yesterday';
+  if (days < 7) return `${days} days ago`;
+  if (days < 30) return `${Math.floor(days / 7)} weeks ago`;
+  if (days < 365) return `${Math.floor(days / 30)} months ago`;
+  return `${Math.floor(days / 365)} years ago`;
+}
+
+const typeConfig: Record<Update['type'], { label: string; icon: string }> = {
+  shipped: { label: 'Shipped', icon: '🚀' },
+  learning: { label: 'Learned', icon: '💡' },
+  discovery: { label: 'Discovered', icon: '🔍' },
+  milestone: { label: 'Milestone', icon: '🎯' },
+  update: { label: 'Update', icon: '📝' },
+  idea: { label: 'Idea', icon: '💭' },
+};
+---
+
+{displayUpdates.length > 0 && (
+  <div class="activity-feed">
+    <ol class="timeline">
+      {displayUpdates.map((update, index) => (
+        <li class="timeline-item">
+          <div class="timeline-marker" data-type={update.type}>
+            <span class="type-icon">{typeConfig[update.type].icon}</span>
+          </div>
+          <div class="timeline-content">
+            <div class="timeline-header">
+              <span class="update-type">{typeConfig[update.type].label}</span>
+              <time class="update-date" datetime={new Date(update.date).toISOString()} title={formatDate(update.date)}>
+                {getRelativeTime(update.date)}
+              </time>
+            </div>
+            {update.title && <h4 class="update-title">{update.title}</h4>}
+            <p class="update-content">{update.content}</p>
+          </div>
+        </li>
+      ))}
+    </ol>
+
+    {showViewAll && updates.length > (limit || 0) && (
+      <a href="#activity-feed" class="view-all-link">
+        View all {updates.length} updates →
+      </a>
+    )}
+  </div>
+)}
+
+<style>
+  .activity-feed {
+    margin: 1.5rem 0;
+  }
+
+  .timeline {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    position: relative;
+  }
+
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 12px;
+    top: 8px;
+    bottom: 8px;
+    width: 2px;
+    background: var(--color-border);
+  }
+
+  .timeline-item {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+    position: relative;
+  }
+
+  .timeline-item:last-child {
+    margin-bottom: 0;
+  }
+
+  .timeline-marker {
+    flex-shrink: 0;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--color-bg);
+    border: 2px solid var(--color-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+  }
+
+  .timeline-item:hover .timeline-marker {
+    transform: scale(1.1);
+    border-color: var(--color-text-muted);
+  }
+
+  .type-icon {
+    font-size: 0.75rem;
+    line-height: 1;
+  }
+
+  .timeline-content {
+    flex: 1;
+    min-width: 0;
+    padding-top: 2px;
+  }
+
+  .timeline-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .update-type {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-muted);
+    background: var(--color-code-bg);
+    padding: 0.15rem 0.4rem;
+    border-radius: 3px;
+  }
+
+  .update-date {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+  }
+
+  .update-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin: 0.25rem 0 0.35rem 0;
+    line-height: 1.4;
+  }
+
+  .update-content {
+    font-size: 0.9rem;
+    color: var(--color-text-muted);
+    margin: 0;
+    line-height: 1.6;
+  }
+
+  .view-all-link {
+    display: inline-block;
+    margin-top: 1rem;
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+  }
+
+  .view-all-link:hover {
+    color: var(--color-text);
+  }
+
+  /* Type-specific styling */
+  .timeline-marker[data-type="shipped"] {
+    border-color: #10b981;
+    background: rgba(16, 185, 129, 0.1);
+  }
+
+  .timeline-marker[data-type="milestone"] {
+    border-color: #f59e0b;
+    background: rgba(245, 158, 11, 0.1);
+  }
+
+  .timeline-marker[data-type="learning"] {
+    border-color: #8b5cf6;
+    background: rgba(139, 92, 246, 0.1);
+  }
+
+  .timeline-marker[data-type="discovery"] {
+    border-color: #3b82f6;
+    background: rgba(59, 130, 246, 0.1);
+  }
+
+  /* Dark mode adjustments */
+  @media (prefers-color-scheme: dark) {
+    .timeline-marker[data-type="shipped"] {
+      background: rgba(16, 185, 129, 0.15);
+    }
+    .timeline-marker[data-type="milestone"] {
+      background: rgba(245, 158, 11, 0.15);
+    }
+    .timeline-marker[data-type="learning"] {
+      background: rgba(139, 92, 246, 0.15);
+    }
+    .timeline-marker[data-type="discovery"] {
+      background: rgba(59, 130, 246, 0.15);
+    }
+  }
+</style>

@@ -14,6 +14,7 @@ const base = import.meta.env.BASE_URL;
 const normalizedBase = base.endsWith('/') ? base : `${base}/`;
 const homeHref = normalizedBase;
 const aboutHref = `${normalizedBase}about/`;
+const projectsHref = `${normalizedBase}projects/`;
 const currentPath = Astro.url.pathname.endsWith('/')
   ? Astro.url.pathname
   : `${Astro.url.pathname}/`;
@@ -96,6 +97,7 @@ const lastUpdatedRelativeLabel = latestLogItem ? getRelativeTimeLabel(latestLogI
       <div class="site-header-actions">
         <nav class="site-nav">
           <a href={homeHref} class:list={['nav-link', { active: currentPath === homeHref }]}>learning.log</a>
+          <a href={projectsHref} class:list={['nav-link', { active: currentPath.startsWith(projectsHref) }]}>Projects</a>
           <a href={aboutHref} class:list={['nav-link', { active: currentPath === aboutHref }]}>About</a>
         </nav>
 
