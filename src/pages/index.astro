@@ -9,78 +9,25 @@ import {
 
 const ITEMS_PER_PAGE = 30;
 const base = import.meta.env.BASE_URL;
-const visibleFilters = ['all', 'projects', 'discoveries'] as const;
-type VisibleFilter = (typeof visibleFilters)[number];
-type Filter = VisibleFilter;
-
-const bucketFallback = Astro.url.searchParams.get('bucket');
-const rawFilter = (
-  Astro.url.searchParams.get('filter')
-  ?? (bucketFallback === 'project-updates' ? 'projects' : null)
-  ?? (bucketFallback === 'what-i-discovered' ? 'discoveries' : null)
-  ?? 'all'
-).toLowerCase();
-
-const filterAliases: Record<string, Filter> = {
-  all: 'all',
-  projects: 'projects',
-  project: 'projects',
-  'project-updates': 'projects',
-  discoveries: 'discoveries',
-  'what-i-discovered': 'discoveries',
-  learnings: 'discoveries',
-  resources: 'discoveries',
-  thoughts: 'discoveries',
-};
-
-const activeFilter: Filter = filterAliases[rawFilter] ?? 'all';
 
 const requestedPage = Number.parseInt(Astro.url.searchParams.get('page') ?? '1', 10);
 const currentPage = Number.isFinite(requestedPage) && requestedPage > 0 ? requestedPage : 1;
 
 const allItems = await getLearningLogItems();
-const filteredItems = activeFilter === 'all'
-  ? allItems
-  : activeFilter === 'projects'
-    ? allItems.filter(item => item.category === 'projects')
-    : allItems.filter(item => item.category !== 'projects');
 
 const visibleCount = currentPage * ITEMS_PER_PAGE;
-const visibleItems = filteredItems.slice(0, visibleCount);
-const hasMore = filteredItems.length > visibleCount;
+const visibleItems = allItems.slice(0, visibleCount);
+const hasMore = allItems.length > visibleCount;
 
 function formatEntryDate(date: Date) {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-function buildUrl(filter: Filter, page = 1) {
-  const params = new URLSearchParams();
-
-  if (filter !== 'all') {
-    params.set('filter', filter);
-  }
-
+function buildUrl(page = 1) {
   if (page > 1) {
-    params.set('page', String(page));
+    return `${base}?page=${page}`;
   }
-
-  const query = params.toString();
-  return query ? `${base}?${query}` : base;
-}
-
-function getFilterLabel(filter: Filter) {
-  const labels: Record<Filter, string> = {
-    all: 'All',
-    projects: 'Projects',
-    discoveries: 'What I discovered',
-  };
-  return labels[filter];
-}
-
-function getFilterCount(filter: Filter) {
-  if (filter === 'all') return allItems.length;
-  if (filter === 'projects') return allItems.filter(item => item.category === 'projects').length;
-  return allItems.filter(item => item.category !== 'projects').length;
+  return base;
 }
 
 function resolveHref(href: string, isExternal: boolean) {
@@ -121,17 +68,6 @@ function getTags(item: LearningLogItem) {
 
 <Base title="learning.log" description="A digital journal for thoughts in progress.">
   <main class="journal-page">
-    <nav class="filter-tabs content-offset" aria-label="Filter entries">
-      {visibleFilters.map((filter) => (
-        <a
-          href={buildUrl(filter, 1)}
-          class:list={['filter-tab', { active: activeFilter === filter }]}
-        >
-          <span>{getFilterLabel(filter)}</span>
-          <span class="tab-count">{getFilterCount(filter)}</span>
-        </a>
-      ))}
-    </nav>
     <p class="journal-subtitle content-offset">What I shipped, learned, and bookmarked.</p>
 
     {visibleItems.length === 0 ? (
@@ -240,7 +176,7 @@ function getTags(item: LearningLogItem) {
 
     {hasMore && (
       <div class="content-offset load-more-wrap">
-        <a class="load-more" href={buildUrl(activeFilter, currentPage + 1)}>Load more entries</a>
+        <a class="load-more" href={buildUrl(currentPage + 1)}>Load more entries</a>
       </div>
     )}
 
@@ -287,58 +223,6 @@ function getTags(item: LearningLogItem) {
     font-size: 0.82rem;
     color: var(--text-tertiary);
     letter-spacing: 0.012em;
-  }
-
-  .filter-tabs {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem 1.2rem;
-    margin-bottom: 0.55rem;
-    border-bottom: 1px solid var(--border-primary);
-    padding-bottom: 0.55rem;
-  }
-
-  .filter-tab {
-    position: relative;
-    font-family: var(--font-serif);
-    font-size: 0.98rem;
-    color: var(--text-secondary);
-    text-decoration: none;
-    padding-bottom: 0.45rem;
-    display: inline-flex;
-    gap: 0.38rem;
-    align-items: baseline;
-  }
-
-  .tab-count {
-    font-family: var(--font-sans);
-    font-size: 0.72rem;
-    color: var(--text-tertiary);
-  }
-
-  .filter-tab::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: -0.72rem;
-    height: 2px;
-    background: transparent;
-    transform: translateY(0);
-    transition: background-color 0.2s ease, transform 0.2s ease;
-  }
-
-  .filter-tab:hover {
-    color: var(--text-primary);
-  }
-
-  .filter-tab.active {
-    color: var(--accent);
-  }
-
-  .filter-tab.active::after {
-    background: var(--accent);
-    transform: translateY(2px);
   }
 
   .entries {
