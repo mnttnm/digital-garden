@@ -16,6 +16,17 @@ const notes = defineCollection({
   }),
 });
 
+// Schema for TILs (Today I Learned)
+const til = defineCollection({
+  type: 'content',
+  schema: z.object({
+    title: z.string(),
+    date: z.coerce.date(),
+    tags: z.array(z.string()).default([]),
+    draft: z.boolean().default(false),
+  }),
+});
+
 // Schema for projects
 const projects = defineCollection({
   type: 'content',
@@ -57,4 +68,4 @@ const projects = defineCollection({
   }),
 });
 
-export const collections = { notes, projects };
+export const collections = { notes, projects, til };

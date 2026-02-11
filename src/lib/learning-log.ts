@@ -4,7 +4,7 @@ type NoteType = CollectionEntry<'notes'>['data']['type'];
 type ProjectActivity = CollectionEntry<'projects'>['data']['activity'][number];
 
 export type LearningLogBucket = 'project-updates' | 'what-i-discovered';
-export type LearningLogSourceType = NoteType | ProjectActivity['type'];
+export type LearningLogSourceType = NoteType | ProjectActivity['type'] | 'til';
 export type LearningLogCategory = 'projects' | 'learnings' | 'resources' | 'thoughts';
 
 export interface LearningLogLinkPreview {
@@ -125,9 +125,10 @@ function getNoteCategory(type: NoteType): LearningLogCategory {
 }
 
 export async function getLearningLogItems(): Promise<LearningLogItem[]> {
-  const [notes, projects] = await Promise.all([
+  const [notes, projects, tils] = await Promise.all([
     getCollection('notes', ({ data }) => !data.draft),
     getCollection('projects', ({ data }) => !data.draft),
+    getCollection('til', ({ data }) => !data.draft),
   ]);
 
   const noteItems: LearningLogItem[] = notes.map((note) => {
@@ -210,5 +211,22 @@ export async function getLearningLogItems(): Promise<LearningLogItem[]> {
     })
   );
 
-  return [...projectItems, ...noteItems].sort((a, b) => b.date.valueOf() - a.date.valueOf());
+  const tilItems: LearningLogItem[] = tils.map((til) => {
+    const crux = firstSentenceOrExcerpt(til.body) || til.data.title;
+
+    return {
+      id: `til-${til.slug}`,
+      bucket: 'what-i-discovered',
+      category: 'learnings',
+      date: til.data.date,
+      title: til.data.title,
+      crux,
+      href: `/til/${til.slug}/`,
+      tags: til.data.tags ?? [],
+      sourceType: 'til',
+      isExternal: false,
+    };
+  });
+
+  return [...projectItems, ...noteItems, ...tilItems].sort((a, b) => b.date.valueOf() - a.date.valueOf());
 }
