@@ -68,7 +68,10 @@ function getTags(item: LearningLogItem) {
 
 <Base title="learning.log" description="A digital journal for thoughts in progress.">
   <main class="journal-page">
-    <p class="journal-subtitle content-offset">What I shipped, learned, and bookmarked.</p>
+    <header class="page-header content-offset">
+      <h1 class="page-title">learning.log</h1>
+      <p class="page-subtitle">What I shipped, learned, and bookmarked.</p>
+    </header>
 
     {visibleItems.length === 0 ? (
       <p class="empty-state content-offset">No entries found for this category.</p>
@@ -218,8 +221,21 @@ function getTags(item: LearningLogItem) {
     padding-left: 0;
   }
 
-  .journal-subtitle {
-    margin: 0 0 clamp(0.95rem, 2.1vw, 1.4rem) 0;
+  .page-header {
+    margin-bottom: clamp(1.2rem, 2.4vw, 1.8rem);
+  }
+
+  .page-title {
+    margin: 0 0 0.25rem 0;
+    font-size: clamp(1.4rem, 2.5vw, 1.8rem);
+    font-family: var(--entry-title-font);
+    font-weight: 500;
+    letter-spacing: -0.015em;
+    color: var(--text-primary);
+  }
+
+  .page-subtitle {
+    margin: 0;
     font-size: 0.82rem;
     color: var(--text-tertiary);
     letter-spacing: 0.012em;

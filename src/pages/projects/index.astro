@@ -16,10 +16,10 @@ const sortedProjects = projects.sort((a, b) => {
 
 const base = import.meta.env.BASE_URL;
 
-function getLatestActivityDate(project: typeof projects[0]) {
+function getLatestActivity(project: typeof projects[0]) {
   const activities = project.data.activity;
-  if (!activities || activities.length === 0) return project.data.date;
-  return [...activities].sort((a, b) => b.date.valueOf() - a.date.valueOf())[0].date;
+  if (!activities || activities.length === 0) return null;
+  return [...activities].sort((a, b) => b.date.valueOf() - a.date.valueOf())[0];
 }
 
 function formatRelativeDate(date: Date) {
@@ -43,15 +43,19 @@ function formatRelativeDate(date: Date) {
 
 <Base title="Projects" description="Things I'm building and exploring">
   <main class="projects-page">
-    <p class="page-subtitle content-offset">Things I'm building and exploring.</p>
+    <header class="page-header content-offset">
+      <h1 class="page-title">Projects</h1>
+      <p class="page-subtitle">Things I'm building and exploring.</p>
+    </header>
 
     {sortedProjects.length === 0 ? (
       <p class="empty-state content-offset">No projects yet.</p>
     ) : (
       <ul class="projects-list" aria-label="Projects">
         {sortedProjects.map((project, index) => {
-          const latestDate = getLatestActivityDate(project);
-          const stack = project.data.stack?.slice(0, 3) || [];
+          const latestActivity = getLatestActivity(project);
+          const latestDate = latestActivity?.date || project.data.date;
+          const tags = project.data.tags?.slice(0, 3) || [];
 
           return (
             <li
@@ -60,24 +64,13 @@ function formatRelativeDate(date: Date) {
             >
               <article class="project-grid">
                 <aside class="project-margin">
-                  {stack.length > 0 && (
-                    <p class="project-stack">
-                      {stack.map((tech, i) => (
-                        <span>
-                          {tech.toUpperCase()}
-                          {i < stack.length - 1 && <span class="stack-sep"> · </span>}
-                        </span>
-                      ))}
-                    </p>
-                  )}
                   <p class="project-updated">
-                    Updated {formatRelativeDate(latestDate)}
+                    {formatRelativeDate(latestDate)}
                   </p>
                 </aside>
 
                 <div class="project-main">
                   <h2 class="project-title">
-                    {project.data.featured && <span class="featured-star" aria-label="Featured">★</span>}
                     <a href={`${base}projects/${project.slug}/`}>
                       {project.data.title}
                     </a>
@@ -85,23 +78,40 @@ function formatRelativeDate(date: Date) {
 
                   <p class="project-description">{project.data.description}</p>
 
-                  {(project.data.github || project.data.live) && (
-                    <p class="project-links">
-                      {project.data.github && (
-                        <a href={project.data.github} target="_blank" rel="noopener">
-                          Code ↗
-                        </a>
-                      )}
-                      {project.data.github && project.data.live && (
-                        <span class="link-sep"> · </span>
-                      )}
-                      {project.data.live && (
-                        <a href={project.data.live} target="_blank" rel="noopener">
-                          Live ↗
-                        </a>
-                      )}
+                  {latestActivity && (
+                    <p class="latest-update">
+                      <span class="latest-label">Latest:</span> {latestActivity.title}
                     </p>
                   )}
+
+                  <p class="project-meta">
+                    {project.data.github && (
+                      <a href={project.data.github} target="_blank" rel="noopener" class="meta-link">
+                        Code
+                      </a>
+                    )}
+                    {project.data.github && project.data.live && (
+                      <span class="meta-sep"> · </span>
+                    )}
+                    {project.data.live && (
+                      <a href={project.data.live} target="_blank" rel="noopener" class="meta-link">
+                        Live
+                      </a>
+                    )}
+                    {(project.data.github || project.data.live) && tags.length > 0 && (
+                      <span class="meta-sep"> · </span>
+                    )}
+                    {tags.length > 0 && (
+                      <span class="project-tags">
+                        {tags.map((tag, i) => (
+                          <span>
+                            #{tag}
+                            {i < tags.length - 1 && ' '}
+                          </span>
+                        ))}
+                      </span>
+                    )}
+                  </p>
 
                   <div class="project-separator" aria-hidden="true"></div>
                 </div>
@@ -145,8 +155,21 @@ function formatRelativeDate(date: Date) {
     padding-left: 0;
   }
 
+  .page-header {
+    margin-bottom: clamp(1.2rem, 2.4vw, 1.8rem);
+  }
+
+  .page-title {
+    margin: 0 0 0.25rem 0;
+    font-size: clamp(1.4rem, 2.5vw, 1.8rem);
+    font-family: var(--entry-title-font);
+    font-weight: 500;
+    letter-spacing: -0.015em;
+    color: var(--text-primary);
+  }
+
   .page-subtitle {
-    margin: 0 0 clamp(1.2rem, 2.4vw, 1.8rem) 0;
+    margin: 0;
     font-size: 0.82rem;
     color: var(--text-tertiary);
     letter-spacing: 0.012em;
@@ -187,22 +210,7 @@ function formatRelativeDate(date: Date) {
   .project-margin {
     display: flex;
     align-items: baseline;
-    gap: 0.65rem;
     color: var(--text-tertiary);
-  }
-
-  .project-stack {
-    margin: 0;
-    font-size: 0.69rem;
-    font-weight: 500;
-    letter-spacing: 0.07em;
-    text-transform: uppercase;
-    color: var(--text-tertiary);
-  }
-
-  .stack-sep {
-    color: var(--text-tertiary);
-    opacity: 0.5;
   }
 
   .project-updated {
@@ -216,7 +224,7 @@ function formatRelativeDate(date: Date) {
   }
 
   .project-title {
-    margin: 0 0 0.7rem 0;
+    margin: 0 0 0.55rem 0;
     font-size: clamp(1.18rem, 2vw, 1.52rem);
     line-height: 1.22;
     font-family: var(--entry-title-font);
@@ -224,52 +232,67 @@ function formatRelativeDate(date: Date) {
     letter-spacing: -0.012em;
   }
 
-  .featured-star {
-    color: #fbbf24;
-    margin-right: 0.35rem;
-    font-size: 0.85em;
-  }
-
   .project-title a {
     color: var(--text-primary);
     text-decoration: none;
+    border-bottom: 1px solid color-mix(in srgb, var(--text-tertiary) 40%, transparent);
+    transition: border-color 0.2s ease, color 0.2s ease;
   }
 
   .project-title a:hover {
     color: var(--accent-hover);
+    border-bottom-color: var(--accent);
   }
 
   .project-description {
-    margin: 0 0 1rem 0;
+    margin: 0 0 0.65rem 0;
     font-size: 1.02rem;
     line-height: 1.65;
     color: var(--text-secondary);
     max-width: 62ch;
   }
 
-  .project-links {
-    margin: 0 0 0.95rem 0;
+  .latest-update {
+    margin: 0 0 0.85rem 0;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: var(--text-tertiary);
+    max-width: 58ch;
   }
 
-  .project-links a {
-    font-size: 0.84rem;
+  .latest-label {
+    color: var(--text-tertiary);
+  }
+
+  .project-meta {
+    margin: 0 0 0.95rem 0;
+    font-size: 0.8rem;
+    color: var(--text-tertiary);
+  }
+
+  .meta-link {
     color: var(--accent);
+    text-decoration: none;
     border-bottom: 1px solid transparent;
     padding-bottom: 0.05rem;
-    text-decoration: none;
   }
 
-  .project-links a:hover {
+  .meta-link:hover {
     color: var(--accent-hover);
     border-bottom-color: var(--border-primary);
   }
 
-  .link-sep {
+  .meta-sep {
+    color: var(--text-tertiary);
+    opacity: 0.6;
+  }
+
+  .project-tags {
     color: var(--text-tertiary);
   }
 
   .project-separator {
-    margin-top: clamp(2.6rem, 5.2vw, 3.45rem);
+    margin-top: clamp(2.2rem, 4.5vw, 3rem);
     width: 66%;
     border-top: 1px solid color-mix(in srgb, var(--border-primary) 40%, transparent);
   }
@@ -293,7 +316,6 @@ function formatRelativeDate(date: Date) {
       flex-direction: column;
       justify-content: flex-start;
       align-items: flex-end;
-      gap: 0.35rem;
       text-align: right;
       padding-top: 0.3rem;
     }

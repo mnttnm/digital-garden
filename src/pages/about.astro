@@ -5,7 +5,8 @@ import Base from '../layouts/Base.astro';
 <Base title="About" description="Learn more about me and how to get in touch.">
   <article class="about-page">
     <header class="page-header">
-      <h1>About</h1>
+      <h1 class="page-title">About</h1>
+      <p class="page-subtitle">Learn more about me and how to get in touch.</p>
     </header>
 
     <section class="bio">
@@ -58,8 +59,24 @@ import Base from '../layouts/Base.astro';
     max-width: 600px;
   }
 
-  .page-header h1 {
-    margin-top: 0;
+  .page-header {
+    margin-bottom: clamp(1.2rem, 2.4vw, 1.8rem);
+  }
+
+  .page-title {
+    margin: 0 0 0.25rem 0;
+    font-size: clamp(1.4rem, 2.5vw, 1.8rem);
+    font-family: var(--entry-title-font);
+    font-weight: 500;
+    letter-spacing: -0.015em;
+    color: var(--text-primary);
+  }
+
+  .page-subtitle {
+    margin: 0;
+    font-size: 0.82rem;
+    color: var(--text-tertiary);
+    letter-spacing: 0.012em;
   }
 
   .bio {
