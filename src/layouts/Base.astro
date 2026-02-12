@@ -60,11 +60,17 @@ const lastUpdatedRelativeLabel = latestLogItem ? getRelativeTimeLabel(latestLogI
     (() => {
       try {
         const root = document.documentElement;
-        const appearance = localStorage.getItem('learning-log-appearance')
-          || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        const storedAppearance = localStorage.getItem('learning-log-appearance') || 'auto';
         const warmth = localStorage.getItem('learning-log-warmth') || 'warm';
         const font = localStorage.getItem('learning-log-font') || 'serif';
-        root.dataset.appearance = appearance;
+
+        // Resolve auto to actual light/dark
+        const resolvedAppearance = storedAppearance === 'auto'
+          ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+          : storedAppearance;
+
+        root.dataset.appearance = resolvedAppearance;
+        root.dataset.appearanceMode = storedAppearance;
         root.dataset.warmth = warmth;
         root.dataset.font = font;
       } catch {
@@ -129,10 +135,11 @@ const lastUpdatedRelativeLabel = latestLogItem ? getRelativeTimeLabel(latestLogI
             </div>
             <div class="theme-row">
               <span class="theme-label">Appearance</span>
-              <button class="theme-appearance-button" type="button" data-appearance-toggle>
-                <span data-appearance-icon>☀</span>
-                <span data-appearance-label>Light</span>
-              </button>
+              <div class="theme-segmented" role="radiogroup" aria-label="Appearance mode">
+                <button type="button" data-appearance="light">Light</button>
+                <button type="button" data-appearance="dark">Dark</button>
+                <button type="button" data-appearance="auto">Auto</button>
+              </div>
             </div>
           </section>
         </div>
@@ -160,11 +167,9 @@ const lastUpdatedRelativeLabel = latestLogItem ? getRelativeTimeLabel(latestLogI
       const panel = document.querySelector('[data-theme-panel]');
       const warmthButtons = Array.from(document.querySelectorAll('[data-warmth]'));
       const fontButtons = Array.from(document.querySelectorAll('[data-font]'));
-      const appearanceToggle = document.querySelector('[data-appearance-toggle]');
-      const appearanceIcon = document.querySelector('[data-appearance-icon]');
-      const appearanceLabel = document.querySelector('[data-appearance-label]');
+      const appearanceButtons = Array.from(document.querySelectorAll('button[data-appearance]'));
 
-      if (!controls || !toggle || !panel || !appearanceToggle || !appearanceIcon || !appearanceLabel) {
+      if (!controls || !toggle || !panel) {
         return;
       }
 
@@ -177,15 +182,25 @@ const lastUpdatedRelativeLabel = latestLogItem ? getRelativeTimeLabel(latestLogI
       const state = {
         warmth: localStorage.getItem(STORAGE_KEYS.warmth) || 'warm',
         font: localStorage.getItem(STORAGE_KEYS.font) || 'serif',
-        appearance: localStorage.getItem(STORAGE_KEYS.appearance)
-          || root.dataset.appearance
-          || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+        appearanceMode: localStorage.getItem(STORAGE_KEYS.appearance) || 'auto'
       };
 
+      const systemDarkQuery = window.matchMedia('(prefers-color-scheme: dark)');
+
+      function getResolvedAppearance() {
+        if (state.appearanceMode === 'auto') {
+          return systemDarkQuery.matches ? 'dark' : 'light';
+        }
+        return state.appearanceMode;
+      }
+
       function applyState() {
+        const resolvedAppearance = getResolvedAppearance();
+
         root.dataset.warmth = state.warmth;
         root.dataset.font = state.font;
-        root.dataset.appearance = state.appearance;
+        root.dataset.appearance = resolvedAppearance;
+        root.dataset.appearanceMode = state.appearanceMode;
 
         warmthButtons.forEach((button) => {
           button.classList.toggle('active', button.getAttribute('data-warmth') === state.warmth);
@@ -195,14 +210,15 @@ const lastUpdatedRelativeLabel = latestLogItem ? getRelativeTimeLabel(latestLogI
           button.classList.toggle('active', button.getAttribute('data-font') === state.font);
         });
 
-        appearanceIcon.textContent = state.appearance === 'dark' ? '☾' : '☀';
-        appearanceLabel.textContent = state.appearance === 'dark' ? 'Dark' : 'Light';
+        appearanceButtons.forEach((button) => {
+          button.classList.toggle('active', button.getAttribute('data-appearance') === state.appearanceMode);
+        });
       }
 
       function persistState() {
         localStorage.setItem(STORAGE_KEYS.warmth, state.warmth);
         localStorage.setItem(STORAGE_KEYS.font, state.font);
-        localStorage.setItem(STORAGE_KEYS.appearance, state.appearance);
+        localStorage.setItem(STORAGE_KEYS.appearance, state.appearanceMode);
       }
 
       function closePanel() {
@@ -241,10 +257,19 @@ const lastUpdatedRelativeLabel = latestLogItem ? getRelativeTimeLabel(latestLogI
         });
       });
 
-      appearanceToggle.addEventListener('click', () => {
-        state.appearance = state.appearance === 'dark' ? 'light' : 'dark';
-        applyState();
-        persistState();
+      appearanceButtons.forEach((button) => {
+        button.addEventListener('click', () => {
+          state.appearanceMode = button.getAttribute('data-appearance') || 'auto';
+          applyState();
+          persistState();
+        });
+      });
+
+      // Listen for system preference changes (only affects auto mode)
+      systemDarkQuery.addEventListener('change', () => {
+        if (state.appearanceMode === 'auto') {
+          applyState();
+        }
       });
 
       document.addEventListener('click', (event) => {

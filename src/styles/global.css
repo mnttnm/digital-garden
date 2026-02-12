@@ -554,7 +554,7 @@ th {
   position: absolute;
   right: 0;
   top: calc(100% + 0.55rem);
-  width: 16rem;
+  width: 17.5rem;
   border-radius: 0.9rem;
   border: 1px solid var(--border-primary);
   background: var(--bg-card);
@@ -628,29 +628,17 @@ html[data-appearance='dark'] .warmth-warmer { background: #3b3026; }
   border: 0;
   background: transparent;
   color: var(--text-secondary);
-  padding: 0.25rem 0.55rem;
+  padding: 0.25rem 0.5rem;
   border-radius: 0.4rem;
   cursor: pointer;
   font-family: var(--font-serif);
-  font-size: 0.94rem;
+  font-size: 0.88rem;
 }
 
 .theme-segmented button.active {
   background: var(--bg-card);
   color: var(--text-primary);
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.08);
-}
-
-.theme-appearance-button {
-  border: 1px solid var(--border-primary);
-  border-radius: 0.55rem;
-  background: var(--bg-subtle);
-  color: var(--text-secondary);
-  padding: 0.35rem 0.65rem;
-  display: inline-flex;
-  gap: 0.45rem;
-  align-items: center;
-  cursor: pointer;
 }
 
 @media (max-width: 700px) {
