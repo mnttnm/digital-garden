@@ -84,8 +84,8 @@ export const POST: APIRoute = async ({ request }) => {
       true // Default to refined; individual preferences handled in transform
     );
 
-    // Mark all as published
-    await markAsPublished(result.ids);
+    // Mark all as published with slug info
+    await markAsPublished(result.publishedInfo);
 
     return new Response(
       JSON.stringify({

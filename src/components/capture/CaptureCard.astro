@@ -14,6 +14,22 @@ interface Props {
 
 const { capture, adminPassword } = Astro.props;
 
+// Generate URL for published items
+function getPublishedUrl(capture: Capture): string | null {
+  if (capture.status !== 'published') return null;
+
+  const slug = capture.publishedSlug;
+  const collection = capture.publishedCollection;
+
+  if (!slug) return null;
+
+  // Use collection to determine route
+  if (collection === 'til') {
+    return `/til/${slug}/`;
+  }
+  return `/notes/${slug}/`;
+}
+
 function formatDate(dateStr: string) {
   const date = new Date(dateStr);
   const now = new Date();
@@ -163,40 +179,92 @@ function truncate(text: string, maxLength: number): string {
   </div>
 
   <footer class="capture-actions">
-    <button
-      type="button"
-      class="action-btn action-refine"
-      data-action="refine"
-      disabled={Boolean(capture.refined)}
-    >
-      {capture.refined ? 'Refined' : 'Refine'}
-    </button>
+    {/* Pending: Show refine and approve/reject actions */}
+    {capture.status === 'pending' && (
+      <>
+        <button
+          type="button"
+          class="action-btn action-refine"
+          data-action="refine"
+          disabled={Boolean(capture.refined)}
+        >
+          {capture.refined ? 'Refined' : 'Refine'}
+        </button>
 
-    <div class="action-group-primary">
-      <button
-        type="button"
-        class="action-btn action-approve"
-        data-action="approve"
-        data-use-refined="true"
-      >
-        Approve Refined
-      </button>
-      <button
-        type="button"
-        class="action-btn action-approve-raw"
-        data-action="approve"
-        data-use-refined="false"
-      >
-        Approve Raw
-      </button>
-      <button
-        type="button"
-        class="action-btn action-reject"
-        data-action="reject"
-      >
-        Reject
-      </button>
-    </div>
+        <div class="action-group-primary">
+          <button
+            type="button"
+            class="action-btn action-approve"
+            data-action="approve"
+            data-use-refined="true"
+          >
+            Approve Refined
+          </button>
+          <button
+            type="button"
+            class="action-btn action-approve-raw"
+            data-action="approve"
+            data-use-refined="false"
+          >
+            Approve Raw
+          </button>
+          <button
+            type="button"
+            class="action-btn action-reject"
+            data-action="reject"
+          >
+            Reject
+          </button>
+        </div>
+      </>
+    )}
+
+    {/* Approved/Queued: Show waiting status */}
+    {capture.status === 'approved' && (
+      <>
+        <span class="status-label status-queued">Queued for publish</span>
+        <button
+          type="button"
+          class="action-btn action-reject"
+          data-action="reject"
+        >
+          Cancel
+        </button>
+      </>
+    )}
+
+    {/* Published: Show view link */}
+    {capture.status === 'published' && (
+      <>
+        <span class="status-label status-published">Published</span>
+        {getPublishedUrl(capture) ? (
+          <a
+            href={getPublishedUrl(capture)}
+            class="action-btn action-view"
+            target="_blank"
+            rel="noopener"
+          >
+            View on site ↗
+          </a>
+        ) : (
+          <span class="status-note">Link not available</span>
+        )}
+      </>
+    )}
+
+    {/* Rejected: Show restore option */}
+    {capture.status === 'rejected' && (
+      <>
+        <span class="status-label status-rejected">Rejected</span>
+        <button
+          type="button"
+          class="action-btn action-restore"
+          data-action="restore"
+        >
+          Restore to Pending
+        </button>
+      </>
+    )}
   </footer>
 </article>
 
@@ -473,6 +541,58 @@ function truncate(text: string, maxLength: number): string {
   .action-reject:hover:not(:disabled) {
     background: #dc2626;
     color: white;
+  }
+
+  .action-view {
+    background: #10b981;
+    border-color: #10b981;
+    color: white;
+    text-decoration: none;
+  }
+
+  .action-view:hover {
+    background: #059669;
+    border-color: #059669;
+    color: white;
+  }
+
+  .action-restore {
+    color: var(--accent);
+    border-color: var(--accent);
+    background: transparent;
+  }
+
+  .action-restore:hover:not(:disabled) {
+    background: var(--accent);
+    color: white;
+  }
+
+  .status-label {
+    font-size: 0.78rem;
+    font-weight: 500;
+    padding: 0.35rem 0.7rem;
+    border-radius: 0.4rem;
+  }
+
+  .status-queued {
+    background: color-mix(in srgb, #10b981 15%, transparent);
+    color: #10b981;
+  }
+
+  .status-published {
+    background: color-mix(in srgb, var(--accent) 15%, transparent);
+    color: var(--accent);
+  }
+
+  .status-rejected {
+    background: color-mix(in srgb, #dc2626 15%, transparent);
+    color: #dc2626;
+  }
+
+  .status-note {
+    font-size: 0.78rem;
+    color: var(--text-tertiary);
+    font-style: italic;
   }
 
   /* Loading state */

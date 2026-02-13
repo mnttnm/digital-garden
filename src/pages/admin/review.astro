@@ -216,7 +216,7 @@ const counts = {
             if (response.ok) {
               if (action === 'refine' && data.refined) {
                 location.reload();
-              } else if (action === 'approve' || action === 'reject') {
+              } else if (action === 'approve' || action === 'reject' || action === 'restore') {
                 card.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
                 card.style.opacity = '0';
                 card.style.transform = 'translateY(-10px)';

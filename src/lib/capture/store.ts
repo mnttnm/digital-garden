@@ -217,15 +217,33 @@ export async function getApprovedCaptures(): Promise<Capture[]> {
 }
 
 /**
- * Bulk update captures to published status
+ * Bulk update captures to published status with slug info
  */
-export async function markAsPublished(ids: string[]): Promise<void> {
+export async function markAsPublished(
+  publishedInfo: Array<{ id: string; slug: string; collection: string }>
+): Promise<void> {
   const redis = getRedis();
 
-  for (const id of ids) {
-    const capture = await getCapture(id);
+  for (const info of publishedInfo) {
+    const capture = await getCapture(info.id);
     if (capture && capture.status === 'approved') {
-      await updateCaptureStatus(id, 'published');
+      // Update capture with published slug and collection
+      const updated: Capture = {
+        ...capture,
+        status: 'published',
+        publishedSlug: info.slug,
+        publishedCollection: info.collection as 'til' | 'notes',
+      };
+
+      // Move between status sets
+      await redis.zrem(statusSetKey('approved'), info.id);
+      await redis.zadd(statusSetKey('published'), {
+        score: Date.now(),
+        member: info.id,
+      });
+
+      // Save updated capture
+      await redis.set(captureKey(info.id), JSON.stringify(updated));
     }
   }
 }

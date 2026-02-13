@@ -39,6 +39,10 @@ export interface Capture {
 
   // Publishing preference (set when approved)
   publishUseRefined?: boolean;
+
+  // Published content info (set after publishing)
+  publishedSlug?: string;
+  publishedCollection?: InferredCollection;
 }
 
 export interface CaptureImage {

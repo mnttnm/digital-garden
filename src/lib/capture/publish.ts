@@ -169,7 +169,7 @@ export function previewPublish(capture: Capture, useRefined = true): {
 export async function batchPublishCaptures(
   captures: Capture[],
   useRefined = true
-): Promise<{ sha: string; filesAdded: number; ids: string[] }> {
+): Promise<{ sha: string; filesAdded: number; ids: string[]; publishedInfo: Array<{ id: string; slug: string; collection: string }> }> {
   if (captures.length === 0) {
     throw new Error('No captures to publish');
   }
@@ -181,11 +181,15 @@ export async function batchPublishCaptures(
   const files = captures.map((capture) => {
     const result = transformCapture(capture, useRefined);
     const path = getContentPath(result);
+    // Extract slug from filename (remove .md extension)
+    const slug = result.filename.replace(/\.md$/, '');
     return {
       id: capture.id,
       path,
       content: result.fullContent,
       title: result.frontmatter.title,
+      slug,
+      collection: result.collection,
     };
   });
 
@@ -337,5 +341,10 @@ export async function batchPublishCaptures(
     sha: newCommitData.sha,
     filesAdded: files.length,
     ids: files.map((f) => f.id),
+    publishedInfo: files.map((f) => ({
+      id: f.id,
+      slug: f.slug,
+      collection: f.collection,
+    })),
   };
 }
