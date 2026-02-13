@@ -1,0 +1,158 @@
+---
+/**
+ * Admin Login Page
+ *
+ * /admin - Simple login form that redirects to /admin/review
+ */
+
+import Base from '../../layouts/Base.astro';
+
+export const prerender = false;
+
+const error = Astro.url.searchParams.get('error');
+---
+
+<Base title="Admin Login" description="Admin login for content capture dashboard">
+  <div class="login-page">
+    <div class="login-card">
+      <h1 class="login-title">Admin Access</h1>
+      <p class="login-subtitle">Enter your password to access the capture review dashboard</p>
+
+      {error === 'auth' && (
+        <div class="login-error">
+          Invalid password. Please try again.
+        </div>
+      )}
+
+      <form class="login-form" id="loginForm">
+        <div class="form-field">
+          <label for="password" class="form-label">Password</label>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            class="form-input"
+            placeholder="Enter admin password"
+            required
+            autofocus
+          />
+        </div>
+        <button type="submit" class="login-button">
+          Access Dashboard
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('loginForm');
+
+    form?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const password = document.getElementById('password').value;
+
+      if (password) {
+        window.location.href = `/admin/review?password=${encodeURIComponent(password)}`;
+      }
+    });
+  </script>
+</Base>
+
+<style>
+  .login-page {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+  }
+
+  .login-card {
+    width: 100%;
+    max-width: 380px;
+    padding: 2rem;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.75rem;
+    background: var(--bg-card);
+  }
+
+  .login-title {
+    margin: 0 0 0.25rem;
+    font-size: 1.3rem;
+    font-family: var(--entry-title-font);
+    font-weight: 500;
+    color: var(--text-primary);
+    text-align: center;
+  }
+
+  .login-subtitle {
+    margin: 0 0 1.5rem;
+    font-size: 0.88rem;
+    color: var(--text-tertiary);
+    text-align: center;
+  }
+
+  .login-error {
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+    background: color-mix(in srgb, #dc2626 10%, transparent);
+    border: 1px solid color-mix(in srgb, #dc2626 30%, transparent);
+    border-radius: 0.5rem;
+    color: #dc2626;
+    font-size: 0.88rem;
+    text-align: center;
+  }
+
+  .login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .form-label {
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+
+  .form-input {
+    padding: 0.65rem 0.85rem;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.5rem;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    font-family: inherit;
+    transition: border-color 0.15s ease;
+  }
+
+  .form-input:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  .form-input::placeholder {
+    color: var(--text-tertiary);
+  }
+
+  .login-button {
+    padding: 0.7rem 1rem;
+    border: none;
+    border-radius: 0.5rem;
+    background: var(--accent);
+    color: white;
+    font-size: 0.92rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+  }
+
+  .login-button:hover {
+    background: var(--accent-hover);
+  }
+</style>

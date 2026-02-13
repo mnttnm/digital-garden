@@ -1,0 +1,490 @@
+---
+/**
+ * Capture Card Component
+ *
+ * Displays a single capture with raw/refined toggle and action buttons.
+ */
+
+import type { Capture } from '../../lib/capture/types';
+
+interface Props {
+  capture: Capture;
+  adminPassword: string;
+}
+
+const { capture, adminPassword } = Astro.props;
+
+function formatDate(dateStr: string) {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffHours < 1) return 'Just now';
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
+function getTypeLabel(capture: Capture): string {
+  if (capture.type === 'url') return 'URL';
+  if (capture.type === 'image') return 'Image';
+  if (capture.type === 'mixed') return 'Mixed';
+  return 'Text';
+}
+
+function getCollectionLabel(capture: Capture): string {
+  const collection = capture.refined?.suggestedType || capture.inferredCollection;
+  return collection === 'til' ? 'TIL' : 'Note';
+}
+
+function getNoteTypeLabel(capture: Capture): string | null {
+  const noteType = capture.refined?.suggestedNoteType || capture.inferredNoteType;
+  if (!noteType) return null;
+
+  const labels: Record<string, string> = {
+    link: 'Link',
+    thought: 'Thought',
+    essay: 'Essay',
+    snippet: 'Snippet',
+  };
+  return labels[noteType] || noteType;
+}
+
+function getDomain(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '');
+  } catch {
+    return url;
+  }
+}
+
+function truncate(text: string, maxLength: number): string {
+  if (text.length <= maxLength) return text;
+  return text.slice(0, maxLength - 1).trim() + '...';
+}
+---
+
+<article class="capture-card" data-capture-id={capture.id}>
+  <header class="capture-header">
+    <div class="capture-meta">
+      <span class="capture-time">{formatDate(capture.createdAt)}</span>
+      <span class="capture-type">{getTypeLabel(capture)}</span>
+      <span class="capture-source">{capture.source}</span>
+    </div>
+    <div class="capture-classification">
+      <span class="capture-collection">{getCollectionLabel(capture)}</span>
+      {getNoteTypeLabel(capture) && (
+        <span class="capture-note-type">{getNoteTypeLabel(capture)}</span>
+      )}
+    </div>
+  </header>
+
+  <div class="capture-content">
+    <div class="capture-view-toggle" data-toggle-container>
+      <button
+        type="button"
+        class="toggle-btn active"
+        data-view="raw"
+        aria-pressed="true"
+      >
+        Raw
+      </button>
+      <button
+        type="button"
+        class="toggle-btn"
+        data-view="refined"
+        aria-pressed="false"
+        disabled={!capture.refined}
+      >
+        Refined {capture.refined ? '✨' : ''}
+      </button>
+    </div>
+
+    <!-- Raw View -->
+    <div class="capture-view view-raw" data-view-content="raw">
+      {capture.url && (
+        <a class="capture-url" href={capture.url} target="_blank" rel="noopener">
+          <span class="url-icon">🔗</span>
+          <span class="url-domain">{getDomain(capture.url)}</span>
+          <span class="url-arrow">↗</span>
+        </a>
+      )}
+
+      {capture.comment && (
+        <p class="capture-comment">
+          <span class="comment-label">Comment:</span>
+          {capture.comment}
+        </p>
+      )}
+
+      {capture.text && capture.text !== capture.comment && (
+        <div class="capture-text">
+          {truncate(capture.text, 500)}
+        </div>
+      )}
+    </div>
+
+    <!-- Refined View -->
+    <div class="capture-view view-refined hidden" data-view-content="refined">
+      {capture.refined ? (
+        <>
+          <h3 class="refined-title">{capture.refined.title}</h3>
+
+          {capture.refined.takeaway && (
+            <p class="refined-takeaway">
+              <em>{capture.refined.takeaway}</em>
+            </p>
+          )}
+
+          <div class="refined-body">
+            {capture.refined.body}
+          </div>
+
+          {capture.refined.suggestedTags.length > 0 && (
+            <div class="refined-tags">
+              {capture.refined.suggestedTags.map((tag) => (
+                <span class="tag">#{tag}</span>
+              ))}
+            </div>
+          )}
+        </>
+      ) : (
+        <div class="no-refinement">
+          <p>Click "Refine" to generate AI-improved content</p>
+        </div>
+      )}
+    </div>
+  </div>
+
+  <footer class="capture-actions">
+    <button
+      type="button"
+      class="action-btn action-refine"
+      data-action="refine"
+      disabled={Boolean(capture.refined)}
+    >
+      {capture.refined ? 'Refined' : 'Refine'}
+    </button>
+
+    <div class="action-group-primary">
+      <button
+        type="button"
+        class="action-btn action-approve"
+        data-action="approve"
+        data-use-refined="true"
+      >
+        Approve Refined
+      </button>
+      <button
+        type="button"
+        class="action-btn action-approve-raw"
+        data-action="approve"
+        data-use-refined="false"
+      >
+        Approve Raw
+      </button>
+      <button
+        type="button"
+        class="action-btn action-reject"
+        data-action="reject"
+      >
+        Reject
+      </button>
+    </div>
+  </footer>
+</article>
+
+<style>
+  .capture-card {
+    border: 1px solid var(--border-primary);
+    border-radius: 0.75rem;
+    background: var(--bg-card);
+    overflow: hidden;
+    transition: box-shadow 0.2s ease;
+  }
+
+  .capture-card:hover {
+    box-shadow: 0 4px 12px -6px rgba(0, 0, 0, 0.1);
+  }
+
+  .capture-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-primary);
+    background: var(--bg-subtle);
+  }
+
+  .capture-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.78rem;
+    color: var(--text-tertiary);
+  }
+
+  .capture-time {
+    font-weight: 500;
+  }
+
+  .capture-type,
+  .capture-source {
+    padding: 0.15rem 0.45rem;
+    background: var(--bg-card);
+    border-radius: 0.25rem;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .capture-classification {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .capture-collection,
+  .capture-note-type {
+    font-size: 0.72rem;
+    font-weight: 500;
+    padding: 0.2rem 0.5rem;
+    border-radius: 0.25rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .capture-collection {
+    background: color-mix(in srgb, var(--accent) 15%, transparent);
+    color: var(--accent);
+  }
+
+  .capture-note-type {
+    background: var(--bg-subtle);
+    color: var(--text-secondary);
+  }
+
+  .capture-content {
+    padding: 1rem;
+  }
+
+  .capture-view-toggle {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .toggle-btn {
+    padding: 0.35rem 0.75rem;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.4rem;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .toggle-btn:hover:not(:disabled) {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .toggle-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+  }
+
+  .toggle-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .capture-view {
+    min-height: 100px;
+  }
+
+  .capture-view.hidden {
+    display: none;
+  }
+
+  .capture-url {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 0.85rem;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.5rem;
+    background: var(--bg-subtle);
+    color: var(--text-primary);
+    text-decoration: none;
+    margin-bottom: 0.75rem;
+    transition: border-color 0.2s ease;
+  }
+
+  .capture-url:hover {
+    border-color: var(--accent);
+  }
+
+  .url-icon {
+    font-size: 0.9rem;
+  }
+
+  .url-domain {
+    flex: 1;
+    font-size: 0.88rem;
+    font-weight: 500;
+  }
+
+  .url-arrow {
+    color: var(--text-tertiary);
+  }
+
+  .capture-comment {
+    margin: 0 0 0.75rem;
+    font-size: 0.95rem;
+    line-height: 1.55;
+    color: var(--text-primary);
+  }
+
+  .comment-label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-tertiary);
+    margin-right: 0.5rem;
+  }
+
+  .capture-text {
+    font-size: 0.92rem;
+    line-height: 1.6;
+    color: var(--text-secondary);
+    padding: 0.75rem;
+    background: var(--bg-subtle);
+    border-radius: 0.5rem;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .refined-title {
+    margin: 0 0 0.5rem;
+    font-size: 1.15rem;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  .refined-takeaway {
+    margin: 0 0 0.75rem;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    border-left: 2px solid var(--accent);
+    padding-left: 0.75rem;
+  }
+
+  .refined-body {
+    font-size: 0.92rem;
+    line-height: 1.65;
+    color: var(--text-secondary);
+    margin-bottom: 0.75rem;
+  }
+
+  .refined-tags {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .tag {
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+    background: var(--bg-subtle);
+    padding: 0.2rem 0.5rem;
+    border-radius: 0.25rem;
+  }
+
+  .no-refinement {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-tertiary);
+    font-style: italic;
+  }
+
+  .capture-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-top: 1px solid var(--border-primary);
+    background: var(--bg-subtle);
+  }
+
+  .action-group-primary {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .action-btn {
+    padding: 0.4rem 0.75rem;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.4rem;
+    background: var(--bg-card);
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .action-btn:hover:not(:disabled) {
+    border-color: var(--text-secondary);
+    color: var(--text-primary);
+  }
+
+  .action-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .action-approve {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+  }
+
+  .action-approve:hover:not(:disabled) {
+    background: var(--accent-hover);
+    border-color: var(--accent-hover);
+    color: white;
+  }
+
+  .action-reject {
+    color: #dc2626;
+    border-color: #dc2626;
+    background: transparent;
+  }
+
+  .action-reject:hover:not(:disabled) {
+    background: #dc2626;
+    color: white;
+  }
+
+  /* Loading state */
+  .capture-card.loading {
+    opacity: 0.6;
+    pointer-events: none;
+  }
+
+  .capture-card.loading::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.3);
+  }
+</style>
