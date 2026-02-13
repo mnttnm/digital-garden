@@ -22,18 +22,13 @@ const base = import.meta.env.BASE_URL;
         autocomplete="email"
       />
       <input type="hidden" name="frequency" value="weekly" />
-      <!--
-      <div class="frequency-options">
-        <label class="frequency-option">
-          <input type="radio" name="frequency" value="daily" />
-          <span>Daily</span>
-        </label>
-        <label class="frequency-option">
-          <input type="radio" name="frequency" value="weekly" checked />
-          <span>Weekly</span>
-        </label>
-      </div>
-      -->
+      <label class="preference-select">
+        <span>Content preference</span>
+        <select name="preference" required>
+          <option value="all" selected>All updates</option>
+          <option value="projects">Projects only</option>
+        </select>
+      </label>
       <button type="submit">Subscribe</button>
     </div>
     <p class="form-message" id="form-message"></p>
@@ -50,6 +45,7 @@ const base = import.meta.env.BASE_URL;
     const formData = new FormData(form);
     const email = formData.get('email');
     const frequency = formData.get('frequency');
+    const preference = formData.get('preference');
 
     // Update button state
     const button = form.querySelector('button') as HTMLButtonElement;
@@ -64,17 +60,17 @@ const base = import.meta.env.BASE_URL;
       const response = await fetch(`${base}api/subscribe`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, frequency }),
+        body: JSON.stringify({ email, frequency, preference }),
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        message.textContent = data.message || 'Subscribed!';
+        message.textContent = data?.message || 'Subscribed!';
         message.className = 'form-message success';
         form.reset();
       } else {
-        message.textContent = data.error || 'Something went wrong';
+        message.textContent = data?.message || 'Something went wrong';
         message.className = 'form-message error';
       }
     } catch (error) {
@@ -144,6 +140,30 @@ const base = import.meta.env.BASE_URL;
     gap: 1.25rem;
   }
 
+  .preference-select {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    color: var(--color-text-muted);
+    font-size: 0.82rem;
+    min-width: 180px;
+  }
+
+  .preference-select select {
+    padding: 0.56rem 0.75rem;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-size: 0.88rem;
+    font-family: inherit;
+  }
+
+  .preference-select select:focus {
+    outline: none;
+    border-color: var(--color-text);
+  }
+
   .frequency-option {
     display: flex;
     align-items: center;
@@ -210,6 +230,10 @@ const base = import.meta.env.BASE_URL;
 
     button {
       flex-shrink: 0;
+    }
+
+    .preference-select {
+      min-width: 170px;
     }
   }
 </style>

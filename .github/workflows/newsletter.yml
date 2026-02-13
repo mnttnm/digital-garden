@@ -19,6 +19,7 @@ on:
 
 jobs:
   send-newsletter:
+    if: github.event_name == 'workflow_dispatch' || vars.NEWSLETTER_AUTOSEND == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -49,15 +50,17 @@ jobs:
         env:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           RESEND_AUDIENCE_ID: ${{ secrets.RESEND_AUDIENCE_ID }}
+          RESEND_FROM_EMAIL: ${{ secrets.RESEND_FROM_EMAIL }}
+          SITE_URL: ${{ vars.SITE_URL }}
         run: |
-          echo "TODO: Implement daily newsletter sending script"
-          # node scripts/send-newsletter.js --type=daily
+          node scripts/newsletter-send.mjs --type=daily --confirm=true
 
       - name: Send weekly newsletter
         if: steps.type.outputs.type == 'weekly' || steps.type.outputs.type == 'both'
         env:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           RESEND_AUDIENCE_ID: ${{ secrets.RESEND_AUDIENCE_ID }}
+          RESEND_FROM_EMAIL: ${{ secrets.RESEND_FROM_EMAIL }}
+          SITE_URL: ${{ vars.SITE_URL }}
         run: |
-          echo "TODO: Implement weekly newsletter sending script"
-          # node scripts/send-newsletter.js --type=weekly
+          node scripts/newsletter-send.mjs --type=weekly --confirm=true
