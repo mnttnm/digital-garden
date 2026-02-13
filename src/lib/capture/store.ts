@@ -122,6 +122,7 @@ export async function updateCapture(
     tags: updates.tags ?? capture.tags,
     inferredCollection: updates.inferredCollection ?? capture.inferredCollection,
     inferredNoteType: updates.inferredNoteType ?? capture.inferredNoteType,
+    publishUseRefined: updates.publishUseRefined ?? capture.publishUseRefined,
   };
 
   await redis.set(captureKey(id), JSON.stringify(updated));

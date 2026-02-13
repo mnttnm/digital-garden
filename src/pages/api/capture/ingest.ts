@@ -103,7 +103,8 @@ function inferNoteType(payload: CaptureIngestPayload): InferredNoteType | undefi
     return 'snippet';
   }
 
-  return 'thought';
+  // Long text without code blocks is an essay
+  return 'essay';
 }
 
 /**

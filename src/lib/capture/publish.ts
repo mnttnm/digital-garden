@@ -476,7 +476,9 @@ export async function batchPublishCaptures(
   const projectUpdatesBySlug = new Map<string, { capture: Capture; result: ProjectActivityTransformResult }[]>();
 
   for (const capture of projectUpdates) {
-    const result = transformCapture(capture, useRefined) as ProjectActivityTransformResult;
+    // Use capture's stored preference, fallback to global useRefined
+    const captureUseRefined = capture.publishUseRefined ?? useRefined;
+    const result = transformCapture(capture, captureUseRefined) as ProjectActivityTransformResult;
     const existing = projectUpdatesBySlug.get(result.projectSlug) || [];
     existing.push({ capture, result });
     projectUpdatesBySlug.set(result.projectSlug, existing);
@@ -484,7 +486,9 @@ export async function batchPublishCaptures(
 
   // Process regular captures
   const files: FileEntry[] = regularCaptures.map((capture) => {
-    const result = transformCapture(capture, useRefined) as TransformResult;
+    // Use capture's stored preference, fallback to global useRefined
+    const captureUseRefined = capture.publishUseRefined ?? useRefined;
+    const result = transformCapture(capture, captureUseRefined) as TransformResult;
     const path = getContentPath(result);
     const slug = result.filename.replace(/\.md$/, '');
 

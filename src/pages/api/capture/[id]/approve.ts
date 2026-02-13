@@ -72,7 +72,6 @@ export const POST: APIRoute = async ({ params, request }) => {
     // Store the publish preference in capture metadata
     // We'll use this when batch publishing later
     await updateCapture(id, {
-      // @ts-ignore - adding publish preference
       publishUseRefined: useRefined,
     });
 

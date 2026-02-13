@@ -78,10 +78,10 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // Batch publish all in one commit
-    // Use each capture's stored preference for refined vs raw
+    // Each capture's publishUseRefined preference is respected
     const result = await batchPublishCaptures(
       approved,
-      true // Default to refined; individual preferences handled in transform
+      true // Fallback default; individual capture.publishUseRefined takes priority
     );
 
     // Mark all as published with slug info

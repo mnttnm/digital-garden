@@ -116,12 +116,12 @@ export interface CaptureIngestResponse {
  * Parameters for updating a capture
  */
 export interface CaptureUpdatePayload {
-  title?: string;
   text?: string;
   comment?: string;
   tags?: string[];
   inferredCollection?: InferredCollection;
   inferredNoteType?: InferredNoteType;
+  publishUseRefined?: boolean;
 }
 
 /**
