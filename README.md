@@ -19,6 +19,30 @@ into one chronological feed at `/` with quick filters and deep links.
 - `/rss.xml` - Unified RSS feed
 - `/api/subscribe` - Newsletter subscribe endpoint
 
+## Newsletter Runbook
+
+Required env vars:
+
+- `RESEND_API_KEY`
+- `RESEND_AUDIENCE_ID`
+- `RESEND_FROM_EMAIL` (optional in dev, recommended in production)
+- `SITE_URL` (optional for absolute links in newsletter content)
+- `NEWSLETTER_AUTOSEND=false` (keeps scheduled workflow disabled)
+
+Generate preview artifacts:
+
+```bash
+npm run newsletter:preview -- --type=daily
+```
+
+Send newsletter manually (explicit confirmation required):
+
+```bash
+npm run newsletter:send -- --type=daily --confirm=true
+```
+
+Preview files are written to `.tmp/newsletter-preview/` as HTML, text, and summary JSON.
+
 ## Quick Start
 
 ```bash

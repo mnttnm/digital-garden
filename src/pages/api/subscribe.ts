@@ -4,10 +4,42 @@ import { Resend } from 'resend';
 export const prerender = false;
 
 const resend = new Resend(import.meta.env.RESEND_API_KEY);
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+type Frequency = 'daily' | 'weekly';
+type Preference = 'all' | 'projects';
+
+function jsonResponse(
+  status: number,
+  payload: { success: boolean; code: string; message: string }
+) {
+  return new Response(JSON.stringify(payload), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
+function normalizeFrequency(value: unknown): Frequency | null {
+  if (typeof value !== 'string') return null;
+  const normalized = value.trim().toLowerCase();
+  if (normalized === 'daily' || normalized === 'weekly') return normalized;
+  return null;
+}
+
+function normalizePreference(value: unknown): Preference | null {
+  if (typeof value !== 'string') return null;
+  const normalized = value.trim().toLowerCase();
+  if (normalized === 'all' || normalized === 'projects') return normalized;
+  return null;
+}
 
 // Welcome email template
-function getWelcomeEmail(frequency: string) {
+function getWelcomeEmail(frequency: Frequency, preference: Preference) {
   const frequencyText = frequency === 'daily' ? 'daily' : 'weekly';
+  const preferenceText =
+    preference === 'projects'
+      ? 'project launches, milestones, and updates'
+      : 'all updates: learnings, curated links, and project updates';
 
   return {
     subject: "Welcome to my corner of the internet 👋",
@@ -30,7 +62,7 @@ function getWelcomeEmail(frequency: string) {
 
   <p style="font-size: 17px; margin-bottom: 24px;">
     I'll be sending you a <strong>${frequencyText} digest</strong> of what I've been learning, building,
-    and finding interesting. Think of it as a curated peek into my notes — the good stuff
+    and finding interesting, focused on <strong>${preferenceText}</strong>. Think of it as a curated peek into my notes — the good stuff
     without the noise.
   </p>
 
@@ -67,11 +99,11 @@ function getWelcomeEmail(frequency: string) {
 </body>
 </html>
     `,
-    text: `Hey there! 👋
+    text: `Hey there! 
 
 Thanks for subscribing — I'm genuinely glad you're here.
 
-I'll be sending you a ${frequencyText} digest of what I've been learning, building, and finding interesting. Think of it as a curated peek into my notes — the good stuff without the noise.
+I'll be sending you a ${frequencyText} digest of what I've been learning, building, and finding interesting, focused on ${preferenceText}. Think of it as a curated peek into my notes — the good stuff without the noise.
 
 Here's what you can expect:
 - Essays on AI, product building, and working smarter
@@ -94,31 +126,26 @@ P.S. If this landed in spam or promotions, dragging it to your inbox helps make 
 export const POST: APIRoute = async ({ request }) => {
   try {
     const data = await request.json();
-    const { email, frequency } = data;
+    const email = typeof data?.email === 'string' ? data.email.trim().toLowerCase() : '';
+    const frequency = normalizeFrequency(data?.frequency);
+    const preference = normalizePreference(data?.preference);
 
     // Validate input
-    if (!email || !frequency) {
-      return new Response(
-        JSON.stringify({ error: 'Email and frequency are required' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
+    if (!email || !frequency || !preference) {
+      return jsonResponse(400, {
+        success: false,
+        code: 'invalid_payload',
+        message: 'Email, frequency, and preference are required.',
+      });
     }
 
     // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      return new Response(
-        JSON.stringify({ error: 'Invalid email format' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Validate frequency
-    if (!['daily', 'weekly'].includes(frequency)) {
-      return new Response(
-        JSON.stringify({ error: 'Frequency must be daily or weekly' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
+      return jsonResponse(400, {
+        success: false,
+        code: 'invalid_email',
+        message: 'Invalid email format.',
+      });
     }
 
     // Add to Resend Audience
@@ -126,26 +153,55 @@ export const POST: APIRoute = async ({ request }) => {
 
     if (!audienceId) {
       console.error('RESEND_AUDIENCE_ID not configured');
-      return new Response(
-        JSON.stringify({ error: 'Newsletter not configured' }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
-      );
+      return jsonResponse(500, {
+        success: false,
+        code: 'newsletter_not_configured',
+        message: 'Newsletter is not configured.',
+      });
     }
 
-    // Add contact to audience
-    await resend.contacts.create({
+    // Upsert contact in audience
+    const createResult = await resend.contacts.create({
       email,
       audienceId,
       firstName: '',
       lastName: '',
       unsubscribed: false,
+      properties: {
+        frequency,
+        preference,
+      },
     });
 
+    if (createResult.error) {
+      const duplicate =
+        createResult.error.message.includes('already exists') ||
+        createResult.error.name === 'validation_error';
+
+      if (!duplicate) {
+        throw new Error(createResult.error.message);
+      }
+
+      const updateResult = await resend.contacts.update({
+        email,
+        audienceId,
+        unsubscribed: false,
+        properties: {
+          frequency,
+          preference,
+        },
+      });
+
+      if (updateResult.error) {
+        throw new Error(updateResult.error.message);
+      }
+    }
+
     // Send welcome email
-    const welcomeEmail = getWelcomeEmail(frequency);
+    const welcomeEmail = getWelcomeEmail(frequency, preference);
     const fromEmail = import.meta.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
 
-    await resend.emails.send({
+    const sendResult = await resend.emails.send({
       from: fromEmail,
       to: email,
       subject: welcomeEmail.subject,
@@ -153,27 +209,22 @@ export const POST: APIRoute = async ({ request }) => {
       text: welcomeEmail.text,
     });
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        message: `You're in! Check your inbox for a welcome note.`
-      }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
-    );
-  } catch (error: any) {
-    console.error('Subscribe error:', error);
-
-    // Handle duplicate email
-    if (error?.message?.includes('already exists')) {
-      return new Response(
-        JSON.stringify({ error: 'This email is already subscribed' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
+    if (sendResult.error) {
+      throw new Error(sendResult.error.message);
     }
 
-    return new Response(
-      JSON.stringify({ error: 'Failed to subscribe. Please try again.' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    );
+    return jsonResponse(200, {
+      success: true,
+      code: 'subscribed',
+      message: `You're in! Check your inbox for a welcome note.`,
+    });
+  } catch (error: unknown) {
+    console.error('Subscribe error:', error);
+
+    return jsonResponse(500, {
+      success: false,
+      code: 'subscribe_failed',
+      message: 'Failed to subscribe. Please try again.',
+    });
   }
 };
