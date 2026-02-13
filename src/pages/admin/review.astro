@@ -1,0 +1,414 @@
+---
+/**
+ * Admin Review Dashboard
+ *
+ * /admin/review - Lists pending captures for review and approval
+ */
+
+import Base from '../../layouts/Base.astro';
+import CaptureCard from '../../components/capture/CaptureCard.astro';
+import { listCaptures, getCaptureCount } from '../../lib/capture';
+
+export const prerender = false;
+
+// Simple auth check
+const adminPassword = import.meta.env.ADMIN_PASSWORD;
+const queryPassword = Astro.url.searchParams.get('password');
+
+const isAuthenticated = adminPassword && queryPassword === adminPassword;
+
+// If not authenticated, show login form
+if (!isAuthenticated) {
+  return Astro.redirect(`/admin/review?error=auth`);
+}
+
+// Load captures
+type StatusType = 'pending' | 'approved' | 'published' | 'rejected';
+const status = (Astro.url.searchParams.get('status') || 'pending') as StatusType;
+const captures = await listCaptures(status, 50, 0);
+const counts = {
+  pending: await getCaptureCount('pending'),
+  approved: await getCaptureCount('approved'),  // "Queued" - approved but not published
+  published: await getCaptureCount('published'),
+  rejected: await getCaptureCount('rejected'),
+};
+---
+
+<Base title="Review Captures" description="Admin dashboard for reviewing captured content">
+  <div class="admin-page">
+    <header class="admin-header">
+      <div class="admin-title-row">
+        <div class="admin-title-group">
+          <h1 class="admin-title">Review Captures</h1>
+          <span class="admin-badge">{counts.pending} to review</span>
+          {counts.approved > 0 && (
+            <span class="admin-badge queued">{counts.approved} queued</span>
+          )}
+        </div>
+
+        {counts.approved > 0 && (
+          <button
+            type="button"
+            class="publish-all-btn"
+            id="publishAllBtn"
+            data-count={counts.approved}
+          >
+            Publish All ({counts.approved})
+          </button>
+        )}
+      </div>
+      <p class="admin-subtitle">
+        Review captures, then publish all queued items in a single deployment
+      </p>
+    </header>
+
+    <nav class="status-tabs">
+      <a
+        href={`/admin/review?password=${queryPassword}&status=pending`}
+        class:list={['tab', { active: status === 'pending' }]}
+      >
+        Pending ({counts.pending})
+      </a>
+      <a
+        href={`/admin/review?password=${queryPassword}&status=approved`}
+        class:list={['tab', 'tab-queued', { active: status === 'approved' }]}
+      >
+        Queued ({counts.approved})
+      </a>
+      <a
+        href={`/admin/review?password=${queryPassword}&status=published`}
+        class:list={['tab', { active: status === 'published' }]}
+      >
+        Published ({counts.published})
+      </a>
+      <a
+        href={`/admin/review?password=${queryPassword}&status=rejected`}
+        class:list={['tab', { active: status === 'rejected' }]}
+      >
+        Rejected ({counts.rejected})
+      </a>
+    </nav>
+
+    {status === 'approved' && counts.approved > 0 && (
+      <div class="publish-banner">
+        <p>
+          <strong>{counts.approved} item{counts.approved > 1 ? 's' : ''}</strong> queued for publishing.
+          Click "Publish All" to deploy in a single commit.
+        </p>
+      </div>
+    )}
+
+    {captures.length === 0 ? (
+      <div class="empty-state">
+        <p class="empty-title">
+          {status === 'pending' && 'No captures to review'}
+          {status === 'approved' && 'No items queued'}
+          {status === 'published' && 'No published items yet'}
+          {status === 'rejected' && 'No rejected items'}
+        </p>
+        <p class="empty-subtitle">
+          {status === 'pending' && 'Captures from Raycast or iOS Shortcuts will appear here'}
+          {status === 'approved' && 'Approve items from Pending to queue them for publishing'}
+          {status === 'published' && 'Published items will appear here after you click "Publish All"'}
+          {status === 'rejected' && 'Rejected items are archived here'}
+        </p>
+      </div>
+    ) : (
+      <div class="captures-grid">
+        {captures.map((capture) => (
+          <CaptureCard capture={capture} adminPassword={adminPassword!} />
+        ))}
+      </div>
+    )}
+  </div>
+
+  <script define:vars={{ adminPassword }}>
+    // Publish All button handling
+    const publishBtn = document.getElementById('publishAllBtn');
+    if (publishBtn) {
+      publishBtn.addEventListener('click', async () => {
+        const count = publishBtn.dataset.count;
+        if (!confirm(`Publish ${count} item(s)? This will create one GitHub commit and trigger a Vercel deployment.`)) {
+          return;
+        }
+
+        publishBtn.disabled = true;
+        publishBtn.textContent = 'Publishing...';
+
+        try {
+          const response = await fetch('/api/capture/publish-all', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${adminPassword}`,
+            },
+          });
+
+          const data = await response.json();
+
+          if (response.ok) {
+            alert(`Success! Published ${data.published} items.\nCommit: ${data.commit?.slice(0, 7) || 'N/A'}`);
+            location.reload();
+          } else {
+            alert(`Error: ${data.error || 'Unknown error'}\n${data.details || ''}`);
+            publishBtn.disabled = false;
+            publishBtn.textContent = `Publish All (${count})`;
+          }
+        } catch (error) {
+          console.error('Publish failed:', error);
+          alert('Publish failed. Please try again.');
+          publishBtn.disabled = false;
+          publishBtn.textContent = `Publish All (${count})`;
+        }
+      });
+    }
+
+    // Handle capture card interactions
+    document.querySelectorAll('.capture-card').forEach((card) => {
+      const captureId = card.dataset.captureId;
+
+      // Toggle view handling
+      const toggleButtons = card.querySelectorAll('.toggle-btn');
+      const viewContents = card.querySelectorAll('[data-view-content]');
+
+      toggleButtons.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const view = btn.dataset.view;
+
+          toggleButtons.forEach((b) => {
+            b.classList.remove('active');
+            b.setAttribute('aria-pressed', 'false');
+          });
+          btn.classList.add('active');
+          btn.setAttribute('aria-pressed', 'true');
+
+          viewContents.forEach((content) => {
+            content.classList.toggle('hidden', content.dataset.viewContent !== view);
+          });
+        });
+      });
+
+      // Action button handling
+      card.querySelectorAll('[data-action]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const action = btn.dataset.action;
+          const useRefined = btn.dataset.useRefined === 'true';
+
+          card.classList.add('loading');
+
+          try {
+            const endpoint = `/api/capture/${captureId}/${action}`;
+            const options = {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${adminPassword}`,
+                'Content-Type': 'application/json',
+              },
+              body: undefined,
+            };
+
+            if (action === 'approve') {
+              options.body = JSON.stringify({ useRefined });
+            }
+
+            const response = await fetch(endpoint, options);
+            const data = await response.json();
+
+            if (response.ok) {
+              if (action === 'refine' && data.refined) {
+                location.reload();
+              } else if (action === 'approve' || action === 'reject') {
+                card.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(-10px)';
+                setTimeout(() => {
+                  card.remove();
+                  updateUI();
+                }, 300);
+              }
+            } else {
+              alert(`Error: ${data.error || 'Unknown error'}`);
+            }
+          } catch (error) {
+            console.error('Action failed:', error);
+            alert('Action failed. Please try again.');
+          } finally {
+            card.classList.remove('loading');
+          }
+        });
+      });
+    });
+
+    function updateUI() {
+      const cards = document.querySelectorAll('.capture-card');
+
+      if (cards.length === 0) {
+        const grid = document.querySelector('.captures-grid');
+        if (grid) {
+          grid.outerHTML = `
+            <div class="empty-state">
+              <p class="empty-title">All done!</p>
+              <p class="empty-subtitle">No more items in this view</p>
+            </div>
+          `;
+        }
+      }
+    }
+  </script>
+</Base>
+
+<style>
+  .admin-page {
+    max-width: 900px;
+    margin: 0 auto;
+    padding-bottom: 3rem;
+  }
+
+  .admin-header {
+    margin-bottom: 1.5rem;
+  }
+
+  .admin-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .admin-title-group {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .admin-title {
+    margin: 0;
+    font-size: clamp(1.4rem, 2.5vw, 1.8rem);
+    font-family: var(--entry-title-font);
+    font-weight: 500;
+    letter-spacing: -0.015em;
+    color: var(--text-primary);
+  }
+
+  .admin-badge {
+    font-size: 0.72rem;
+    font-weight: 500;
+    padding: 0.2rem 0.55rem;
+    background: color-mix(in srgb, var(--accent) 15%, transparent);
+    color: var(--accent);
+    border-radius: 999px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .admin-badge.queued {
+    background: color-mix(in srgb, #10b981 15%, transparent);
+    color: #10b981;
+  }
+
+  .admin-subtitle {
+    margin: 0;
+    font-size: 0.88rem;
+    color: var(--text-tertiary);
+  }
+
+  .publish-all-btn {
+    padding: 0.55rem 1.1rem;
+    border: none;
+    border-radius: 0.5rem;
+    background: #10b981;
+    color: white;
+    font-size: 0.88rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.15s ease, transform 0.1s ease;
+  }
+
+  .publish-all-btn:hover:not(:disabled) {
+    background: #059669;
+  }
+
+  .publish-all-btn:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+
+  .publish-all-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+
+  .status-tabs {
+    display: flex;
+    gap: 0.25rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-primary);
+    overflow-x: auto;
+  }
+
+  .tab {
+    padding: 0.6rem 1rem;
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    text-decoration: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+  }
+
+  .tab:hover {
+    color: var(--text-primary);
+  }
+
+  .tab.active {
+    color: var(--text-primary);
+    border-bottom-color: var(--accent);
+  }
+
+  .tab-queued.active {
+    border-bottom-color: #10b981;
+  }
+
+  .publish-banner {
+    padding: 0.85rem 1rem;
+    margin-bottom: 1.25rem;
+    background: color-mix(in srgb, #10b981 10%, transparent);
+    border: 1px solid color-mix(in srgb, #10b981 25%, transparent);
+    border-radius: 0.5rem;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+  }
+
+  .publish-banner p {
+    margin: 0;
+  }
+
+  .captures-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    border: 1px dashed var(--border-primary);
+    border-radius: 0.75rem;
+    background: var(--bg-subtle);
+  }
+
+  .empty-title {
+    margin: 0 0 0.5rem;
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  .empty-subtitle {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--text-tertiary);
+  }
+</style>

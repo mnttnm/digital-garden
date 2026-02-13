@@ -1,0 +1,62 @@
+{
+  "$schema": "https://www.raycast.com/schemas/extension.json",
+  "name": "digital-garden-capture",
+  "title": "Digital Garden Capture",
+  "description": "Quickly capture content to your digital garden for later review",
+  "icon": "extension-icon.png",
+  "author": "mohittater",
+  "categories": ["Productivity", "Developer Tools"],
+  "license": "MIT",
+  "commands": [
+    {
+      "name": "capture",
+      "title": "Capture Content",
+      "subtitle": "Digital Garden",
+      "description": "Capture URLs, text, or clipboard content to your digital garden",
+      "mode": "view"
+    },
+    {
+      "name": "quick-capture",
+      "title": "Quick Capture",
+      "subtitle": "Digital Garden",
+      "description": "Capture clipboard content with one keystroke",
+      "mode": "no-view"
+    }
+  ],
+  "preferences": [
+    {
+      "name": "captureApiUrl",
+      "title": "API URL",
+      "description": "Your digital garden capture API URL (e.g., https://yoursite.vercel.app)",
+      "type": "textfield",
+      "required": true,
+      "placeholder": "https://yoursite.vercel.app"
+    },
+    {
+      "name": "captureApiKey",
+      "title": "API Key",
+      "description": "Your CAPTURE_API_KEY from environment variables",
+      "type": "password",
+      "required": true
+    }
+  ],
+  "dependencies": {
+    "@raycast/api": "^1.74.0",
+    "@raycast/utils": "^1.16.0"
+  },
+  "devDependencies": {
+    "@raycast/eslint-config": "^1.0.8",
+    "@types/node": "^20.12.7",
+    "@types/react": "^18.2.79",
+    "eslint": "^8.57.0",
+    "prettier": "^3.2.5",
+    "typescript": "^5.4.5"
+  },
+  "scripts": {
+    "build": "ray build -e dist",
+    "dev": "ray develop",
+    "fix-lint": "ray lint --fix",
+    "lint": "ray lint",
+    "publish": "npx @raycast/api@latest publish"
+  }
+}
