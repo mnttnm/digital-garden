@@ -9,6 +9,17 @@ outcome: "What shipped, what I discovered, and what changed."
 tags: ["digital-garden", "dx"]
 activity:
   - date: 2026-02-13
+    title: "Digital Garden: Polishing & Bug Fixing"
+    summary: "I've been diving into the digital-garden project lately, focusing heavily on a long list of minor bugs and UI/UX refinements. It's surprising how many small details contribute to a truly polished and professional feel. This phase involves a lot of iterative testing, squashing visual glitches, improving responsiveness across devices, and generally ensuring the user experience is smooth and intuitive. The goal is to move beyond functional completeness and achieve a level of finish that reflects the care put into the content itself."
+    tags:
+      - "digital-garden"
+      - "bug-fixing"
+      - "ui-ux"
+      - "refinement"
+    type: "update"
+    image: "/captures/2026-02-13-mll2kyap.png"
+    imageCaption: "so many minor bugs to fix to make it look polished and professional"
+  - date: 2026-02-13
     title: "Project update routing fix"
     summary: "Project update routing fix  Fixed the project update routing in the capture system - now project updates are properly routed to the projects collection as activity entries instead of becoming standalone notes."
     tags:
