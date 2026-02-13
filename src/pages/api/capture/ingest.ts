@@ -62,6 +62,11 @@ function detectContentType(payload: CaptureIngestPayload): CaptureType {
  * Infer which collection this content belongs to
  */
 function inferCollection(payload: CaptureIngestPayload): InferredCollection {
+  // If project is specified, it's a project update
+  if (payload.project) {
+    return 'project-update';
+  }
+
   const textLength = (payload.text?.length || 0) + (payload.comment?.length || 0);
 
   // Short text = TIL
@@ -82,6 +87,11 @@ function inferCollection(payload: CaptureIngestPayload): InferredCollection {
  * Infer the note type for notes collection
  */
 function inferNoteType(payload: CaptureIngestPayload): InferredNoteType | undefined {
+  // Project updates get their own type
+  if (payload.project) {
+    return 'project-update';
+  }
+
   if (payload.url) {
     return 'link';
   }
@@ -168,6 +178,7 @@ export const POST: APIRoute = async ({ request }) => {
       comment: payload.comment,
       images,
       tags: payload.tags,
+      project: payload.project,
       inferredCollection,
       inferredNoteType,
     });

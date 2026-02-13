@@ -16,8 +16,8 @@ const refinementSchema = z.object({
   body: z.string().describe('Clean, formatted markdown body'),
   takeaway: z.string().optional().describe('One-sentence summary of the key insight'),
   suggestedTags: z.array(z.string()).describe('2-4 relevant topic tags'),
-  suggestedType: z.enum(['til', 'notes']).describe('Which collection this belongs to'),
-  suggestedNoteType: z.enum(['link', 'thought', 'essay', 'snippet']).optional()
+  suggestedType: z.enum(['til', 'notes', 'project-update']).describe('Which collection this belongs to'),
+  suggestedNoteType: z.enum(['link', 'thought', 'essay', 'snippet', 'project-update']).optional()
     .describe('For notes collection, the type of note'),
 });
 
@@ -40,12 +40,14 @@ Content classification:
 - Notes (thought): Reflections, opinions, observations
 - Notes (essay): Longer, structured pieces
 - Notes (snippet): Code-focused content with explanations
+- Project Update: Progress updates, milestones, or discoveries about a specific project
 
 Raw capture:
 {capture}
 
 URL (if provided): {url}
-User's comment (if provided): {comment}`;
+User's comment (if provided): {comment}
+Project (if specified): {project}`;
 
 /**
  * Build the prompt from a capture
@@ -54,11 +56,13 @@ function buildPrompt(capture: Capture): string {
   const captureText = capture.text || '';
   const url = capture.url || 'None';
   const comment = capture.comment || 'None';
+  const project = capture.project || 'None';
 
   return REFINEMENT_PROMPT
     .replace('{capture}', captureText)
     .replace('{url}', url)
-    .replace('{comment}', comment);
+    .replace('{comment}', comment)
+    .replace('{project}', project);
 }
 
 /**

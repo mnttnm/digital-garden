@@ -56,12 +56,16 @@ function getTypeLabel(capture: Capture): string {
 
 function getCollectionLabel(capture: Capture): string {
   const collection = capture.refined?.suggestedType || capture.inferredCollection;
-  return collection === 'til' ? 'TIL' : 'Note';
+  if (collection === 'til') return 'TIL';
+  if (collection === 'project-update') return 'Project Update';
+  return 'Note';
 }
 
 function getNoteTypeLabel(capture: Capture): string | null {
   const noteType = capture.refined?.suggestedNoteType || capture.inferredNoteType;
   if (!noteType) return null;
+  // Don't show note type for project updates (collection label is enough)
+  if (noteType === 'project-update') return null;
 
   const labels: Record<string, string> = {
     link: 'Link',
@@ -92,6 +96,9 @@ function truncate(text: string, maxLength: number): string {
       <span class="capture-time">{formatDate(capture.createdAt)}</span>
       <span class="capture-type">{getTypeLabel(capture)}</span>
       <span class="capture-source">{capture.source}</span>
+      {capture.project && (
+        <span class="capture-project">{capture.project}</span>
+      )}
     </div>
     <div class="capture-classification">
       <span class="capture-collection">{getCollectionLabel(capture)}</span>
@@ -174,6 +181,20 @@ function truncate(text: string, maxLength: number): string {
           <div class="refined-body">
             {capture.refined.body}
           </div>
+
+          {/* Show images in refined view too */}
+          {capture.images && capture.images.length > 0 && (
+            <div class="capture-images">
+              {capture.images.map((img, idx) => (
+                <img
+                  src={img.data || img.url}
+                  alt={`Captured image ${idx + 1}`}
+                  class="capture-image"
+                  loading="lazy"
+                />
+              ))}
+            </div>
+          )}
 
           {capture.refined.suggestedTags.length > 0 && (
             <div class="refined-tags">
@@ -323,6 +344,15 @@ function truncate(text: string, maxLength: number): string {
     font-size: 0.7rem;
     text-transform: uppercase;
     letter-spacing: 0.04em;
+  }
+
+  .capture-project {
+    padding: 0.15rem 0.45rem;
+    background: color-mix(in srgb, var(--accent) 20%, transparent);
+    border-radius: 0.25rem;
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--accent);
   }
 
   .capture-classification {

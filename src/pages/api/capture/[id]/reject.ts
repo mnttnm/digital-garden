@@ -52,9 +52,10 @@ export const POST: APIRoute = async ({ params, request }) => {
       );
     }
 
-    if (capture.status !== 'pending') {
+    // Allow rejecting from both pending and approved (queued) states
+    if (capture.status !== 'pending' && capture.status !== 'approved') {
       return new Response(
-        JSON.stringify({ error: 'Capture is not pending' }),
+        JSON.stringify({ error: 'Capture cannot be rejected' }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }

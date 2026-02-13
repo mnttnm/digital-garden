@@ -8,8 +8,8 @@
 export type CaptureSource = 'raycast' | 'shortcut' | 'slack' | 'api';
 export type CaptureType = 'url' | 'text' | 'image' | 'mixed';
 export type CaptureStatus = 'pending' | 'approved' | 'published' | 'rejected';
-export type InferredCollection = 'til' | 'notes';
-export type InferredNoteType = 'link' | 'thought' | 'essay' | 'snippet';
+export type InferredCollection = 'til' | 'notes' | 'project-update';
+export type InferredNoteType = 'link' | 'thought' | 'essay' | 'snippet' | 'project-update';
 
 /**
  * Raw capture as received from capture clients
@@ -26,6 +26,9 @@ export interface Capture {
   comment?: string;
   images?: CaptureImage[];
   tags?: string[];
+
+  // Project association (for project updates)
+  project?: string;
 
   // Status
   status: CaptureStatus;
@@ -73,6 +76,7 @@ export interface CaptureIngestPayload {
   imageBase64?: string;
   source: CaptureSource;
   tags?: string[];
+  project?: string; // Project slug for project updates
 }
 
 /**

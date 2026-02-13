@@ -23,7 +23,15 @@ interface FormValues {
   content: string;
   comment: string;
   tags: string;
+  project: string;
 }
+
+// Known projects - add new projects here as they're created
+const PROJECTS = [
+  { value: "", title: "None (not a project update)" },
+  { value: "digital-garden", title: "learning.log (Digital Garden)" },
+  { value: "business-co-pilot-claude-code", title: "Business Co-Pilot" },
+];
 
 // Image file extensions we support
 const IMAGE_EXTENSIONS = [".png", ".jpg", ".jpeg", ".gif", ".webp"];
@@ -171,6 +179,7 @@ export default function CaptureCommand() {
         source: "raycast",
         comment: values.comment || undefined,
         tags,
+        project: values.project || undefined,
       };
 
       if (url) body.url = url;
@@ -267,6 +276,15 @@ export default function CaptureCommand() {
         placeholder="Optional: Add your thoughts..."
         info="Your commentary about this content"
       />
+      <Form.Dropdown
+        id="project"
+        title="Project"
+        info="Select a project if this is a project update"
+      >
+        {PROJECTS.map((p) => (
+          <Form.Dropdown.Item key={p.value} value={p.value} title={p.title} />
+        ))}
+      </Form.Dropdown>
       <Form.TextField
         id="tags"
         title="Tags"
