@@ -8,6 +8,13 @@ stack: ["Astro", "Resend", "Vercel"]
 outcome: "What shipped, what I discovered, and what changed."
 tags: ["digital-garden", "dx"]
 activity:
+  - date: 2026-02-13
+    title: "Project update routing fix"
+    summary: "Project update routing fix  Fixed the project update routing in the capture system - now project updates are properly routed to the projects collection as activity entries instead of becoming standalone notes."
+    tags:
+      - "capture-system"
+      - "fix"
+    type: "update"
   - date: 2026-02-05
     title: "Shipped the activity feed for project pages"
     summary: "Refactored the project page so each project can act like a living document with a timeline of updates, learnings, and discoveries."
