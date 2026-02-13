@@ -153,6 +153,8 @@ function parseProjectActivity(frontmatter) {
         date: eventDate[1].trim(),
         title: '',
         summary: '',
+        image: '',
+        imageCaption: '',
       };
       continue;
     }
@@ -168,6 +170,18 @@ function parseProjectActivity(frontmatter) {
     const summary = line.match(/^\s+summary:\s*(.+)$/);
     if (summary) {
       current.summary = summary[1].trim().replace(/^"|"$/g, '').replace(/^'|'$/g, '');
+      continue;
+    }
+
+    const image = line.match(/^\s+image:\s*(.+)$/);
+    if (image) {
+      current.image = image[1].trim().replace(/^"|"$/g, '').replace(/^'|'$/g, '');
+      continue;
+    }
+
+    const imageCaption = line.match(/^\s+imageCaption:\s*(.+)$/);
+    if (imageCaption) {
+      current.imageCaption = imageCaption[1].trim().replace(/^"|"$/g, '').replace(/^'|'$/g, '');
     }
   }
 
@@ -209,13 +223,18 @@ function buildSubject(type, anchorDate) {
   return `[${cadence}] Notes from Mohit — ${formatHumanDate(anchorDate)}`;
 }
 
+function renderItemHtml(item) {
+  const imageHtml = item.image
+    ? `<div style="margin: 8px 0;"><img src="${item.image}" alt="${item.imageCaption || item.title}" style="max-width: 100%; height: auto; border-radius: 8px;" />${item.imageCaption ? `<p style="margin: 4px 0 0; font-size: 13px; color: #666; font-style: italic;">${item.imageCaption}</p>` : ''}</div>`
+    : '';
+  return `<li style="margin: 0 0 20px;"><strong>${item.title}</strong> <span style="color:#888;">(${formatItemDate(item.date)})</span><br/>${item.summary}${imageHtml}<br/><a href="${item.url}" style="color: #0066cc;">Read more →</a></li>`;
+}
+
 function renderHtml({ subject, window, items, variant }) {
   const subtitle = variant === 'projects' ? 'Projects-only updates' : 'All updates';
   const listHtml = items.length === 0
     ? '<p style="margin: 0; color: #666;">No new updates in this window.</p>'
-    : `<ul style="padding-left: 20px; margin: 0;">${items
-        .map((item) => `<li style="margin: 0 0 14px;"><strong>${item.title}</strong> <span style="color:#888;">(${formatItemDate(item.date)})</span><br/>${item.summary}<br/><a href="${item.url}">${item.url}</a></li>`)
-        .join('')}</ul>`;
+    : `<ul style="padding-left: 20px; margin: 0;">${items.map(renderItemHtml).join('')}</ul>`;
 
   return `<!DOCTYPE html>
 <html>
@@ -321,6 +340,8 @@ function collectProjects(window) {
           title: event.title,
           summary: event.summary || projectDescription,
           url: `/projects/${slug}/#${anchor}`,
+          image: event.image || '',
+          imageCaption: event.imageCaption || '',
         });
       }
       continue;
@@ -375,9 +396,14 @@ export function generateNewsletterBundle({ type, dateInput, siteUrl }) {
     items: variant.items.map((item) => ({
       ...item,
       url: normalizedSiteUrl ? `${normalizedSiteUrl}${item.url}` : item.url,
+      image: item.image && normalizedSiteUrl && item.image.startsWith('/')
+        ? `${normalizedSiteUrl}${item.image}`
+        : item.image,
     })),
     html: normalizedSiteUrl
-      ? variant.html.replace(/href="\/(.*?)"/g, `href="${normalizedSiteUrl}/$1"`)
+      ? variant.html
+          .replace(/href="\/(.*?)"/g, `href="${normalizedSiteUrl}/$1"`)
+          .replace(/src="\/(.*?)"/g, `src="${normalizedSiteUrl}/$1"`)
       : variant.html,
     text: normalizedSiteUrl
       ? variant.text.replace(/\n  \//g, `\n  ${normalizedSiteUrl}/`)
