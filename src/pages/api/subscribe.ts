@@ -174,30 +174,23 @@ export const POST: APIRoute = async ({ request }) => {
     });
 
     if (createResult.error) {
-      const duplicate =
+      const isAlreadySubscribed =
         createResult.error.message.includes('already exists') ||
         createResult.error.name === 'validation_error';
 
-      if (!duplicate) {
-        throw new Error(createResult.error.message);
+      if (isAlreadySubscribed) {
+        // Already subscribed - return success without re-sending welcome email
+        return jsonResponse(200, {
+          success: true,
+          code: 'already_subscribed',
+          message: `You're already subscribed! Check your inbox for updates.`,
+        });
       }
 
-      const updateResult = await resend.contacts.update({
-        email,
-        audienceId,
-        unsubscribed: false,
-        properties: {
-          frequency,
-          preference,
-        },
-      });
-
-      if (updateResult.error) {
-        throw new Error(updateResult.error.message);
-      }
+      throw new Error(createResult.error.message);
     }
 
-    // Send welcome email
+    // Send welcome email (only for new subscribers)
     const welcomeEmail = getWelcomeEmail(frequency, preference);
     const fromEmail = import.meta.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
 
