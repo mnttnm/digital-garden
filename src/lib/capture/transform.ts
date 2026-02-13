@@ -8,11 +8,15 @@
 import type {
   Capture,
   TransformResult,
+  ProjectActivityTransformResult,
   TilFrontmatter,
   NoteFrontmatter,
   InferredNoteType,
+  ProjectActivityEntry,
 } from './types';
 import { generateFallbackTitle } from './refine';
+
+export { formatDate, slugify };
 
 /**
  * Slugify a string for use in filenames
@@ -207,6 +211,50 @@ function transformToNote(capture: Capture, useRefined: boolean): TransformResult
 }
 
 /**
+ * Transform a capture to Project Activity format
+ */
+function transformToProjectActivity(
+  capture: Capture,
+  useRefined: boolean
+): ProjectActivityTransformResult {
+  const date = formatDate(capture.createdAt);
+  const title = getTitle(capture, useRefined);
+  const summary = getBody(capture, useRefined);
+  const tags = getTags(capture, useRefined);
+
+  // Get image data if present
+  const imageData = capture.images?.[0]?.data;
+  const imageCaption = capture.comment && capture.images?.length ? capture.comment : undefined;
+
+  const activity: ProjectActivityEntry = {
+    date,
+    title,
+    summary,
+    tags,
+    type: 'update', // Default to 'update', can be manually edited later if needed
+  };
+
+  // Add image caption if we have an image
+  if (imageCaption) {
+    activity.imageCaption = imageCaption;
+  }
+
+  return {
+    collection: 'project-update',
+    projectSlug: capture.project!,
+    activity,
+    imageData,
+  };
+}
+
+/**
+ * Check if a capture should be transformed as a project activity
+ */
+export function isProjectUpdate(capture: Capture): boolean {
+  return Boolean(capture.project);
+}
+
+/**
  * Transform a capture into MDX content
  *
  * @param capture The capture to transform
@@ -215,7 +263,12 @@ function transformToNote(capture: Capture, useRefined: boolean): TransformResult
 export function transformCapture(
   capture: Capture,
   useRefined = true
-): TransformResult {
+): TransformResult | ProjectActivityTransformResult {
+  // Route project updates to project activity transform
+  if (capture.project) {
+    return transformToProjectActivity(capture, useRefined);
+  }
+
   // Use refined suggestion if available, otherwise use inferred collection
   const collection = useRefined && capture.refined?.suggestedType
     ? capture.refined.suggestedType

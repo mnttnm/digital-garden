@@ -17,7 +17,7 @@ const refinementSchema = z.object({
   takeaway: z.string().optional().describe('One-sentence summary of the key insight'),
   suggestedTags: z.array(z.string()).describe('2-4 relevant topic tags'),
   suggestedType: z.enum(['til', 'notes', 'project-update']).describe('Which collection this belongs to'),
-  suggestedNoteType: z.enum(['link', 'thought', 'essay', 'snippet', 'project-update']).optional()
+  suggestedNoteType: z.enum(['link', 'thought', 'essay', 'snippet']).optional()
     .describe('For notes collection, the type of note'),
 });
 

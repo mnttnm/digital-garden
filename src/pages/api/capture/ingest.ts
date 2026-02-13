@@ -85,13 +85,9 @@ function inferCollection(payload: CaptureIngestPayload): InferredCollection {
 
 /**
  * Infer the note type for notes collection
+ * Note: Only called when collection is 'notes', not for project updates
  */
 function inferNoteType(payload: CaptureIngestPayload): InferredNoteType | undefined {
-  // Project updates get their own type
-  if (payload.project) {
-    return 'project-update';
-  }
-
   if (payload.url) {
     return 'link';
   }

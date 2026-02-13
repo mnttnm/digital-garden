@@ -9,7 +9,32 @@ export type CaptureSource = 'raycast' | 'shortcut' | 'slack' | 'api';
 export type CaptureType = 'url' | 'text' | 'image' | 'mixed';
 export type CaptureStatus = 'pending' | 'approved' | 'published' | 'rejected';
 export type InferredCollection = 'til' | 'notes' | 'project-update';
-export type InferredNoteType = 'link' | 'thought' | 'essay' | 'snippet' | 'project-update';
+export type InferredNoteType = 'link' | 'thought' | 'essay' | 'snippet';
+
+/**
+ * Activity type for project updates (matches projects schema)
+ */
+export type ProjectActivityType = 'update' | 'learning' | 'discovery' | 'milestone' | 'experiment' | 'fix';
+
+/**
+ * Activity entry for a project (matches projects schema)
+ */
+export interface ProjectActivityEntry {
+  date: string;
+  title: string;
+  summary: string;
+  tags: string[];
+  type: ProjectActivityType;
+  highlights?: string[];
+  image?: string;
+  imageAlt?: string;
+  imageCaption?: string;
+  actionLabel?: string;
+  actionUrl?: string;
+  code?: string;
+  codeLanguage?: string;
+  links?: Array<{ label: string; url: string }>;
+}
 
 /**
  * Raw capture as received from capture clients
@@ -122,12 +147,22 @@ export interface NoteFrontmatter {
 }
 
 /**
- * Result of transforming a capture to MDX
+ * Result of transforming a capture to MDX (for notes/TIL)
  */
 export interface TransformResult {
-  collection: InferredCollection;
+  collection: 'til' | 'notes';
   filename: string;
   frontmatter: TilFrontmatter | NoteFrontmatter;
   body: string;
   fullContent: string;
+}
+
+/**
+ * Result of transforming a capture to project activity
+ */
+export interface ProjectActivityTransformResult {
+  collection: 'project-update';
+  projectSlug: string;
+  activity: ProjectActivityEntry;
+  imageData?: string; // Base64 image data if present
 }

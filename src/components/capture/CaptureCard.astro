@@ -27,6 +27,10 @@ function getPublishedUrl(capture: Capture): string | null {
   if (collection === 'til') {
     return `/til/${slug}/`;
   }
+  if (collection === 'project-update' && capture.project) {
+    // Project updates link to the project page with anchor
+    return `/projects/${capture.project}/#${slug}`;
+  }
   return `/notes/${slug}/`;
 }
 
@@ -55,6 +59,9 @@ function getTypeLabel(capture: Capture): string {
 }
 
 function getCollectionLabel(capture: Capture): string {
+  // Show "Project Update" when capture has a project associated
+  if (capture.project) return 'Project Update';
+
   const collection = capture.refined?.suggestedType || capture.inferredCollection;
   if (collection === 'til') return 'TIL';
   if (collection === 'project-update') return 'Project Update';
@@ -62,10 +69,11 @@ function getCollectionLabel(capture: Capture): string {
 }
 
 function getNoteTypeLabel(capture: Capture): string | null {
+  // Don't show note type for project updates (collection label is enough)
+  if (capture.project) return null;
+
   const noteType = capture.refined?.suggestedNoteType || capture.inferredNoteType;
   if (!noteType) return null;
-  // Don't show note type for project updates (collection label is enough)
-  if (noteType === 'project-update') return null;
 
   const labels: Record<string, string> = {
     link: 'Link',
