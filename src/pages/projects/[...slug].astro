@@ -80,8 +80,17 @@ const keyUpdates = activity.filter(e => keyUpdateTypes.includes(e.type));
 ---
 
 <Base title={project.data.title} description={project.data.description}>
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href={base}>learning.log</a>
+    <span class="sep">/</span>
+    <a href={`${base}?bucket=project-updates`}>projects</a>
+    <span class="sep">/</span>
+    <span class="current">{project.data.title}</span>
+  </nav>
+
   <article class="project-article">
     <header class="project-header">
+      <div class="project-type">PROJECT</div>
       <div class="header-row">
         <h1 class="project-title">{project.data.title}</h1>
         <div class="project-actions">
@@ -250,7 +259,7 @@ const keyUpdates = activity.filter(e => keyUpdateTypes.includes(e.type));
       <footer class="article-footer">
         <div class="tags">
           {project.data.tags.map(tag => (
-            <span class="tag">{tag}</span>
+            <a href={`${base}?tag=${encodeURIComponent(tag)}`} class="tag">{tag}</a>
           ))}
         </div>
       </footer>
@@ -284,6 +293,49 @@ const keyUpdates = activity.filter(e => keyUpdateTypes.includes(e.type));
 </Base>
 
 <style>
+  /* Breadcrumb */
+  .breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.78rem;
+    color: var(--text-tertiary);
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .breadcrumb a {
+    color: var(--text-tertiary);
+    text-decoration: none;
+    transition: color 0.15s ease;
+  }
+
+  .breadcrumb a:hover {
+    color: var(--accent);
+  }
+
+  .breadcrumb .sep {
+    opacity: 0.4;
+  }
+
+  .breadcrumb .current {
+    color: var(--text-secondary);
+    max-width: 30ch;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Project Type Indicator */
+  .project-type {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--accent);
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+  }
+
   /* Compact Header */
   .project-header {
     margin-bottom: 1.5rem;
@@ -805,6 +857,13 @@ const keyUpdates = activity.filter(e => keyUpdateTypes.includes(e.type));
     background: var(--bg-subtle);
     padding: 0.15rem 0.5rem;
     border-radius: 4px;
+    text-decoration: none;
+    transition: background-color 0.15s ease, color 0.15s ease;
+  }
+
+  .tag:hover {
+    background: var(--accent);
+    color: white;
   }
 
   .back-link {
