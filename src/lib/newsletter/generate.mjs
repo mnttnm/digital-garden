@@ -223,27 +223,82 @@ function buildSubject(type, anchorDate) {
   return `[${cadence}] Notes from Mohit — ${formatHumanDate(anchorDate)}`;
 }
 
-function renderItemHtml(item) {
+function renderItemHtml(item, isFirst) {
   const imageHtml = item.image
-    ? `<div style="margin: 8px 0;"><img src="${item.image}" alt="${item.imageCaption || item.title}" style="max-width: 100%; height: auto; border-radius: 8px;" />${item.imageCaption ? `<p style="margin: 4px 0 0; font-size: 13px; color: #666; font-style: italic;">${item.imageCaption}</p>` : ''}</div>`
+    ? `<div style="margin: 16px 0 12px;">
+        <img src="${item.image}" alt="${item.imageCaption || item.title}" style="max-width: 100%; height: auto; border-radius: 8px; border: 1px solid #e5e5e5;" />
+        ${item.imageCaption ? `<p style="margin: 6px 0 0; font-size: 13px; color: #888; font-style: italic;">${item.imageCaption}</p>` : ''}
+      </div>`
     : '';
-  return `<li style="margin: 0 0 20px;"><strong>${item.title}</strong> <span style="color:#888;">(${formatItemDate(item.date)})</span><br/>${item.summary}${imageHtml}<br/><a href="${item.url}" style="color: #0066cc;">Read more →</a></li>`;
+
+  const kindBadge = item.kind === 'project'
+    ? '<span style="display: inline-block; background: #f0f9ff; color: #0369a1; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Project</span>'
+    : item.kind === 'til'
+    ? '<span style="display: inline-block; background: #fef3c7; color: #92400e; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 12px; text-transform: uppercase; letter-spacing: 0.5px;">TIL</span>'
+    : '<span style="display: inline-block; background: #f3f4f6; color: #4b5563; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Note</span>';
+
+  return `
+    <div style="margin-bottom: 32px; padding-bottom: 32px; border-bottom: 1px solid #f0f0f0;">
+      <div style="margin-bottom: 8px;">
+        ${kindBadge}
+        <span style="color: #9ca3af; font-size: 13px; margin-left: 8px;">${formatItemDate(item.date)}</span>
+      </div>
+      <h2 style="margin: 0 0 12px; font-size: 18px; font-weight: 600; color: #111; line-height: 1.4;">${item.title}</h2>
+      <p style="margin: 0 0 12px; color: #4b5563; font-size: 15px; line-height: 1.6;">${item.summary}</p>
+      ${imageHtml}
+      <a href="${item.url}" style="display: inline-block; color: #2563eb; font-size: 14px; font-weight: 500; text-decoration: none;">Read more →</a>
+    </div>`;
 }
 
 function renderHtml({ subject, window, items, variant }) {
-  const subtitle = variant === 'projects' ? 'Projects-only updates' : 'All updates';
-  const listHtml = items.length === 0
-    ? '<p style="margin: 0; color: #666;">No new updates in this window.</p>'
-    : `<ul style="padding-left: 20px; margin: 0;">${items.map(renderItemHtml).join('')}</ul>`;
+  const subtitle = variant === 'projects' ? 'Projects only' : 'All updates';
+  const itemCount = items.length;
+
+  const contentHtml = items.length === 0
+    ? '<p style="text-align: center; color: #9ca3af; padding: 40px 0;">No new updates this time. Check back soon!</p>'
+    : items.map((item, i) => renderItemHtml(item, i === 0)).join('');
 
   return `<!DOCTYPE html>
 <html>
-<head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /></head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 640px; margin: 0 auto; padding: 32px 20px; color: #111; line-height: 1.5;">
-  <h1 style="font-size: 22px; margin: 0 0 10px;">${subject}</h1>
-  <p style="margin: 0 0 4px; color: #444;">${subtitle}</p>
-  <p style="margin: 0 0 24px; color: #666; font-size: 14px;">Window: ${formatHumanDate(window.startInclusive)} to ${formatHumanDate(new Date(window.endExclusive.getTime() - 1))} (UTC)</p>
-  ${listHtml}
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>${subject}</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f9fafb; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+  <div style="max-width: 600px; margin: 0 auto; background: #ffffff;">
+
+    <!-- Header -->
+    <div style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); padding: 40px 32px; text-align: center;">
+      <h1 style="margin: 0 0 8px; font-size: 24px; font-weight: 600; color: #ffffff; letter-spacing: -0.5px;">Notes from Mohit</h1>
+      <p style="margin: 0; color: #94a3b8; font-size: 14px;">${subtitle} · ${formatHumanDate(window.anchorDate)}</p>
+    </div>
+
+    <!-- Intro -->
+    <div style="padding: 32px 32px 24px; border-bottom: 1px solid #f0f0f0;">
+      <p style="margin: 0; color: #6b7280; font-size: 15px; line-height: 1.6;">
+        Here's what I've been learning, building, and discovering${itemCount > 0 ? ` — ${itemCount} update${itemCount === 1 ? '' : 's'} this time` : ''}.
+      </p>
+    </div>
+
+    <!-- Content -->
+    <div style="padding: 32px;">
+      ${contentHtml}
+    </div>
+
+    <!-- Footer -->
+    <div style="background: #f9fafb; padding: 24px 32px; text-align: center; border-top: 1px solid #e5e7eb;">
+      <p style="margin: 0 0 8px; color: #6b7280; font-size: 13px;">
+        You're receiving this because you subscribed to my newsletter.
+      </p>
+      <p style="margin: 0; font-size: 13px;">
+        <a href="{{{unsubscribe_url}}}" style="color: #9ca3af; text-decoration: underline;">Unsubscribe</a>
+        <span style="color: #d1d5db; margin: 0 8px;">·</span>
+        <a href="{{{manage_preferences_url}}}" style="color: #9ca3af; text-decoration: underline;">Manage preferences</a>
+      </p>
+    </div>
+
+  </div>
 </body>
 </html>`;
 }
