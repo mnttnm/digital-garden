@@ -48,7 +48,7 @@ const projects = defineCollection({
         tags: z.array(z.string()).default([]),
         type: z.enum(['update', 'learning', 'discovery', 'milestone', 'experiment', 'fix']).default('update'),
         highlights: z.array(z.string()).default([]),
-        image: z.string().url().optional(),
+        image: z.string().optional(), // Can be relative path or full URL
         imageAlt: z.string().optional(),
         imageCaption: z.string().optional(),
         actionLabel: z.string().optional(),
