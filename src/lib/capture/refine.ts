@@ -13,34 +13,50 @@ import type { Capture, RefinedCapture, InferredNoteType, InferredCollection } fr
 // Schema for AI-generated refinement
 const refinementSchema = z.object({
   title: z.string().describe('Concise title under 60 characters'),
-  body: z.string().describe('Clean, formatted markdown body'),
+  body: z.string().describe('Clean markdown body - preserve original meaning, only fix grammar'),
   takeaway: z.string().optional().describe('One-sentence summary of the key insight'),
+  description: z.string().optional().describe('For resources: 1-2 sentence description of what this resource is'),
   suggestedTags: z.array(z.string()).describe('2-4 relevant topic tags'),
-  suggestedType: z.enum(['til', 'notes', 'project-update']).describe('Which collection this belongs to'),
+  suggestedType: z.enum(['til', 'notes', 'resources', 'project-update']).describe('Which collection this belongs to'),
   suggestedNoteType: z.enum(['link', 'thought', 'essay', 'snippet']).optional()
     .describe('For notes collection, the type of note'),
+  suggestedResourceType: z.enum(['blog', 'newsletter', 'twitter', 'youtube', 'community', 'podcast', 'tool']).optional()
+    .describe('For resources collection, the type of resource'),
 });
 
 type RefinementOutput = z.infer<typeof refinementSchema>;
 
-const REFINEMENT_PROMPT = `You are a content editor for a developer's personal site. Given raw captured content, produce publication-ready markdown.
+const REFINEMENT_PROMPT = `You are a minimal content editor. Your job is to PRESERVE the user's original message while only fixing grammar and spelling.
 
-Rules:
-- Fix grammar and spelling without changing voice
-- Add markdown formatting (headers, lists, code blocks) where appropriate
-- Generate a concise title (under 60 chars)
-- Write a one-sentence takeaway/summary
-- Suggest 2-4 relevant tags (lowercase, hyphenated)
-- Preserve technical accuracy - don't simplify jargon
-- Keep the author's personality and tone
+CRITICAL RULES:
+- DO NOT add information the user didn't provide
+- DO NOT remove information the user provided
+- DO NOT change the meaning or tone
+- DO NOT over-format with headers/lists unless the original clearly needs it
+- DO NOT editorialize or add your own commentary
+- ONLY fix grammar, spelling, and basic punctuation
+- Keep the body SHORT - match the length of the original content
 
-Content classification:
-- TIL: Short learnings, quick tips, code snippets (< 300 words)
-- Notes (link): Content that's primarily about a URL/resource
-- Notes (thought): Reflections, opinions, observations
-- Notes (essay): Longer, structured pieces
-- Notes (snippet): Code-focused content with explanations
-- Project Update: Progress updates, milestones, or discoveries about a specific project
+Content classification (pick the MOST appropriate):
+- Resources: When user is SHARING a link/URL as a reference (twitter, blog, newsletter, youtube, podcast, tool, community)
+  → Use this when the URL IS the content being shared
+  → suggestedResourceType: twitter (for x.com/twitter.com), youtube (for youtube.com), blog, newsletter, podcast, tool, community
+- TIL: Short learnings or tips the user discovered (< 200 words, no URL focus)
+- Notes (link): URL + substantial user commentary/analysis about it
+- Notes (thought): Personal reflections, opinions (no URL)
+- Notes (essay): Longer structured pieces (> 300 words)
+- Notes (snippet): Code-focused content
+- Project Update: ONLY if a project is explicitly specified
+
+For Resources:
+- title: Name of the resource/author (e.g., "Simon Willison's Blog", "Pieter Levels on X")
+- description: 1-2 sentences about what this resource offers
+- body: User's comment about why they're sharing it (keep brief)
+
+For Notes/TIL:
+- title: Capture the essence in < 60 chars
+- body: User's content with grammar fixes only
+- takeaway: One sentence key insight
 
 Raw capture:
 {capture}
@@ -99,9 +115,11 @@ function mapToRefinedCapture(output: RefinementOutput): RefinedCapture {
     title: output.title,
     body: output.body,
     takeaway: output.takeaway,
+    description: output.description,
     suggestedTags: output.suggestedTags,
     suggestedType: output.suggestedType as InferredCollection,
     suggestedNoteType: output.suggestedNoteType as InferredNoteType | undefined,
+    suggestedResourceType: output.suggestedResourceType as RefinedCapture['suggestedResourceType'],
     refinedAt: new Date().toISOString(),
   };
 }

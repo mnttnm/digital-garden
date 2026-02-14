@@ -8,7 +8,7 @@
 export type CaptureSource = 'raycast' | 'shortcut' | 'slack' | 'api';
 export type CaptureType = 'url' | 'text' | 'image' | 'mixed';
 export type CaptureStatus = 'pending' | 'approved' | 'published' | 'rejected';
-export type InferredCollection = 'til' | 'notes' | 'project-update';
+export type InferredCollection = 'til' | 'notes' | 'resources' | 'project-update';
 export type InferredNoteType = 'link' | 'thought' | 'essay' | 'snippet';
 
 /**
@@ -79,15 +79,22 @@ export interface CaptureImage {
 }
 
 /**
+ * Resource types for the resources collection
+ */
+export type ResourceType = 'blog' | 'newsletter' | 'twitter' | 'youtube' | 'community' | 'podcast' | 'tool';
+
+/**
  * AI-refined version of a capture
  */
 export interface RefinedCapture {
   title: string;
   body: string;
   takeaway?: string;
+  description?: string; // For resources collection
   suggestedTags: string[];
   suggestedType: InferredCollection;
   suggestedNoteType?: InferredNoteType;
+  suggestedResourceType?: ResourceType;
   refinedAt: string;
 }
 
@@ -146,13 +153,23 @@ export interface NoteFrontmatter {
   draft: boolean;
 }
 
+export interface ResourceFrontmatter {
+  title: string;
+  url: string;
+  type: ResourceType;
+  description: string;
+  featured: boolean;
+  tags: string[];
+  draft: boolean;
+}
+
 /**
- * Result of transforming a capture to MDX (for notes/TIL)
+ * Result of transforming a capture to MDX (for notes/TIL/resources)
  */
 export interface TransformResult {
-  collection: 'til' | 'notes';
+  collection: 'til' | 'notes' | 'resources';
   filename: string;
-  frontmatter: TilFrontmatter | NoteFrontmatter;
+  frontmatter: TilFrontmatter | NoteFrontmatter | ResourceFrontmatter;
   body: string;
   fullContent: string;
 }

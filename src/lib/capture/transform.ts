@@ -11,7 +11,9 @@ import type {
   ProjectActivityTransformResult,
   TilFrontmatter,
   NoteFrontmatter,
+  ResourceFrontmatter,
   InferredNoteType,
+  ResourceType,
   ProjectActivityEntry,
 } from './types';
 import { generateFallbackTitle } from './refine';
@@ -211,6 +213,78 @@ function transformToNote(capture: Capture, useRefined: boolean): TransformResult
 }
 
 /**
+ * Get the resource type from URL or refined suggestion
+ */
+function getResourceType(capture: Capture, useRefined: boolean): ResourceType {
+  if (useRefined && capture.refined?.suggestedResourceType) {
+    return capture.refined.suggestedResourceType;
+  }
+
+  // Infer from URL
+  if (capture.url) {
+    const url = capture.url.toLowerCase();
+    if (url.includes('twitter.com') || url.includes('x.com')) return 'twitter';
+    if (url.includes('youtube.com') || url.includes('youtu.be')) return 'youtube';
+    if (url.includes('substack.com') || url.includes('newsletter')) return 'newsletter';
+    if (url.includes('podcast') || url.includes('spotify.com/show')) return 'podcast';
+  }
+
+  return 'blog'; // Default fallback
+}
+
+/**
+ * Get description for resources
+ */
+function getDescription(capture: Capture, useRefined: boolean): string {
+  if (useRefined && capture.refined?.description) {
+    return capture.refined.description;
+  }
+
+  // Use comment as description, or generate a simple one
+  if (capture.comment) {
+    return capture.comment.slice(0, 200);
+  }
+
+  return 'A useful resource worth checking out.';
+}
+
+/**
+ * Transform a capture to Resource format
+ */
+function transformToResource(capture: Capture, useRefined: boolean): TransformResult {
+  const title = getTitle(capture, useRefined);
+  const tags = getTags(capture, useRefined);
+  const resourceType = getResourceType(capture, useRefined);
+  const description = getDescription(capture, useRefined);
+  const body = getBody(capture, useRefined);
+
+  if (!capture.url) {
+    throw new Error('Resource capture requires a URL');
+  }
+
+  const frontmatter: ResourceFrontmatter = {
+    title,
+    url: capture.url,
+    type: resourceType,
+    description,
+    featured: false,
+    tags,
+    draft: false,
+  };
+
+  const filename = `${slugify(title)}.md`;
+  const fullContent = `---\n${serializeFrontmatter(frontmatter as unknown as Record<string, unknown>)}\n---\n\n${body}\n`;
+
+  return {
+    collection: 'resources',
+    filename,
+    frontmatter,
+    body,
+    fullContent,
+  };
+}
+
+/**
  * Transform a capture to Project Activity format
  */
 function transformToProjectActivity(
@@ -276,6 +350,10 @@ export function transformCapture(
 
   if (collection === 'til') {
     return transformToTil(capture, useRefined);
+  }
+
+  if (collection === 'resources') {
+    return transformToResource(capture, useRefined);
   }
 
   return transformToNote(capture, useRefined);
