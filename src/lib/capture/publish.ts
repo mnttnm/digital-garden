@@ -251,8 +251,12 @@ async function saveImage(
   const filename = `${date}-${idPrefix}.png`;
   const path = `public/captures/${filename}`;
 
-  // Remove data URL prefix if present
-  const base64Data = imageData.replace(/^data:image\/\w+;base64,/, '');
+  // Clean base64 data:
+  // 1. Remove data URL prefix if present
+  // 2. Remove whitespace/newlines (iOS Shortcuts can add these)
+  const base64Data = imageData
+    .replace(/^data:image\/\w+;base64,/, '')
+    .replace(/\s/g, '');
 
   const url = `https://api.github.com/repos/${config.repo}/contents/${path}`;
 
