@@ -96,6 +96,37 @@ function truncate(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text;
   return text.slice(0, maxLength - 1).trim() + '...';
 }
+
+/**
+ * Get the proper image source URL
+ * Handles both URLs and base64 data (with or without data URI prefix)
+ */
+function getImageSrc(img: { url: string; data?: string }): string {
+  // If there's a URL, use it
+  if (img.url) return img.url;
+
+  // If there's base64 data
+  if (img.data) {
+    // Already has data URI prefix
+    if (img.data.startsWith('data:')) return img.data;
+
+    // Raw base64 - detect image type and add prefix
+    // PNG starts with iVBOR, JPEG with /9j/, GIF with R0lGOD
+    if (img.data.startsWith('iVBOR')) {
+      return `data:image/png;base64,${img.data}`;
+    }
+    if (img.data.startsWith('/9j/')) {
+      return `data:image/jpeg;base64,${img.data}`;
+    }
+    if (img.data.startsWith('R0lGOD')) {
+      return `data:image/gif;base64,${img.data}`;
+    }
+    // Default to PNG
+    return `data:image/png;base64,${img.data}`;
+  }
+
+  return '';
+}
 ---
 
 <article class="capture-card" data-capture-id={capture.id}>
@@ -164,7 +195,7 @@ function truncate(text: string, maxLength: number): string {
         <div class="capture-images">
           {capture.images.map((img, idx) => (
             <img
-              src={img.data || img.url}
+              src={getImageSrc(img)}
               alt={`Captured image ${idx + 1}`}
               class="capture-image"
               loading="lazy"
@@ -195,7 +226,7 @@ function truncate(text: string, maxLength: number): string {
             <div class="capture-images">
               {capture.images.map((img, idx) => (
                 <img
-                  src={img.data || img.url}
+                  src={getImageSrc(img)}
                   alt={`Captured image ${idx + 1}`}
                   class="capture-image"
                   loading="lazy"
