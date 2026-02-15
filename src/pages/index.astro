@@ -102,19 +102,22 @@ function getTags(item: LearningLogItem) {
                   </a>
                 </h2>
 
-                <p class="entry-body">{item.crux}</p>
-
-                {item.imagePreview && (
-                  <figure class="entry-media">
+                {item.imagePreview ? (
+                  <a
+                    class="entry-thumbnail"
+                    href={resolveHref(item.href, item.isExternal)}
+                    target={item.isExternal ? '_blank' : undefined}
+                    rel={item.isExternal ? 'noopener' : undefined}
+                    aria-label={`View ${item.title}`}
+                  >
                     <img
                       src={item.imagePreview.src}
                       alt={item.imagePreview.alt}
                       loading="lazy"
                     />
-                    {item.imagePreview.caption && (
-                      <figcaption>{item.imagePreview.caption}</figcaption>
-                    )}
-                  </figure>
+                  </a>
+                ) : (
+                  <p class="entry-body">{item.crux}</p>
                 )}
 
                 {item.linkPreview && (
@@ -444,29 +447,26 @@ function getTags(item: LearningLogItem) {
     color: var(--text-tertiary);
   }
 
-  .entry-media {
-    margin: 0 0 1rem 0;
+  .entry-thumbnail {
+    display: block;
+    width: 100%;
+    margin-bottom: 1rem;
     border: 1px solid var(--border-primary);
     border-radius: 0.65rem;
     background: var(--bg-card);
     overflow: hidden;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
   }
 
-  .entry-media img {
+  .entry-thumbnail:hover {
+    border-color: color-mix(in srgb, var(--accent) 50%, var(--border-primary));
+    box-shadow: 0 8px 20px -8px rgba(0, 0, 0, 0.3);
+  }
+
+  .entry-thumbnail img {
     width: 100%;
+    height: auto;
     display: block;
-    margin: 0;
-    border-radius: 0;
-  }
-
-  .entry-media figcaption {
-    margin: 0;
-    padding: 0.52rem 0.7rem 0.62rem;
-    font-size: 0.72rem;
-    color: var(--text-tertiary);
-    font-family: var(--font-serif);
-    font-style: italic;
-    text-align: center;
   }
 
   .entry-action {

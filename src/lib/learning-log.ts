@@ -118,6 +118,17 @@ function getCodePreview(markdown: string): LearningLogCodePreview | undefined {
   };
 }
 
+function getImagePreview(markdown: string): LearningLogImagePreview | undefined {
+  // Match markdown image syntax: ![alt](src)
+  const match = markdown.match(/!\[([^\]]*)\]\(([^)]+)\)/);
+  if (!match?.[2]) return undefined;
+
+  return {
+    src: match[2],
+    alt: match[1] || 'Image',
+  };
+}
+
 function getNoteCategory(type: NoteType): LearningLogCategory {
   if (type === 'link') return 'resources';
   if (type === 'thought') return 'thoughts';
@@ -143,6 +154,7 @@ export async function getLearningLogItems(): Promise<LearningLogItem[]> {
         }
       : undefined;
     const codePreview = note.data.type === 'snippet' ? getCodePreview(note.body) : undefined;
+    const imagePreview = getImagePreview(note.body);
 
     return {
       id: `note-${note.slug}`,
@@ -157,6 +169,7 @@ export async function getLearningLogItems(): Promise<LearningLogItem[]> {
       isExternal,
       linkPreview,
       codePreview,
+      imagePreview,
     };
   });
 
@@ -213,6 +226,7 @@ export async function getLearningLogItems(): Promise<LearningLogItem[]> {
 
   const tilItems: LearningLogItem[] = tils.map((til) => {
     const crux = firstSentenceOrExcerpt(til.body) || til.data.title;
+    const imagePreview = getImagePreview(til.body);
 
     return {
       id: `til-${til.slug}`,
@@ -225,6 +239,7 @@ export async function getLearningLogItems(): Promise<LearningLogItem[]> {
       tags: til.data.tags ?? [],
       sourceType: 'til',
       isExternal: false,
+      imagePreview,
     };
   });
 
