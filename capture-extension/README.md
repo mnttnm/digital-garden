@@ -1,55 +1,67 @@
-# Digital Garden Capture - Raycast Extension
+# Digital Garden Capture (Raycast)
 
-A Raycast extension for quickly capturing content to your digital garden.
+Raycast extension for sending URLs, text, and images to the Digital Garden capture queue.
 
-## Features
+## What It Does
 
-- **Capture Content**: Open form with auto-filled clipboard, add comments and tags
-- **Quick Capture**: One-keystroke capture of clipboard content (no UI)
+- `Capture Content` (UI): review/edit content before sending.
+- `Quick Capture` (no UI): send clipboard text/URL immediately.
 
-## Installation
+Both commands call:
 
-### Local Development
+- `POST {captureApiUrl}/api/capture/ingest`
 
-1. Clone this repository
-2. Run `npm install`
-3. Run `npm run dev` to start development mode
-4. The extension will appear in Raycast
+## Requirements
 
-### Publishing to Raycast Store
+- Raycast installed
+- Digital Garden backend deployed and reachable
+- `CAPTURE_API_KEY` configured in the backend
 
-```bash
-npm run publish
+## Setup
+
+1. In this folder, install dependencies:
+   ```bash
+   npm install
+   ```
+2. Start extension dev mode:
+   ```bash
+   npm run dev
+   ```
+3. In Raycast preferences for this extension, set:
+   - `API URL`: e.g. `https://your-site.vercel.app`
+   - `API Key`: value of backend `CAPTURE_API_KEY`
+
+## Request Payload
+
+The extension sends JSON like:
+
+```json
+{
+  "source": "raycast",
+  "url": "https://example.com",
+  "text": "optional plain text",
+  "comment": "optional note",
+  "tags": ["ai", "productivity"],
+  "project": "optional-project-slug",
+  "imageBase64": "optional data:image/...;base64,..."
+}
 ```
 
-## Configuration
+At least one of `url`, `text`, or `imageBase64` must be present.
 
-After installing, configure the extension in Raycast preferences:
+## Recommended Hotkeys
 
-1. **API URL**: Your site URL (e.g., `https://yoursite.vercel.app`)
-2. **API Key**: Your `CAPTURE_API_KEY` from environment variables
+- `Capture Content`: `Cmd + Shift + C`
+- `Quick Capture`: `Cmd + Ctrl + C`
 
-## Usage
+## Troubleshooting
 
-### Capture Content (Cmd+Space → "capture")
+- `401 Unauthorized`: API key mismatch or missing `Authorization` header.
+- `Failed to capture`: verify `API URL` points to deployed backend and `/api/capture/ingest` is reachable.
+- Image not captured from clipboard: try selecting a file with the `Image File` field.
 
-1. Copy a URL or text to clipboard
-2. Open Raycast and type "capture"
-3. Content is auto-filled from clipboard
-4. Optionally add a comment and tags
-5. Press Enter to capture
+## Related Docs
 
-### Quick Capture (Set custom hotkey)
-
-1. Copy content to clipboard
-2. Press your assigned hotkey
-3. Content is captured immediately
-4. HUD notification confirms capture
-
-## Keyboard Shortcuts
-
-Assign custom hotkeys in Raycast preferences for instant access.
-
-Recommended:
-- **Capture Content**: `Cmd + Shift + C`
-- **Quick Capture**: `Cmd + Ctrl + C`
+- Root project guide: [`../README.md`](../README.md)
+- System architecture: [`../docs/architecture.md`](../docs/architecture.md)
+- Capture backend reference: [`../docs/capture-system-plan.md`](../docs/capture-system-plan.md)

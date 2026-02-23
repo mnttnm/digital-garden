@@ -1,205 +1,81 @@
-# Newsletter Workflow Plan
+# Newsletter Workflow
 
-## Goal
+Current newsletter workflow reference for this project.
 
-Create an effortless workflow to share learnings, curated links, and project updates with subscribers who can filter by interest and frequency.
+## Overview
 
----
+The newsletter system builds digests directly from `src/content` and sends two audience variants:
 
-## Current State
+- `all`: notes + TIL + project updates
+- `projects`: project updates only
 
-- **Subscription**: Captures email + frequency (daily/weekly) — no content preferences
-- **Content types**: essay, link, snippet, thought (notes) + projects
-- **Automation**: GitHub Action exists but scripts not implemented
-- **Commands**: `/post`, `/til`, `/resource`, `/project` for content creation
+Subscribers are filtered by:
 
----
+- `frequency`: `daily` or `weekly`
+- `preference`: `all` or `projects`
 
-## Proposed Solution
+## Flow
 
-### Subscriber Preferences (Simple Model)
-
-Two choices only — easy to understand, easy to manage:
-
-| Preference        | What they receive                                       |
-| ----------------- | ------------------------------------------------------- |
-| **All updates**   | Everything — learnings, curated links, project updates  |
-| **Projects only** | Just project launches, milestones, and updates          |
-
-### Content Categorization
-
-Content is either "project" or "general":
-
-- **Projects** — From `src/content/projects/` collection
-- **General** — All notes (essays, TILs, links, thoughts, snippets)
-
-No schema changes needed — we use the existing collection structure.
-
----
-
-## Implementation Phases
-
-### Phase 1: Content Foundation (Manual Start)
-
-**Goal**: Establish capture habit, no code changes needed initially
-
-**Daily Routine** (5-10 min):
-
-1. Browse Twitter/YouTube/feeds in morning
-2. For each interesting find: `/resource <url>` with your take
-3. For learnings: `/til <what you learned>`
-4. For project updates: `/project <update>`
-5. End of day: `/publish` to deploy
-
-**Files to modify**:
-
-- `.claude/commands/resource.md` — Enhance to auto-detect source platform
-
-### Phase 2: Subscription Enhancement
-
-**Goal**: Let subscribers choose their interests
-
-**Changes**:
-
-- Update subscription form with topic checkboxes
-- Store preferences in Resend (using Topics or custom fields)
-- Send personalized welcome email based on choices
-
-**Files to modify**:
-
-- `src/components/SubscribeForm.astro` — Add topic selection UI
-- `src/pages/api/subscribe.ts` — Handle topic preferences
-
-### Phase 3: Newsletter Generation (Manual Review)
-
-**Goal**: Generate newsletter, you review before sending
-
-**New commands**:
-
-- `/newsletter-preview` — Generate and preview email in browser
-- `/newsletter-send` — Send the approved newsletter
-
-**Workflow**:
-
-1. Run `/newsletter-preview daily` or `/newsletter-preview weekly`
-2. Opens HTML preview in browser showing exactly what subscribers will receive
-3. Review content, make edits if needed
-4. Run `/newsletter-send` to dispatch to all subscribers
-
-**Scripts to create**:
-
-```
-scripts/
-  generate-newsletter.ts   # Aggregate content, generate HTML
-  send-newsletter.ts       # Send via Resend API
-  templates/
-    daily.html             # Daily digest template
-    weekly.html            # Weekly digest template
+```mermaid
+flowchart LR
+  A["Content in src/content"] --> B["generateNewsletterBundle()"]
+  B --> C["Build all + projects variants"]
+  C --> D["newsletter-preview.mjs\nwrite .tmp artifacts"]
+  C --> E["newsletter-send.mjs\nload Resend contacts"]
+  E --> F["Filter by frequency + preference"]
+  F --> G["Send via Resend emails API"]
 ```
 
-**Logic**:
+## Commands
 
-1. Query content published since last newsletter
-2. Separate into: notes (all general content) vs projects
-3. Generate two versions: "all updates" and "projects only"
-4. On send: match each subscriber to their preference version
-
-### Phase 4: Semi-Automation (Future)
-
-**Goal**: Reduce friction while keeping approval control
-
-**When ready**:
-
-- GitHub Action generates preview daily/weekly
-- Sends you a notification with preview link
-- You click "approve" to send, or ignore to skip
-- No action = no email sent (safe default)
-
-**File to modify**:
-
-- `.github/workflows/newsletter.yml` — Enable preview generation
-
----
-
-## New Slash Commands
-
-### `/curate` (quick capture)
+Preview (safe, local artifacts only):
 
 ```bash
-/curate https://twitter.com/user/status/123
+npm run newsletter:preview -- --type=daily
 ```
 
-- Auto-detects platform (Twitter, YouTube, article)
-- Fetches title/metadata from URL
-- Creates note with `type: link` and source info in frontmatter
-- Prompts for your take/commentary
+Send (requires explicit confirmation):
 
-### `/dailycapture` (guided session)
-
-Interactive capture that asks:
-
-1. What did you learn today?
-2. Any interesting links to share?
-3. Project updates?
-
-Creates all content in one session.
-
----
-
-## Email Template Structure
-
-```
-Subject: [Daily/Weekly] Notes from Mohit — Jan 15
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-THINGS I LEARNED
-- Redis sorted sets for leaderboards
-- CSS container queries are production-ready
-[Read more →]
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-INTERESTING FINDS
-- [Twitter] Why SQLite is taking over
-- [YouTube] Fireship on Bun 1.0
-- [Article] The end of localhost
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-PROJECT UPDATES
-- Digital Garden: Added newsletter preferences
-[View project →]
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-[Manage preferences] [Unsubscribe]
+```bash
+npm run newsletter:send -- --type=daily --confirm=true
 ```
 
----
+Optional flags:
 
-## Verification Plan
+- `--type=daily|weekly` (default `daily` for preview, `daily` fallback for send)
+- `--date=YYYY-MM-DD` (window anchor)
 
-1. **Phase 1**: Manually create 5 pieces of content using new workflow, verify they appear on site
-2. **Phase 2**: Test subscription with different preference combinations
-3. **Phase 3**: Run newsletter script locally, verify email content matches subscriber preferences
-4. **Phase 4**: Monitor first automated sends, check delivery rates in Resend dashboard
+## Files and Responsibilities
 
----
+- `src/lib/newsletter/generate.mjs`: content collection, filtering, rendering.
+- `scripts/newsletter-preview.mjs`: writes HTML/TXT/JSON preview artifacts.
+- `scripts/newsletter-send.mjs`: recipient selection + sending.
+- `src/pages/api/subscribe.ts`: captures subscriber preferences in Resend audience.
 
-## Files to Create
+## Required Environment Variables
 
-- `scripts/generate-newsletter.ts` — Content aggregation logic
-- `scripts/send-newsletter.ts` — Resend API integration
-- `scripts/templates/daily.html` — Daily digest email template
-- `scripts/templates/weekly.html` — Weekly digest email template
-- `.claude/commands/curate.md` — Quick URL capture command
-- `.claude/commands/newsletter-preview.md` — Preview newsletter command
-- `.claude/commands/newsletter-send.md` — Send newsletter command
+```bash
+RESEND_API_KEY=...
+RESEND_AUDIENCE_ID=...
+RESEND_FROM_EMAIL=optional
+SITE_URL=optional
+```
 
-## Files to Modify
+`SITE_URL` is recommended so links/images become absolute in generated emails.
 
-- `src/components/SubscribeForm.astro` — Add "All updates" vs "Projects only" toggle
-- `src/pages/api/subscribe.ts` — Store content preference alongside frequency
-- `.claude/commands/resource.md` — Auto-detect source platform (Twitter/YouTube/etc)
-- `.github/workflows/newsletter.yml` — Enable preview generation (Phase 4)
+## Output Artifacts
+
+Preview outputs are written to:
+
+- `.tmp/newsletter-preview/*.all.html`
+- `.tmp/newsletter-preview/*.all.txt`
+- `.tmp/newsletter-preview/*.projects.html`
+- `.tmp/newsletter-preview/*.projects.txt`
+- `.tmp/newsletter-preview/*.summary.json`
+
+## Safety Rules
+
+- Send script exits unless `--confirm=true` is provided.
+- Unsubscribed contacts are skipped.
+- Contacts are filtered to matching send cadence (`daily` or `weekly`).
+- Any send failures are reported and exit with non-zero status.

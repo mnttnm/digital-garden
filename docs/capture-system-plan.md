@@ -1,141 +1,79 @@
-# Content Capture & Publishing System
+# Capture System Reference
 
-## Overview
+Operational reference for the capture, review, and batch publishing flow.
 
-A system for capturing content from multiple clients (Raycast, iOS Shortcut) and publishing to the digital garden after review.
+## High-Level Flow
 
-## Architecture
-
-```
-┌─────────────────┐      ┌─────────────────┐      ┌─────────────────┐
-│  Mac            │      │                 │      │                 │
-│  (Raycast ext)  │─────▶│                 │      │                 │
-└─────────────────┘      │  /api/capture/  │      │   Upstash       │
-                         │    ingest       │─────▶│   Redis         │
-┌─────────────────┐      │                 │      │                 │
-│  iPhone         │      │                 │      └────────┬────────┘
-│  (iOS Shortcut) │─────▶│                 │               │
-└─────────────────┘      └─────────────────┘               │
-                                                           │
-┌─────────────────┐      ┌─────────────────┐      ┌────────▼────────┐
-│  Live Site      │◀─────│   GitHub API    │◀─────│  Review Dashboard│
-│  (Vercel)       │      │   (commit MDX)  │      │  /admin/review   │
-└─────────────────┘      └─────────────────┘      └─────────────────┘
+```mermaid
+flowchart LR
+  A["Raycast / iOS Shortcut"] --> B["POST /api/capture/ingest"]
+  B --> C["Upstash Redis"]
+  C --> D["/admin/review"]
+  D --> E["approve reject refine restore update preview"]
+  E --> C
+  D --> F["POST /api/capture/publish-all"]
+  F --> G["GitHub API"]
+  G --> H["Commit content + images"]
+  H --> I["Vercel deploy"]
 ```
 
-## Components
+## Status Model
 
-### Core Library (`src/lib/capture/`)
+- `pending`: newly captured and awaiting review
+- `approved`: reviewed and queued for batch publishing
+- `rejected`: intentionally skipped
+- `published`: successfully committed to content
 
-| File | Purpose |
-|------|---------|
-| `types.ts` | Capture schema, RefinedCapture interface |
-| `store.ts` | Upstash Redis CRUD operations |
-| `providers.ts` | AI provider configuration (OpenAI, Google, Azure) |
-| `refine.ts` | LLM refinement via Vercel AI SDK |
-| `transform.ts` | Capture → MDX transformation |
-| `publish.ts` | GitHub commit logic |
-| `index.ts` | Public exports |
+## API Endpoints
 
-### API Routes (`src/pages/api/capture/`)
+| Route | Method(s) | Purpose |
+| --- | --- | --- |
+| `/api/capture/ingest` | `POST` | Capture entry point from clients |
+| `/api/capture/list` | `GET` | List captures by status |
+| `/api/capture/[id]/approve` | `POST` | Move pending -> approved |
+| `/api/capture/[id]/reject` | `POST` | Move pending/approved -> rejected |
+| `/api/capture/[id]/restore` | `POST` | Move rejected -> pending |
+| `/api/capture/[id]/refine` | `POST` | Run AI refinement |
+| `/api/capture/[id]/update` | `PATCH`, `POST` | Update capture metadata |
+| `/api/capture/[id]/preview` | `GET` | Preview transformed output |
+| `/api/capture/publish-all` | `POST`, `GET` | Batch publish approved captures |
 
-| Route | Method | Purpose |
-|-------|--------|---------|
-| `/api/capture/ingest` | POST | Main entry point for capture clients |
-| `/api/capture/list` | GET | List captures by status |
-| `/api/capture/[id]/approve` | POST | Approve and publish capture |
-| `/api/capture/[id]/reject` | POST | Reject capture |
-| `/api/capture/[id]/refine` | POST | Trigger AI refinement |
-| `/api/capture/[id]/update` | PATCH | Edit capture metadata |
-| `/api/capture/[id]/preview` | GET | Preview publish output |
+## Main Modules
 
-### Admin UI (`src/pages/admin/`)
+| File | Responsibility |
+| --- | --- |
+| `src/lib/capture/types.ts` | Capture domain types and transform outputs |
+| `src/lib/capture/store.ts` | Redis persistence and status operations |
+| `src/lib/capture/refine.ts` | AI refinement prompt + schema output |
+| `src/lib/capture/transform.ts` | Capture -> notes/TIL/project activity transforms |
+| `src/lib/capture/publish.ts` | GitHub commit and batch publish logic |
+| `src/pages/admin/review.astro` | Review UI and moderation controls |
 
-| File | Purpose |
-|------|---------|
-| `index.astro` | Login page |
-| `review.astro` | Review dashboard |
-
-### Capture Clients
-
-| Client | Location | Purpose |
-|--------|----------|---------|
-| Raycast Extension | `capture-extension/` | Mac capture via Cmd+Space |
-| iOS Shortcut | `ios-shortcut/SETUP.md` | iPhone Share Sheet capture |
-
-## Environment Variables
+## Required Environment Variables
 
 ```bash
-# Capture API
-CAPTURE_API_KEY=...             # Secret for client auth
-
-# Upstash Redis
+CAPTURE_API_KEY=...
 UPSTASH_REDIS_REST_URL=...
 UPSTASH_REDIS_REST_TOKEN=...
-
-# GitHub (for commits)
-GITHUB_TOKEN=ghp_...
-GITHUB_REPO=username/digital-garden
-
-# AI Refinement
-AI_PROVIDER=google              # openai | google | azure
-AI_MODEL=gemini-2.0-flash-exp
-
-# Provider keys (only need active one)
-GOOGLE_GENERATIVE_AI_API_KEY=...
-OPENAI_API_KEY=...
-AZURE_RESOURCE_NAME=...
-AZURE_API_KEY=...
-
-# Admin
 ADMIN_PASSWORD=...
+GITHUB_TOKEN=...
+GITHUB_REPO=username/digital-garden
 ```
 
-## Usage Flow
+Optional but recommended:
 
-### Capture (5 seconds)
-1. Copy URL/text to clipboard
-2. Cmd+Space → "capture" → Enter
-3. Toast: "Captured!"
-
-### Review (daily)
-1. Visit `/admin/review`
-2. Click "Refine" for AI cleanup
-3. Compare raw vs refined
-4. Approve → publishes to GitHub
-5. Vercel auto-deploys
-
-## Batched Publishing (Cost Optimization)
-
-To minimize Vercel deployments, captures are **batched**:
-
-1. **Approve** items → moves to "Queued" status
-2. **Publish All** → commits all queued items in ONE GitHub commit
-3. **One deployment** regardless of item count
-
-### Trigger Options
-
-| Method | Cost | Setup |
-|--------|------|-------|
-| Manual "Publish All" button | Free | None |
-| Vercel Cron (daily at 8am) | Free | Add CRON_SECRET env var |
-| External cron (cron-job.org) | Free | Point to `/api/capture/publish-all` |
-
-### Status Flow
-
-```
-pending → approved (queued) → published
-                ↘ rejected
+```bash
+CRON_SECRET=...
+AI_PROVIDER=google # openai | google | azure
+AI_MODEL=gemini-2.5-flash
 ```
 
-## Implementation Status
+## Operations Runbook
 
-- [x] Core library (types, store, refine, transform, publish)
-- [x] API routes (ingest, list, approve, reject, refine, update, preview, publish-all)
-- [x] Admin dashboard (login, review page, publish all button)
-- [x] Batched publishing (single commit for multiple items)
-- [x] Vercel Cron config (vercel.json)
-- [x] Raycast extension
-- [x] iOS Shortcut documentation
-- [ ] Slack bot (optional, future)
-- [ ] Image upload to CDN (optional, future)
+1. Capture from Raycast or iOS -> item enters `pending`.
+2. Open `/admin/review` and refine/edit as needed.
+3. Approve items (moves them to `approved` queue).
+4. Publish queued items via `Publish All` button (or cron).
+5. Verify new content in `src/content` and live pages.
+
+For broader system context diagrams, see `docs/architecture.md`.
