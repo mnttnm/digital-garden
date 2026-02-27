@@ -27,6 +27,20 @@ const til = defineCollection({
   }),
 });
 
+// Schema for resources (blogs, newsletters, twitter, youtube, communities)
+const resources = defineCollection({
+  type: 'content',
+  schema: z.object({
+    title: z.string(),
+    url: z.string().url(),
+    type: z.enum(['blog', 'newsletter', 'twitter', 'youtube', 'community', 'podcast', 'tool']),
+    description: z.string(),
+    featured: z.boolean().default(false),
+    tags: z.array(z.string()).default([]),
+    draft: z.boolean().default(false),
+  }),
+});
+
 // Schema for projects
 const projects = defineCollection({
   type: 'content',
@@ -51,6 +65,21 @@ const projects = defineCollection({
         image: z.string().optional(), // Can be relative path or full URL
         imageAlt: z.string().optional(),
         imageCaption: z.string().optional(),
+        images: z.array(
+          z.object({
+            src: z.string(),
+            alt: z.string().optional(),
+            caption: z.string().optional(),
+          })
+        ).default([]),
+        videos: z.array(
+          z.object({
+            src: z.string(),
+            poster: z.string().optional(),
+            title: z.string().optional(),
+            caption: z.string().optional(),
+          })
+        ).default([]),
         actionLabel: z.string().optional(),
         actionUrl: z.string().optional(),
         code: z.string().optional(),
@@ -68,4 +97,4 @@ const projects = defineCollection({
   }),
 });
 
-export const collections = { notes, projects, til };
+export const collections = { notes, projects, til, resources };

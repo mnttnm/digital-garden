@@ -46,6 +46,7 @@ export interface LearningLogItem {
   linkPreview?: LearningLogLinkPreview;
   codePreview?: LearningLogCodePreview;
   imagePreview?: LearningLogImagePreview;
+  imagePreviews?: LearningLogImagePreview[];
   actionLink?: LearningLogActionLink;
 }
 
@@ -118,21 +119,52 @@ function getCodePreview(markdown: string): LearningLogCodePreview | undefined {
   };
 }
 
-function getImagePreview(markdown: string): LearningLogImagePreview | undefined {
-  // Match markdown image syntax: ![alt](src)
-  const match = markdown.match(/!\[([^\]]*)\]\(([^)]+)\)/);
-  if (!match?.[2]) return undefined;
+function getImagePreviews(markdown: string): LearningLogImagePreview[] {
+  const matches = Array.from(markdown.matchAll(/!\[([^\]]*)\]\(([^)]+)\)/g));
+  if (matches.length === 0) return [];
 
-  return {
-    src: match[2],
-    alt: match[1] || 'Image',
-  };
+  return matches
+    .map((match) => ({
+      src: match[2],
+      alt: match[1] || 'Image',
+    }))
+    .filter((image) => Boolean(image.src));
 }
 
 function getNoteCategory(type: NoteType): LearningLogCategory {
   if (type === 'link') return 'resources';
   if (type === 'thought') return 'thoughts';
   return 'learnings';
+}
+
+function getProjectEventImagePreviews(event: ProjectActivity): LearningLogImagePreview[] {
+  const galleryPreviews = event.images
+    .filter((image) => Boolean(image.src))
+    .map((image) => ({
+      src: image.src,
+      alt: image.alt || event.imageAlt || event.title,
+      caption: image.caption || event.imageCaption,
+    }));
+
+  if (galleryPreviews.length > 0) return galleryPreviews;
+
+  if (event.image) {
+    return [{
+      src: event.image,
+      alt: event.imageAlt || event.title,
+      caption: event.imageCaption,
+    }];
+  }
+
+  const videoPosterPreviews = event.videos
+    .filter((video) => Boolean(video.poster))
+    .map((video) => ({
+      src: video.poster!,
+      alt: video.title || event.title,
+      caption: video.caption,
+    }));
+
+  return videoPosterPreviews;
 }
 
 export async function getLearningLogItems(): Promise<LearningLogItem[]> {
@@ -143,8 +175,10 @@ export async function getLearningLogItems(): Promise<LearningLogItem[]> {
   ]);
 
   const noteItems: LearningLogItem[] = notes.map((note) => {
-    const isExternal = note.data.type === 'link' && Boolean(note.data.link);
-    const href = isExternal ? note.data.link! : `/notes/${note.slug}/`;
+    // Always route note titles to internal detail pages.
+    // External links are still surfaced via link previews and note detail "View original".
+    const isExternal = false;
+    const href = `/notes/${note.slug}/`;
     const crux = note.data.takeaway?.trim() || firstSentenceOrExcerpt(note.body) || note.data.title;
     const linkPreview = note.data.type === 'link' && note.data.link
       ? {
@@ -154,7 +188,7 @@ export async function getLearningLogItems(): Promise<LearningLogItem[]> {
         }
       : undefined;
     const codePreview = note.data.type === 'snippet' ? getCodePreview(note.body) : undefined;
-    const imagePreview = getImagePreview(note.body);
+    const imagePreviews = getImagePreviews(note.body);
 
     return {
       id: `note-${note.slug}`,
@@ -169,7 +203,8 @@ export async function getLearningLogItems(): Promise<LearningLogItem[]> {
       isExternal,
       linkPreview,
       codePreview,
-      imagePreview,
+      imagePreview: imagePreviews[0],
+      imagePreviews: imagePreviews.length > 0 ? imagePreviews : undefined,
     };
   });
 
@@ -179,6 +214,8 @@ export async function getLearningLogItems(): Promise<LearningLogItem[]> {
       const eventTags = event.tags ?? [];
       const actionHref = event.actionUrl;
       const actionIsExternal = actionHref ? /^https?:\/\//i.test(actionHref) : false;
+      const imagePreviews = getProjectEventImagePreviews(event);
+      const hasVisualMedia = imagePreviews.length > 0;
 
       return {
         id: `project-${project.slug}-${anchor}`,
@@ -193,7 +230,7 @@ export async function getLearningLogItems(): Promise<LearningLogItem[]> {
         tags: eventTags.length > 0 ? eventTags : (project.data.tags ?? []),
         sourceType: event.type,
         isExternal: false,
-        linkPreview: !event.image && event.links[0]
+        linkPreview: !hasVisualMedia && event.links[0]
           ? {
               title: event.links[0].label,
               url: event.links[0].url,
@@ -206,13 +243,8 @@ export async function getLearningLogItems(): Promise<LearningLogItem[]> {
               code: truncate(event.code.trim(), 320),
             }
           : undefined,
-        imagePreview: event.image
-          ? {
-              src: event.image,
-              alt: event.imageAlt || event.title,
-              caption: event.imageCaption,
-            }
-          : undefined,
+        imagePreview: imagePreviews[0],
+        imagePreviews: imagePreviews.length > 0 ? imagePreviews : undefined,
         actionLink: actionHref && event.actionLabel
           ? {
               label: event.actionLabel,
@@ -226,7 +258,7 @@ export async function getLearningLogItems(): Promise<LearningLogItem[]> {
 
   const tilItems: LearningLogItem[] = tils.map((til) => {
     const crux = firstSentenceOrExcerpt(til.body) || til.data.title;
-    const imagePreview = getImagePreview(til.body);
+    const imagePreviews = getImagePreviews(til.body);
 
     return {
       id: `til-${til.slug}`,
@@ -239,7 +271,8 @@ export async function getLearningLogItems(): Promise<LearningLogItem[]> {
       tags: til.data.tags ?? [],
       sourceType: 'til',
       isExternal: false,
-      imagePreview,
+      imagePreview: imagePreviews[0],
+      imagePreviews: imagePreviews.length > 0 ? imagePreviews : undefined,
     };
   });
 
