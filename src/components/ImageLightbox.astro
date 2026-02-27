@@ -192,7 +192,6 @@
         'img[data-lightbox],' +
         // Images in feed thumbnails (index page)
         '.entry-thumbnail img,' +
-        '.entry-thumbnail-grid img,' +
         // Images in project detail feed
         '.feed-media-item img,' +
         // Images in capture cards
@@ -207,8 +206,8 @@
         // Add hover class
         img.classList.add('lightbox-trigger');
 
-        // Find gallery context
-        const galleryContainer = img.closest('[data-lightbox-gallery], .entry-thumbnail-grid, .feed-media-grid, .capture-images');
+        // Find gallery context for grouping images
+        const galleryContainer = img.closest('[data-lightbox-gallery], .entry-thumbnails, .feed-media-grid, .capture-images');
 
         img.addEventListener('click', (e) => {
           e.preventDefault();
@@ -520,19 +519,6 @@
   .entry-thumbnail:has(.lightbox-trigger),
   .feed-media-item:has(.lightbox-trigger) {
     cursor: zoom-in;
-  }
-
-  /* Grid images shouldn't scale individually */
-  .entry-thumbnail-grid .lightbox-trigger:hover,
-  .feed-media-grid .lightbox-trigger:hover {
-    transform: none;
-    box-shadow: none;
-  }
-
-  .entry-thumbnail-grid:hover,
-  .feed-media-grid:hover {
-    transform: scale(1.01);
-    transition: transform 0.2s ease;
   }
 
   /* Capture card images */

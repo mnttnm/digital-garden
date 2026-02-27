@@ -370,8 +370,8 @@ const keyUpdates = activity.filter(e => keyUpdateTypes.includes(e.type));
   </nav>
 
   <script>
-    (() => {
-      const entries = document.querySelectorAll('.reveal');
+    function initRevealAnimations() {
+      const entries = document.querySelectorAll('.reveal:not(.visible)');
       if (!('IntersectionObserver' in window) || entries.length === 0) {
         entries.forEach(entry => entry.classList.add('visible'));
         return;
@@ -387,7 +387,10 @@ const keyUpdates = activity.filter(e => keyUpdateTypes.includes(e.type));
       }, { threshold: 0.15 });
 
       entries.forEach(entry => observer.observe(entry));
-    })();
+    }
+
+    initRevealAnimations();
+    document.addEventListener('astro:page-load', initRevealAnimations);
   </script>
 </Base>
 

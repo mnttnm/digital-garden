@@ -124,8 +124,8 @@ function formatRelativeDate(date: Date) {
   </main>
 
   <script>
-    (() => {
-      const entries = document.querySelectorAll('.reveal');
+    function initRevealAnimations() {
+      const entries = document.querySelectorAll('.reveal:not(.visible)');
       if (!('IntersectionObserver' in window) || entries.length === 0) {
         entries.forEach(entry => entry.classList.add('visible'));
         return;
@@ -141,7 +141,10 @@ function formatRelativeDate(date: Date) {
       }, { threshold: 0.15 });
 
       entries.forEach(entry => observer.observe(entry));
-    })();
+    }
+
+    initRevealAnimations();
+    document.addEventListener('astro:page-load', initRevealAnimations);
   </script>
 </Base>
 

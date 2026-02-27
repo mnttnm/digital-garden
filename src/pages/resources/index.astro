@@ -88,8 +88,8 @@ const activeTypes = resourceTypes.filter(type => grouped[type]?.length > 0);
   </main>
 
   <script>
-    (() => {
-      const entries = document.querySelectorAll('.reveal');
+    function initRevealAnimations() {
+      const entries = document.querySelectorAll('.reveal:not(.visible)');
       if (!('IntersectionObserver' in window) || entries.length === 0) {
         entries.forEach(entry => entry.classList.add('visible'));
         return;
@@ -105,7 +105,10 @@ const activeTypes = resourceTypes.filter(type => grouped[type]?.length > 0);
       }, { threshold: 0.1 });
 
       entries.forEach(entry => observer.observe(entry));
-    })();
+    }
+
+    initRevealAnimations();
+    document.addEventListener('astro:page-load', initRevealAnimations);
   </script>
 </Base>
 
