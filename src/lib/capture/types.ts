@@ -91,6 +91,7 @@ export interface RefinedCapture {
   body: string;
   takeaway?: string;
   description?: string; // For resources collection
+  linkTitle?: string; // Actual page title from URL (for link notes/resources)
   suggestedTags: string[];
   suggestedType: InferredCollection;
   suggestedNoteType?: InferredNoteType;

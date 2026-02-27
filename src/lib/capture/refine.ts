@@ -12,10 +12,11 @@ import type { Capture, RefinedCapture, InferredNoteType, InferredCollection } fr
 
 // Schema for AI-generated refinement
 const refinementSchema = z.object({
-  title: z.string().describe('Concise title under 60 characters'),
+  title: z.string().describe('User commentary/heading - what the user is saying about this content (< 60 chars)'),
   body: z.string().describe('Clean markdown body - preserve original meaning, only fix grammar'),
   takeaway: z.string().optional().describe('One-sentence summary of the key insight'),
   description: z.string().optional().describe('For resources: 1-2 sentence description of what this resource is'),
+  linkTitle: z.string().optional().describe('For URLs: the actual title of the linked page/article (e.g., "How to Build X" not user commentary)'),
   suggestedTags: z.array(z.string()).describe('2-4 relevant topic tags'),
   suggestedType: z.enum(['til', 'notes', 'resources', 'project-update']).describe('Which collection this belongs to'),
   suggestedNoteType: z.enum(['link', 'thought', 'essay', 'snippet']).optional()
@@ -48,13 +49,15 @@ Content classification (pick the MOST appropriate):
 - Notes (snippet): Code-focused content
 - Project Update: ONLY if a project is explicitly specified
 
-For Resources:
-- title: Name of the resource/author (e.g., "Simon Willison's Blog", "Pieter Levels on X")
+For Resources/Links:
+- title: User's commentary or why they're sharing (e.g., "A Billboard worthy reminder", "Great thread on AI agents")
+- linkTitle: The actual page/article title from the URL (e.g., "Building AI Agents with Claude", "Thread by @user")
 - description: 1-2 sentences about what this resource offers
 - body: User's comment about why they're sharing it (keep brief)
 
 For Notes/TIL:
 - title: Capture the essence in < 60 chars
+- linkTitle: If URL provided, the actual page title
 - body: User's content with grammar fixes only
 - takeaway: One sentence key insight
 
@@ -116,6 +119,7 @@ function mapToRefinedCapture(output: RefinementOutput): RefinedCapture {
     body: output.body,
     takeaway: output.takeaway,
     description: output.description,
+    linkTitle: output.linkTitle,
     suggestedTags: output.suggestedTags,
     suggestedType: output.suggestedType as InferredCollection,
     suggestedNoteType: output.suggestedNoteType as InferredNoteType | undefined,

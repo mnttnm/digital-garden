@@ -25,13 +25,16 @@ if (!isAuthenticated) {
 // Load captures
 type StatusType = 'pending' | 'approved' | 'published' | 'rejected';
 const status = (Astro.url.searchParams.get('status') || 'pending') as StatusType;
-const captures = await listCaptures(status, 50, 0);
-const counts = {
-  pending: await getCaptureCount('pending'),
-  approved: await getCaptureCount('approved'),  // "Queued" - approved but not published
-  published: await getCaptureCount('published'),
-  rejected: await getCaptureCount('rejected'),
-};
+
+// Parallel fetch: captures + all counts
+const [captures, pending, approved, published, rejected] = await Promise.all([
+  listCaptures(status, 50, 0),
+  getCaptureCount('pending'),
+  getCaptureCount('approved'),  // "Queued" - approved but not published
+  getCaptureCount('published'),
+  getCaptureCount('rejected'),
+]);
+const counts = { pending, approved, published, rejected };
 ---
 
 <Base title="Review Captures" description="Admin dashboard for reviewing captured content">
@@ -98,6 +101,46 @@ const counts = {
       </div>
     )}
 
+    {/* Bulk selection bar */}
+    {captures.length > 0 && (
+      <div class="bulk-controls">
+        <label class="select-all-label">
+          <input type="checkbox" id="selectAll" class="select-all-checkbox" />
+          <span>Select All</span>
+        </label>
+      </div>
+    )}
+
+    {/* Floating bulk action bar (hidden by default) */}
+    <div class="bulk-action-bar hidden" id="bulkActionBar">
+      <span class="bulk-count"><span id="selectedCount">0</span> selected</span>
+      <div class="bulk-actions">
+        {status === 'pending' && (
+          <>
+            <button type="button" class="bulk-btn bulk-approve" data-bulk-action="approve">
+              Approve All
+            </button>
+            <button type="button" class="bulk-btn bulk-reject" data-bulk-action="reject">
+              Reject All
+            </button>
+          </>
+        )}
+        {status === 'rejected' && (
+          <button type="button" class="bulk-btn bulk-restore" data-bulk-action="restore">
+            Restore All
+          </button>
+        )}
+        {(status === 'pending' || status === 'rejected') && (
+          <button type="button" class="bulk-btn bulk-delete" data-bulk-action="delete">
+            Delete
+          </button>
+        )}
+        <button type="button" class="bulk-btn bulk-clear" id="clearSelection">
+          Clear
+        </button>
+      </div>
+    </div>
+
     {captures.length === 0 ? (
       <div class="empty-state">
         <p class="empty-title">
@@ -122,8 +165,404 @@ const counts = {
     )}
   </div>
 
-  <script define:vars={{ adminPassword }}>
-    // Publish All button handling
+  <script define:vars={{ adminPassword, status }}>
+    // ==========================================
+    // Selection State Management
+    // ==========================================
+    const selectedIds = new Set();
+
+    function updateBulkActionBar() {
+      const bar = document.getElementById('bulkActionBar');
+      const countEl = document.getElementById('selectedCount');
+      const selectAllCheckbox = document.getElementById('selectAll');
+
+      if (selectedIds.size > 0) {
+        bar.classList.remove('hidden');
+        countEl.textContent = selectedIds.size;
+      } else {
+        bar.classList.add('hidden');
+      }
+
+      // Update select all checkbox state
+      const allCheckboxes = document.querySelectorAll('.capture-checkbox');
+      const allChecked = allCheckboxes.length > 0 &&
+        Array.from(allCheckboxes).every(cb => cb.checked);
+      const someChecked = selectedIds.size > 0;
+
+      selectAllCheckbox.checked = allChecked;
+      selectAllCheckbox.indeterminate = someChecked && !allChecked;
+    }
+
+    function toggleCardSelection(card, checked) {
+      const captureId = card.dataset.captureId;
+      const checkbox = card.querySelector('.capture-checkbox');
+
+      if (checked) {
+        selectedIds.add(captureId);
+        card.classList.add('selected');
+        checkbox.checked = true;
+      } else {
+        selectedIds.delete(captureId);
+        card.classList.remove('selected');
+        checkbox.checked = false;
+      }
+
+      updateBulkActionBar();
+    }
+
+    // ==========================================
+    // Dirty State (Unsaved Changes) Tracking
+    // ==========================================
+    function markCardDirty(card, isDirty) {
+      const saveBtn = card.querySelector('[data-action="save"]');
+
+      if (isDirty) {
+        card.classList.add('dirty');
+        saveBtn?.classList.remove('hidden');
+      } else {
+        card.classList.remove('dirty');
+        saveBtn?.classList.add('hidden');
+      }
+    }
+
+    function getCardFieldValues(card) {
+      return {
+        title: card.querySelector('[data-field="title"]')?.value || '',
+        body: card.querySelector('[data-field="body"]')?.value || '',
+        tags: getTagsFromCard(card),
+        collection: card.querySelector('[data-field="collection"]')?.value || '',
+        noteType: card.querySelector('[data-field="noteType"]')?.value || '',
+      };
+    }
+
+    function getTagsFromCard(card) {
+      const tagsEditor = card.querySelector('.tags-editor');
+      if (!tagsEditor) return [];
+
+      return Array.from(tagsEditor.querySelectorAll('.editable-tag'))
+        .map(el => el.dataset.tag);
+    }
+
+    // ==========================================
+    // Tags Editor
+    // ==========================================
+    function setupTagsEditor(card) {
+      const tagsEditor = card.querySelector('.tags-editor');
+      if (!tagsEditor) return;
+
+      const tagsList = tagsEditor.querySelector('.tags-list');
+      const tagInput = tagsEditor.querySelector('.tag-input');
+
+      // Add tag on Enter
+      tagInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && tagInput.value.trim()) {
+          e.preventDefault();
+          addTag(tagsList, tagInput.value.trim(), card);
+          tagInput.value = '';
+        }
+      });
+
+      // Remove tag handlers
+      tagsList.addEventListener('click', (e) => {
+        if (e.target.classList.contains('tag-remove')) {
+          e.target.closest('.editable-tag').remove();
+          markCardDirty(card, true);
+        }
+      });
+    }
+
+    function addTag(tagsList, tagValue, card) {
+      // Normalize tag (lowercase, no special chars)
+      const normalizedTag = tagValue.toLowerCase().replace(/[^a-z0-9-]/g, '');
+      if (!normalizedTag) return;
+
+      // Check if tag already exists
+      const existing = tagsList.querySelector(`[data-tag="${normalizedTag}"]`);
+      if (existing) return;
+
+      const tagEl = document.createElement('span');
+      tagEl.className = 'tag editable-tag';
+      tagEl.dataset.tag = normalizedTag;
+      tagEl.innerHTML = `#${normalizedTag}<button type="button" class="tag-remove" aria-label="Remove tag">×</button>`;
+
+      tagsList.appendChild(tagEl);
+      markCardDirty(card, true);
+    }
+
+    // ==========================================
+    // API Actions
+    // ==========================================
+    async function performAction(captureId, action, body = null) {
+      const endpoint = `/api/capture/${captureId}/${action}`;
+      const options = {
+        method: action === 'delete' ? 'DELETE' : 'POST',
+        headers: {
+          'Authorization': `Bearer ${adminPassword}`,
+          'Content-Type': 'application/json',
+        },
+      };
+
+      if (body) {
+        options.body = JSON.stringify(body);
+      }
+
+      const response = await fetch(endpoint, options);
+      return response.json();
+    }
+
+    async function saveCapture(card) {
+      const captureId = card.dataset.captureId;
+      const values = getCardFieldValues(card);
+
+      const response = await fetch(`/api/capture/${captureId}/update`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${adminPassword}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text: values.body,
+          tags: values.tags,
+          inferredCollection: values.collection,
+          inferredNoteType: values.noteType || null,
+        }),
+      });
+
+      return response.json();
+    }
+
+    async function performBulkAction(action, ids) {
+      // For restore, we need to call restore endpoint for each
+      if (action === 'restore') {
+        const results = await Promise.all(
+          ids.map(id => performAction(id, 'restore'))
+        );
+        return {
+          success: true,
+          processed: results.filter(r => r.success).length,
+          failed: [],
+        };
+      }
+
+      const response = await fetch('/api/capture/bulk', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${adminPassword}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action, ids }),
+      });
+
+      return response.json();
+    }
+
+    // ==========================================
+    // Card Removal Animation
+    // ==========================================
+    function removeCardWithAnimation(card) {
+      card.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+      card.style.opacity = '0';
+      card.style.transform = 'translateY(-10px)';
+      setTimeout(() => {
+        card.remove();
+        updateEmptyState();
+        updateBulkActionBar();
+      }, 300);
+    }
+
+    function updateEmptyState() {
+      const cards = document.querySelectorAll('.capture-card');
+      const grid = document.querySelector('.captures-grid');
+
+      if (cards.length === 0 && grid) {
+        const statusMessages = {
+          pending: { title: 'All done!', subtitle: 'No more items to review' },
+          approved: { title: 'All done!', subtitle: 'No items queued' },
+          published: { title: 'No published items', subtitle: '' },
+          rejected: { title: 'No rejected items', subtitle: '' },
+        };
+        const msg = statusMessages[status] || { title: 'All done!', subtitle: '' };
+
+        grid.outerHTML = `
+          <div class="empty-state">
+            <p class="empty-title">${msg.title}</p>
+            <p class="empty-subtitle">${msg.subtitle}</p>
+          </div>
+        `;
+
+        // Hide bulk controls
+        document.querySelector('.bulk-controls')?.classList.add('hidden');
+      }
+    }
+
+    // ==========================================
+    // Revert Fields to Display Values
+    // ==========================================
+    function revertFieldsToDisplay(card) {
+      const displayMode = card.querySelector('.display-mode');
+      if (!displayMode) return;
+
+      // Get display values
+      const titleEl = displayMode.querySelector('.display-title');
+      const bodyEl = displayMode.querySelector('.display-body');
+      const tagsEl = displayMode.querySelector('.display-tags');
+      const collEl = displayMode.querySelector('.display-collection');
+      const noteTypeEl = displayMode.querySelector('.display-note-type');
+
+      const displayTitle = titleEl?.textContent || '';
+      const displayBody = bodyEl?.textContent || '';
+      const displayTags = tagsEl ?
+        Array.from(tagsEl.querySelectorAll('.tag')).map(t => t.textContent.replace('#', '')) : [];
+      const displayCollection = collEl?.textContent?.toLowerCase()
+        .replace('til', 'til')
+        .replace('note', 'notes')
+        .replace('resource', 'resources') || 'notes';
+      const displayNoteType = noteTypeEl?.textContent?.toLowerCase() || '';
+
+      // Set field values
+      const titleField = card.querySelector('[data-field="title"]');
+      const bodyField = card.querySelector('[data-field="body"]');
+      const collectionField = card.querySelector('[data-field="collection"]');
+      const noteTypeField = card.querySelector('[data-field="noteType"]');
+      const tagsList = card.querySelector('.tags-list');
+
+      if (titleField) titleField.value = displayTitle;
+      if (bodyField) bodyField.value = displayBody;
+      if (collectionField) collectionField.value = displayCollection;
+      if (noteTypeField) noteTypeField.value = displayNoteType;
+
+      // Revert tags
+      if (tagsList) {
+        tagsList.innerHTML = displayTags.map(tag =>
+          `<span class="tag editable-tag" data-tag="${tag}">#${tag}<button type="button" class="tag-remove" aria-label="Remove tag">×</button></span>`
+        ).join('');
+      }
+    }
+
+    // ==========================================
+    // Update Display from Fields
+    // ==========================================
+    function updateDisplayFromFields(card) {
+      const displayMode = card.querySelector('.display-mode');
+      if (!displayMode) return;
+
+      const values = getCardFieldValues(card);
+
+      // Update title
+      let titleEl = displayMode.querySelector('.display-title');
+      if (values.title) {
+        if (titleEl) {
+          titleEl.textContent = values.title;
+        } else {
+          // Create title element if it doesn't exist
+          const newTitle = document.createElement('h3');
+          newTitle.className = 'display-title';
+          newTitle.textContent = values.title;
+          displayMode.insertBefore(newTitle, displayMode.firstChild);
+        }
+      } else if (titleEl) {
+        titleEl.remove();
+      }
+
+      // Update body
+      const bodyEl = displayMode.querySelector('.display-body');
+      if (bodyEl) {
+        bodyEl.textContent = values.body;
+      }
+
+      // Update tags
+      let tagsEl = displayMode.querySelector('.display-tags');
+      if (values.tags.length > 0) {
+        const tagsHtml = values.tags.map(tag => `<span class="tag">#${tag}</span>`).join('');
+        if (tagsEl) {
+          tagsEl.innerHTML = tagsHtml;
+        } else {
+          const newTags = document.createElement('div');
+          newTags.className = 'display-tags';
+          newTags.innerHTML = tagsHtml;
+          // Insert before classification
+          const classEl = displayMode.querySelector('.display-classification');
+          if (classEl) {
+            displayMode.insertBefore(newTags, classEl);
+          } else {
+            displayMode.appendChild(newTags);
+          }
+        }
+      } else if (tagsEl) {
+        tagsEl.remove();
+      }
+
+      // Update classification
+      const classEl = displayMode.querySelector('.display-classification');
+      if (classEl && values.collection) {
+        const collLabel = values.collection === 'til' ? 'TIL' :
+          values.collection === 'resources' ? 'Resource' : 'Note';
+        const collEl = classEl.querySelector('.display-collection');
+        if (collEl) collEl.textContent = collLabel;
+
+        let noteTypeEl = classEl.querySelector('.display-note-type');
+        if (values.noteType) {
+          const noteLabel = values.noteType === 'link' ? 'Link' :
+            values.noteType === 'thought' ? 'Thought' :
+            values.noteType === 'essay' ? 'Essay' :
+            values.noteType === 'snippet' ? 'Snippet' : values.noteType;
+          if (noteTypeEl) {
+            noteTypeEl.textContent = noteLabel;
+          } else {
+            noteTypeEl = document.createElement('span');
+            noteTypeEl.className = 'display-note-type';
+            noteTypeEl.textContent = noteLabel;
+            classEl.appendChild(noteTypeEl);
+          }
+        } else if (noteTypeEl) {
+          noteTypeEl.remove();
+        }
+      }
+    }
+
+    // ==========================================
+    // Reset to Raw
+    // ==========================================
+    function resetToRaw(card) {
+      const rawText = card.dataset.rawText || '';
+      const rawTags = JSON.parse(card.dataset.rawTags || '[]');
+      const rawCollection = card.dataset.rawCollection || 'notes';
+      const rawNoteType = card.dataset.rawNoteType || '';
+
+      // Update fields
+      const titleField = card.querySelector('[data-field="title"]');
+      const bodyField = card.querySelector('[data-field="body"]');
+      const collectionField = card.querySelector('[data-field="collection"]');
+      const noteTypeField = card.querySelector('[data-field="noteType"]');
+      const tagsList = card.querySelector('.tags-list');
+
+      if (titleField) titleField.value = '';
+      if (bodyField) bodyField.value = rawText;
+      if (collectionField) collectionField.value = rawCollection;
+      if (noteTypeField) noteTypeField.value = rawNoteType;
+
+      // Reset tags
+      if (tagsList) {
+        tagsList.innerHTML = rawTags.map(tag =>
+          `<span class="tag editable-tag" data-tag="${tag}">#${tag}<button type="button" class="tag-remove" aria-label="Remove tag">×</button></span>`
+        ).join('');
+      }
+
+      // Remove refined badge
+      card.querySelector('.refined-badge')?.remove();
+      card.dataset.hasRefined = 'false';
+
+      // Hide reset button
+      card.querySelector('[data-action="reset"]')?.classList.add('hidden');
+
+      markCardDirty(card, true);
+    }
+
+    // ==========================================
+    // Event Handlers Setup
+    // ==========================================
+
+    // Publish All button
     const publishBtn = document.getElementById('publishAllBtn');
     if (publishBtn) {
       publishBtn.addEventListener('click', async () => {
@@ -162,68 +601,224 @@ const counts = {
       });
     }
 
-    // Handle capture card interactions
+    // Select All checkbox
+    const selectAllCheckbox = document.getElementById('selectAll');
+    if (selectAllCheckbox) {
+      selectAllCheckbox.addEventListener('change', () => {
+        const cards = document.querySelectorAll('.capture-card');
+        cards.forEach(card => toggleCardSelection(card, selectAllCheckbox.checked));
+      });
+    }
+
+    // Clear selection button
+    const clearBtn = document.getElementById('clearSelection');
+    if (clearBtn) {
+      clearBtn.addEventListener('click', () => {
+        const cards = document.querySelectorAll('.capture-card');
+        cards.forEach(card => toggleCardSelection(card, false));
+      });
+    }
+
+    // Bulk action buttons
+    document.querySelectorAll('[data-bulk-action]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const action = btn.dataset.bulkAction;
+        const ids = Array.from(selectedIds);
+
+        if (ids.length === 0) return;
+
+        // Confirmation for destructive actions
+        if (action === 'delete') {
+          if (!confirm(`Permanently delete ${ids.length} capture(s)? This cannot be undone.`)) {
+            return;
+          }
+        }
+
+        btn.disabled = true;
+        const originalText = btn.textContent;
+        btn.textContent = 'Processing...';
+
+        try {
+          const result = await performBulkAction(action, ids);
+
+          if (result.success || result.processed > 0) {
+            // Remove processed cards
+            ids.forEach(id => {
+              const card = document.querySelector(`[data-capture-id="${id}"]`);
+              if (card && !result.failed?.includes(id)) {
+                selectedIds.delete(id);
+                removeCardWithAnimation(card);
+              }
+            });
+
+            if (result.failed?.length > 0) {
+              alert(`Processed ${result.processed} of ${ids.length}. ${result.failed.length} failed.`);
+            }
+          } else {
+            alert(`Error: ${result.error || 'Unknown error'}`);
+          }
+        } catch (error) {
+          console.error('Bulk action failed:', error);
+          alert('Bulk action failed. Please try again.');
+        } finally {
+          btn.disabled = false;
+          btn.textContent = originalText;
+        }
+      });
+    });
+
+    // Individual card interactions
     document.querySelectorAll('.capture-card').forEach((card) => {
       const captureId = card.dataset.captureId;
 
-      // Toggle view handling
-      const toggleButtons = card.querySelectorAll('.toggle-btn');
-      const viewContents = card.querySelectorAll('[data-view-content]');
+      // Setup tags editor
+      setupTagsEditor(card);
 
-      toggleButtons.forEach((btn) => {
-        btn.addEventListener('click', () => {
-          const view = btn.dataset.view;
-
-          toggleButtons.forEach((b) => {
-            b.classList.remove('active');
-            b.setAttribute('aria-pressed', 'false');
-          });
-          btn.classList.add('active');
-          btn.setAttribute('aria-pressed', 'true');
-
-          viewContents.forEach((content) => {
-            content.classList.toggle('hidden', content.dataset.viewContent !== view);
-          });
+      // Checkbox selection
+      const checkbox = card.querySelector('.capture-checkbox');
+      if (checkbox) {
+        checkbox.addEventListener('change', () => {
+          toggleCardSelection(card, checkbox.checked);
         });
+      }
+
+      // Track dirty state on field changes
+      const fields = card.querySelectorAll('[data-field]');
+      fields.forEach(field => {
+        const event = field.tagName === 'SELECT' ? 'change' : 'input';
+        field.addEventListener(event, () => markCardDirty(card, true));
       });
 
       // Action button handling
       card.querySelectorAll('[data-action]').forEach((btn) => {
         btn.addEventListener('click', async () => {
           const action = btn.dataset.action;
-          const useRefined = btn.dataset.useRefined === 'true';
+
+          // Handle edit mode toggle
+          if (action === 'enter-edit') {
+            card.dataset.editMode = 'true';
+            return;
+          }
+
+          if (action === 'exit-edit') {
+            // Revert any unsaved changes
+            revertFieldsToDisplay(card);
+            card.dataset.editMode = 'false';
+            markCardDirty(card, false);
+            return;
+          }
+
+          // Handle reset to raw locally
+          if (action === 'reset') {
+            resetToRaw(card);
+            return;
+          }
+
+          // Handle save
+          if (action === 'save') {
+            card.classList.add('loading');
+            try {
+              const result = await saveCapture(card);
+              if (result.success) {
+                markCardDirty(card, false);
+                // Update display values and exit edit mode
+                updateDisplayFromFields(card);
+                card.dataset.editMode = 'false';
+              } else {
+                alert(`Error: ${result.error || 'Failed to save'}`);
+              }
+            } catch (error) {
+              console.error('Save failed:', error);
+              alert('Save failed. Please try again.');
+            } finally {
+              card.classList.remove('loading');
+            }
+            return;
+          }
+
+          // Handle delete with confirmation
+          if (action === 'delete') {
+            if (!confirm('Permanently delete this capture? This cannot be undone.')) {
+              return;
+            }
+          }
 
           card.classList.add('loading');
 
           try {
-            const endpoint = `/api/capture/${captureId}/${action}`;
-            const options = {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${adminPassword}`,
-                'Content-Type': 'application/json',
-              },
-              body: undefined,
-            };
-
+            // For approve, save any pending changes first
             if (action === 'approve') {
-              options.body = JSON.stringify({ useRefined });
+              const isDirty = card.classList.contains('dirty');
+              if (isDirty) {
+                const saveResult = await saveCapture(card);
+                if (!saveResult.success) {
+                  alert(`Error saving changes: ${saveResult.error}`);
+                  card.classList.remove('loading');
+                  return;
+                }
+              }
             }
 
-            const response = await fetch(endpoint, options);
-            const data = await response.json();
+            const data = await performAction(captureId, action);
 
-            if (response.ok) {
+            if (data.success || data.refined) {
               if (action === 'refine' && data.refined) {
-                location.reload();
-              } else if (action === 'approve' || action === 'reject' || action === 'restore') {
-                card.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-                card.style.opacity = '0';
-                card.style.transform = 'translateY(-10px)';
-                setTimeout(() => {
-                  card.remove();
-                  updateUI();
-                }, 300);
+                // Update fields with refined content
+                const titleField = card.querySelector('[data-field="title"]');
+                const bodyField = card.querySelector('[data-field="body"]');
+                const tagsList = card.querySelector('.tags-list');
+                const collectionField = card.querySelector('[data-field="collection"]');
+                const noteTypeField = card.querySelector('[data-field="noteType"]');
+
+                if (titleField) titleField.value = data.refined.title || '';
+                if (bodyField) bodyField.value = data.refined.body || '';
+                if (collectionField && data.refined.suggestedType) {
+                  collectionField.value = data.refined.suggestedType;
+                }
+                if (noteTypeField && data.refined.suggestedNoteType) {
+                  noteTypeField.value = data.refined.suggestedNoteType;
+                }
+
+                // Update tags
+                if (tagsList && data.refined.suggestedTags) {
+                  tagsList.innerHTML = data.refined.suggestedTags.map(tag =>
+                    `<span class="tag editable-tag" data-tag="${tag}">#${tag}<button type="button" class="tag-remove" aria-label="Remove tag">×</button></span>`
+                  ).join('');
+                }
+
+                // Add refined badge if not present
+                if (!card.querySelector('.refined-badge')) {
+                  const header = card.querySelector('.capture-header');
+                  const badge = document.createElement('span');
+                  badge.className = 'refined-badge';
+                  badge.textContent = 'Refined';
+                  header.appendChild(badge);
+                }
+
+                // Show reset button
+                let resetBtn = card.querySelector('[data-action="reset"]');
+                if (!resetBtn) {
+                  // Create reset button if it doesn't exist
+                  const actionGroup = card.querySelector('.action-group-left');
+                  resetBtn = document.createElement('button');
+                  resetBtn.type = 'button';
+                  resetBtn.className = 'action-btn action-reset';
+                  resetBtn.dataset.action = 'reset';
+                  resetBtn.textContent = 'Reset to Raw';
+                  actionGroup.appendChild(resetBtn);
+
+                  // Add click handler
+                  resetBtn.addEventListener('click', () => resetToRaw(card));
+                }
+                resetBtn.classList.remove('hidden');
+
+                card.dataset.hasRefined = 'true';
+                markCardDirty(card, true);
+                // Auto-enter edit mode after refine
+                card.dataset.editMode = 'true';
+              } else if (action === 'approve' || action === 'reject' || action === 'restore' || action === 'delete') {
+                selectedIds.delete(captureId);
+                removeCardWithAnimation(card);
               }
             } else {
               alert(`Error: ${data.error || 'Unknown error'}`);
@@ -237,22 +832,6 @@ const counts = {
         });
       });
     });
-
-    function updateUI() {
-      const cards = document.querySelectorAll('.capture-card');
-
-      if (cards.length === 0) {
-        const grid = document.querySelector('.captures-grid');
-        if (grid) {
-          grid.outerHTML = `
-            <div class="empty-state">
-              <p class="empty-title">All done!</p>
-              <p class="empty-subtitle">No more items in this view</p>
-            </div>
-          `;
-        }
-      }
-    }
   </script>
 </Base>
 
@@ -383,6 +962,152 @@ const counts = {
 
   .publish-banner p {
     margin: 0;
+  }
+
+  /* Bulk controls */
+  .bulk-controls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    padding: 0.5rem 0;
+  }
+
+  .bulk-controls.hidden {
+    display: none;
+  }
+
+  .select-all-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+  }
+
+  .select-all-checkbox {
+    width: 1rem;
+    height: 1rem;
+    cursor: pointer;
+    accent-color: var(--accent);
+  }
+
+  /* Floating bulk action bar */
+  .bulk-action-bar {
+    position: fixed;
+    bottom: 1.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem 1.25rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border-primary);
+    border-radius: 0.75rem;
+    box-shadow: 0 8px 30px -10px rgba(0, 0, 0, 0.2);
+    z-index: 100;
+    animation: slideUp 0.2s ease;
+  }
+
+  .bulk-action-bar.hidden {
+    display: none;
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateX(-50%) translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  }
+
+  .bulk-count {
+    font-size: 0.88rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    padding-right: 1rem;
+    border-right: 1px solid var(--border-primary);
+  }
+
+  .bulk-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .bulk-btn {
+    padding: 0.4rem 0.75rem;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.4rem;
+    background: var(--bg-card);
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .bulk-btn:hover:not(:disabled) {
+    border-color: var(--text-secondary);
+    color: var(--text-primary);
+  }
+
+  .bulk-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .bulk-approve {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+  }
+
+  .bulk-approve:hover:not(:disabled) {
+    background: var(--accent-hover);
+    border-color: var(--accent-hover);
+  }
+
+  .bulk-reject {
+    color: #dc2626;
+    border-color: #dc2626;
+  }
+
+  .bulk-reject:hover:not(:disabled) {
+    background: #dc2626;
+    color: white;
+  }
+
+  .bulk-restore {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .bulk-restore:hover:not(:disabled) {
+    background: var(--accent);
+    color: white;
+  }
+
+  .bulk-delete {
+    color: #dc2626;
+    border-color: transparent;
+  }
+
+  .bulk-delete:hover:not(:disabled) {
+    background: color-mix(in srgb, #dc2626 15%, transparent);
+  }
+
+  .bulk-clear {
+    color: var(--text-tertiary);
+    border-color: transparent;
+  }
+
+  .bulk-clear:hover:not(:disabled) {
+    color: var(--text-secondary);
   }
 
   .captures-grid {

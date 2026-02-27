@@ -1,17 +1,14 @@
 /**
- * Update Capture Endpoint
+ * Delete Capture Endpoint
  *
- * PATCH /api/capture/[id]/update
+ * DELETE /api/capture/[id]/delete
  *
- * Updates capture metadata (title, text, tags, etc.)
+ * Permanently removes a capture from Redis.
+ * Only allows deletion of rejected or pending captures.
  */
 
 import type { APIRoute } from 'astro';
-import {
-  getCapture,
-  updateCapture,
-  type CaptureUpdatePayload,
-} from '../../../../lib/capture';
+import { getCapture, deleteCapture } from '../../../../lib/capture';
 
 export const prerender = false;
 
@@ -29,7 +26,7 @@ function verifyAdmin(request: Request): boolean {
   return token === adminPassword;
 }
 
-export const PATCH: APIRoute = async ({ params, request }) => {
+export const DELETE: APIRoute = async ({ params, request }) => {
   if (!verifyAdmin(request)) {
     return new Response(
       JSON.stringify({ error: 'Unauthorized' }),
@@ -56,39 +53,41 @@ export const PATCH: APIRoute = async ({ params, request }) => {
       );
     }
 
-    const updates = await request.json() as CaptureUpdatePayload;
-
-    // Validate updates
-    if (updates.inferredCollection &&
-        !['til', 'notes', 'resources', 'project-update'].includes(updates.inferredCollection)) {
+    // Only allow deletion of pending or rejected captures
+    if (capture.status === 'approved' || capture.status === 'published') {
       return new Response(
-        JSON.stringify({ error: 'Invalid collection' }),
+        JSON.stringify({
+          error: 'Cannot delete approved or published captures',
+          status: capture.status,
+        }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    if (updates.inferredNoteType &&
-        !['link', 'thought', 'essay', 'snippet'].includes(updates.inferredNoteType)) {
+    const deleted = await deleteCapture(id);
+
+    if (!deleted) {
       return new Response(
-        JSON.stringify({ error: 'Invalid note type' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Failed to delete capture' }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
       );
     }
-
-    const updated = await updateCapture(id, updates);
 
     return new Response(
-      JSON.stringify({ success: true, capture: updated }),
+      JSON.stringify({
+        success: true,
+        message: 'Capture permanently deleted',
+      }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
   } catch (error) {
-    console.error('Update capture error:', error);
+    console.error('Delete capture error:', error);
     return new Response(
-      JSON.stringify({ error: 'Failed to update capture' }),
+      JSON.stringify({ error: 'Failed to delete capture' }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }
 };
 
-// Also support POST for clients that don't support PATCH
-export const POST = PATCH;
+// Also support POST for clients that don't support DELETE
+export const POST = DELETE;

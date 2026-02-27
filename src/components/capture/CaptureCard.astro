@@ -2,10 +2,13 @@
 /**
  * Capture Card Component
  *
- * Displays a single capture with raw/refined toggle and action buttons.
+ * Single editable view for captures with:
+ * - Checkbox for bulk selection
+ * - Inline editing for title, body, tags, collection, noteType
+ * - Refine/Reset to Raw/Save/Approve buttons
  */
 
-import type { Capture } from '../../lib/capture/types';
+import type { Capture, InferredCollection, InferredNoteType } from '../../lib/capture/types';
 
 interface Props {
   capture: Capture;
@@ -58,43 +61,12 @@ function getTypeLabel(capture: Capture): string {
   return 'Text';
 }
 
-function getCollectionLabel(capture: Capture): string {
-  // Show "Project Update" when capture has a project associated
-  if (capture.project) return 'Project Update';
-
-  const collection = capture.refined?.suggestedType || capture.inferredCollection;
-  if (collection === 'til') return 'TIL';
-  if (collection === 'project-update') return 'Project Update';
-  return 'Note';
-}
-
-function getNoteTypeLabel(capture: Capture): string | null {
-  // Don't show note type for project updates (collection label is enough)
-  if (capture.project) return null;
-
-  const noteType = capture.refined?.suggestedNoteType || capture.inferredNoteType;
-  if (!noteType) return null;
-
-  const labels: Record<string, string> = {
-    link: 'Link',
-    thought: 'Thought',
-    essay: 'Essay',
-    snippet: 'Snippet',
-  };
-  return labels[noteType] || noteType;
-}
-
 function getDomain(url: string): string {
   try {
     return new URL(url).hostname.replace(/^www\./, '');
   } catch {
     return url;
   }
-}
-
-function truncate(text: string, maxLength: number): string {
-  if (text.length <= maxLength) return text;
-  return text.slice(0, maxLength - 1).trim() + '...';
 }
 
 /**
@@ -127,10 +99,53 @@ function getImageSrc(img: { url: string; data?: string }): string {
 
   return '';
 }
+
+// Get initial values for editable fields
+// If refined exists, use refined values, otherwise use raw
+const initialTitle = capture.refined?.title || '';
+const initialBody = capture.refined?.body || capture.text || capture.comment || '';
+const initialTags = capture.refined?.suggestedTags || capture.tags || [];
+const initialCollection = capture.refined?.suggestedType || capture.inferredCollection;
+const initialNoteType = capture.refined?.suggestedNoteType || capture.inferredNoteType;
+
+// Check if content has been refined
+const isRefined = Boolean(capture.refined);
+
+// Collections options
+const collections: { value: InferredCollection; label: string }[] = [
+  { value: 'til', label: 'TIL' },
+  { value: 'notes', label: 'Note' },
+  { value: 'resources', label: 'Resource' },
+  { value: 'project-update', label: 'Project Update' },
+];
+
+// Note type options
+const noteTypes: { value: InferredNoteType; label: string }[] = [
+  { value: 'link', label: 'Link' },
+  { value: 'thought', label: 'Thought' },
+  { value: 'essay', label: 'Essay' },
+  { value: 'snippet', label: 'Snippet' },
+];
 ---
 
-<article class="capture-card" data-capture-id={capture.id}>
+<article
+  class="capture-card"
+  data-capture-id={capture.id}
+  data-has-refined={isRefined ? 'true' : 'false'}
+  data-edit-mode="false"
+  data-raw-text={capture.text || capture.comment || ''}
+  data-raw-tags={JSON.stringify(capture.tags || [])}
+  data-raw-collection={capture.inferredCollection}
+  data-raw-note-type={capture.inferredNoteType || ''}
+>
   <header class="capture-header">
+    <div class="capture-select">
+      <input
+        type="checkbox"
+        class="capture-checkbox"
+        aria-label="Select capture"
+      />
+    </div>
     <div class="capture-meta">
       <span class="capture-time">{formatDate(capture.createdAt)}</span>
       <span class="capture-type">{getTypeLabel(capture)}</span>
@@ -139,154 +154,268 @@ function getImageSrc(img: { url: string; data?: string }): string {
         <span class="capture-project">{capture.project}</span>
       )}
     </div>
-    <div class="capture-classification">
-      <span class="capture-collection">{getCollectionLabel(capture)}</span>
-      {getNoteTypeLabel(capture) && (
-        <span class="capture-note-type">{getNoteTypeLabel(capture)}</span>
-      )}
-    </div>
+    {isRefined && (
+      <span class="refined-badge">Refined</span>
+    )}
   </header>
 
   <div class="capture-content">
-    <div class="capture-view-toggle" data-toggle-container>
-      <button
-        type="button"
-        class="toggle-btn active"
-        data-view="raw"
-        aria-pressed="true"
-      >
-        Raw
-      </button>
-      <button
-        type="button"
-        class="toggle-btn"
-        data-view="refined"
-        aria-pressed="false"
-        disabled={!capture.refined}
-      >
-        Refined {capture.refined ? '✨' : ''}
-      </button>
-    </div>
+    {/* URL display */}
+    {capture.url && (
+      <a class="capture-url" href={capture.url} target="_blank" rel="noopener">
+        <span class="url-icon">🔗</span>
+        <span class="url-domain">{getDomain(capture.url)}</span>
+        <span class="url-arrow">↗</span>
+      </a>
+    )}
 
-    <!-- Raw View -->
-    <div class="capture-view view-raw" data-view-content="raw">
-      {capture.url && (
-        <a class="capture-url" href={capture.url} target="_blank" rel="noopener">
-          <span class="url-icon">🔗</span>
-          <span class="url-domain">{getDomain(capture.url)}</span>
-          <span class="url-arrow">↗</span>
-        </a>
-      )}
+    {/* For pending captures: show both display and edit modes */}
+    {capture.status === 'pending' && (
+      <>
+        {/* Display mode (read-only) - shown by default */}
+        <div class="display-mode">
+          {initialTitle && <h3 class="display-title">{initialTitle}</h3>}
+          <div class="display-body">{initialBody}</div>
 
-      {capture.comment && (
-        <p class="capture-comment">
-          <span class="comment-label">Comment:</span>
-          {capture.comment}
-        </p>
-      )}
-
-      {capture.text && capture.text !== capture.comment && (
-        <div class="capture-text">
-          {truncate(capture.text, 500)}
-        </div>
-      )}
-
-      {capture.images && capture.images.length > 0 && (
-        <div class="capture-images">
-          {capture.images.map((img, idx) => (
-            <img
-              src={getImageSrc(img)}
-              alt={`Captured image ${idx + 1}`}
-              class="capture-image"
-              loading="lazy"
-            />
-          ))}
-        </div>
-      )}
-    </div>
-
-    <!-- Refined View -->
-    <div class="capture-view view-refined hidden" data-view-content="refined">
-      {capture.refined ? (
-        <>
-          <h3 class="refined-title">{capture.refined.title}</h3>
-
-          {capture.refined.takeaway && (
-            <p class="refined-takeaway">
-              <em>{capture.refined.takeaway}</em>
-            </p>
-          )}
-
-          <div class="refined-body">
-            {capture.refined.body}
-          </div>
-
-          {/* Show images in refined view too */}
+          {/* Images in display mode */}
           {capture.images && capture.images.length > 0 && (
-            <div class="capture-images">
+            <div class="capture-images" data-lightbox-gallery>
               {capture.images.map((img, idx) => (
                 <img
                   src={getImageSrc(img)}
                   alt={`Captured image ${idx + 1}`}
                   class="capture-image"
                   loading="lazy"
+                  data-lightbox
                 />
               ))}
             </div>
           )}
 
-          {capture.refined.suggestedTags.length > 0 && (
-            <div class="refined-tags">
-              {capture.refined.suggestedTags.map((tag) => (
+          {initialTags.length > 0 && (
+            <div class="display-tags">
+              {initialTags.map((tag) => (
                 <span class="tag">#{tag}</span>
               ))}
             </div>
           )}
-        </>
-      ) : (
-        <div class="no-refinement">
-          <p>Click "Refine" to generate AI-improved content</p>
+
+          {!capture.project && (
+            <div class="display-classification">
+              <span class="display-collection">{
+                initialCollection === 'til' ? 'TIL' :
+                initialCollection === 'resources' ? 'Resource' :
+                'Note'
+              }</span>
+              {initialNoteType && (
+                <span class="display-note-type">{
+                  initialNoteType === 'link' ? 'Link' :
+                  initialNoteType === 'thought' ? 'Thought' :
+                  initialNoteType === 'essay' ? 'Essay' :
+                  initialNoteType === 'snippet' ? 'Snippet' :
+                  initialNoteType
+                }</span>
+              )}
+            </div>
+          )}
+
+          <button type="button" class="edit-toggle-btn" data-action="enter-edit">
+            Edit
+          </button>
         </div>
-      )}
-    </div>
+
+        {/* Edit mode - hidden by default */}
+        <div class="edit-mode">
+          <div class="field-group">
+            <label class="field-label">Title</label>
+            <input
+              type="text"
+              class="field-input field-title"
+              value={initialTitle}
+              placeholder="Enter a title..."
+              data-field="title"
+            />
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Body</label>
+            <textarea
+              class="field-textarea field-body"
+              placeholder="Enter content..."
+              data-field="body"
+              rows="4"
+            >{initialBody}</textarea>
+          </div>
+
+          {/* Images in edit mode */}
+          {capture.images && capture.images.length > 0 && (
+            <div class="capture-images" data-lightbox-gallery>
+              {capture.images.map((img, idx) => (
+                <img
+                  src={getImageSrc(img)}
+                  alt={`Captured image ${idx + 1}`}
+                  class="capture-image"
+                  loading="lazy"
+                  data-lightbox
+                />
+              ))}
+            </div>
+          )}
+
+          <div class="field-group field-group-inline">
+            <label class="field-label">Tags</label>
+            <div class="tags-editor" data-field="tags">
+              <div class="tags-list">
+                {initialTags.map((tag) => (
+                  <span class="tag editable-tag" data-tag={tag}>
+                    #{tag}
+                    <button type="button" class="tag-remove" aria-label="Remove tag">×</button>
+                  </span>
+                ))}
+              </div>
+              <input
+                type="text"
+                class="tag-input"
+                placeholder="Add tag..."
+              />
+            </div>
+          </div>
+
+          {!capture.project && (
+            <div class="field-row">
+              <div class="field-group field-group-small">
+                <label class="field-label">Collection</label>
+                <select class="field-select" data-field="collection">
+                  {collections.map((c) => (
+                    <option value={c.value} selected={c.value === initialCollection}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div class="field-group field-group-small">
+                <label class="field-label">Note Type</label>
+                <select class="field-select" data-field="noteType">
+                  <option value="">None</option>
+                  {noteTypes.map((t) => (
+                    <option value={t.value} selected={t.value === initialNoteType}>
+                      {t.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
+
+          <button type="button" class="edit-toggle-btn edit-cancel" data-action="exit-edit">
+            Cancel
+          </button>
+        </div>
+      </>
+    )}
+
+    {/* Non-pending captures: always show display mode */}
+    {capture.status !== 'pending' && (
+      <>
+        {initialTitle && <h3 class="display-title">{initialTitle}</h3>}
+        <div class="display-body">{initialBody}</div>
+
+        {/* Images */}
+        {capture.images && capture.images.length > 0 && (
+          <div class="capture-images" data-lightbox-gallery>
+            {capture.images.map((img, idx) => (
+              <img
+                src={getImageSrc(img)}
+                alt={`Captured image ${idx + 1}`}
+                class="capture-image"
+                loading="lazy"
+                data-lightbox
+              />
+            ))}
+          </div>
+        )}
+
+        {initialTags.length > 0 && (
+          <div class="display-tags">
+            {initialTags.map((tag) => (
+              <span class="tag">#{tag}</span>
+            ))}
+          </div>
+        )}
+
+        <div class="display-classification">
+          <span class="display-collection">{
+            capture.project ? 'Project Update' :
+            initialCollection === 'til' ? 'TIL' :
+            initialCollection === 'resources' ? 'Resource' :
+            'Note'
+          }</span>
+          {!capture.project && initialNoteType && (
+            <span class="display-note-type">{
+              initialNoteType === 'link' ? 'Link' :
+              initialNoteType === 'thought' ? 'Thought' :
+              initialNoteType === 'essay' ? 'Essay' :
+              initialNoteType === 'snippet' ? 'Snippet' :
+              initialNoteType
+            }</span>
+          )}
+        </div>
+      </>
+    )}
   </div>
 
   <footer class="capture-actions">
-    {/* Pending: Show refine and approve/reject actions */}
+    {/* Pending: Show refine, reset, save, and approve/reject actions */}
     {capture.status === 'pending' && (
       <>
-        <button
-          type="button"
-          class="action-btn action-refine"
-          data-action="refine"
-          disabled={Boolean(capture.refined)}
-        >
-          {capture.refined ? 'Refined' : 'Refine'}
-        </button>
+        <div class="action-group-left">
+          <button
+            type="button"
+            class="action-btn action-refine"
+            data-action="refine"
+          >
+            Refine
+          </button>
+          {isRefined && (
+            <button
+              type="button"
+              class="action-btn action-reset"
+              data-action="reset"
+            >
+              Reset to Raw
+            </button>
+          )}
+          <button
+            type="button"
+            class="action-btn action-save hidden"
+            data-action="save"
+          >
+            Save
+          </button>
+        </div>
 
-        <div class="action-group-primary">
-          <button
-            type="button"
-            class="action-btn action-approve"
-            data-action="approve"
-            data-use-refined="true"
-          >
-            Approve Refined
-          </button>
-          <button
-            type="button"
-            class="action-btn action-approve-raw"
-            data-action="approve"
-            data-use-refined="false"
-          >
-            Approve Raw
-          </button>
+        <div class="action-group-right">
           <button
             type="button"
             class="action-btn action-reject"
             data-action="reject"
           >
             Reject
+          </button>
+          <button
+            type="button"
+            class="action-btn action-delete"
+            data-action="delete"
+          >
+            Delete
+          </button>
+          <button
+            type="button"
+            class="action-btn action-approve"
+            data-action="approve"
+          >
+            Approve
           </button>
         </div>
       </>
@@ -317,7 +446,7 @@ function getImageSrc(img: { url: string; data?: string }): string {
             target="_blank"
             rel="noopener"
           >
-            View on site ↗
+            View on site
           </a>
         ) : (
           <span class="status-note">Link not available</span>
@@ -325,17 +454,26 @@ function getImageSrc(img: { url: string; data?: string }): string {
       </>
     )}
 
-    {/* Rejected: Show restore option */}
+    {/* Rejected: Show restore and delete options */}
     {capture.status === 'rejected' && (
       <>
         <span class="status-label status-rejected">Rejected</span>
-        <button
-          type="button"
-          class="action-btn action-restore"
-          data-action="restore"
-        >
-          Restore to Pending
-        </button>
+        <div class="action-group-right">
+          <button
+            type="button"
+            class="action-btn action-restore"
+            data-action="restore"
+          >
+            Restore
+          </button>
+          <button
+            type="button"
+            class="action-btn action-delete"
+            data-action="delete"
+          >
+            Delete
+          </button>
+        </div>
       </>
     )}
   </footer>
@@ -347,20 +485,51 @@ function getImageSrc(img: { url: string; data?: string }): string {
     border-radius: 0.75rem;
     background: var(--bg-card);
     overflow: hidden;
-    transition: box-shadow 0.2s ease;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+    position: relative;
   }
 
   .capture-card:hover {
     box-shadow: 0 4px 12px -6px rgba(0, 0, 0, 0.1);
   }
 
+  .capture-card.selected {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent);
+  }
+
+  .capture-card.dirty {
+    border-color: #f59e0b;
+  }
+
+  .capture-card.dirty::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: #f59e0b;
+  }
+
   .capture-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    gap: 0.75rem;
     padding: 0.75rem 1rem;
     border-bottom: 1px solid var(--border-primary);
     background: var(--bg-subtle);
+  }
+
+  .capture-select {
+    flex-shrink: 0;
+  }
+
+  .capture-checkbox {
+    width: 1rem;
+    height: 1rem;
+    cursor: pointer;
+    accent-color: var(--accent);
   }
 
   .capture-meta {
@@ -369,6 +538,7 @@ function getImageSrc(img: { url: string; data?: string }): string {
     gap: 0.75rem;
     font-size: 0.78rem;
     color: var(--text-tertiary);
+    flex: 1;
   }
 
   .capture-time {
@@ -394,74 +564,76 @@ function getImageSrc(img: { url: string; data?: string }): string {
     color: var(--accent);
   }
 
-  .capture-classification {
-    display: flex;
-    gap: 0.5rem;
-  }
-
-  .capture-collection,
-  .capture-note-type {
-    font-size: 0.72rem;
+  .refined-badge {
+    font-size: 0.68rem;
     font-weight: 500;
-    padding: 0.2rem 0.5rem;
+    padding: 0.15rem 0.45rem;
+    background: color-mix(in srgb, #10b981 15%, transparent);
+    color: #10b981;
     border-radius: 0.25rem;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-
-  .capture-collection {
-    background: color-mix(in srgb, var(--accent) 15%, transparent);
-    color: var(--accent);
-  }
-
-  .capture-note-type {
-    background: var(--bg-subtle);
-    color: var(--text-secondary);
+    letter-spacing: 0.04em;
   }
 
   .capture-content {
     padding: 1rem;
-  }
-
-  .capture-view-toggle {
     display: flex;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
+    flex-direction: column;
+    gap: 0.75rem;
   }
 
-  .toggle-btn {
-    padding: 0.35rem 0.75rem;
+  /* Edit mode toggle */
+  .display-mode,
+  .edit-mode {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  /* Default: show display mode, hide edit mode */
+  .capture-card[data-edit-mode="false"] .display-mode {
+    display: flex;
+  }
+
+  .capture-card[data-edit-mode="false"] .edit-mode {
+    display: none;
+  }
+
+  /* Edit mode: hide display mode, show edit mode */
+  .capture-card[data-edit-mode="true"] .display-mode {
+    display: none;
+  }
+
+  .capture-card[data-edit-mode="true"] .edit-mode {
+    display: flex;
+  }
+
+  .edit-toggle-btn {
+    align-self: flex-start;
+    padding: 0.35rem 0.7rem;
     border: 1px solid var(--border-primary);
     border-radius: 0.4rem;
-    background: transparent;
+    background: var(--bg-card);
     color: var(--text-secondary);
-    font-size: 0.82rem;
+    font-size: 0.78rem;
+    font-weight: 500;
     cursor: pointer;
     transition: all 0.15s ease;
+    margin-top: 0.25rem;
   }
 
-  .toggle-btn:hover:not(:disabled) {
+  .edit-toggle-btn:hover {
     border-color: var(--accent);
     color: var(--accent);
   }
 
-  .toggle-btn.active {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: white;
+  .edit-cancel {
+    color: var(--text-tertiary);
   }
 
-  .toggle-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  .capture-view {
-    min-height: 100px;
-  }
-
-  .capture-view.hidden {
-    display: none;
+  .edit-cancel:hover {
+    border-color: var(--text-secondary);
+    color: var(--text-secondary);
   }
 
   .capture-url {
@@ -474,7 +646,6 @@ function getImageSrc(img: { url: string; data?: string }): string {
     background: var(--bg-subtle);
     color: var(--text-primary);
     text-decoration: none;
-    margin-bottom: 0.75rem;
     transition: border-color 0.2s ease;
   }
 
@@ -496,75 +667,81 @@ function getImageSrc(img: { url: string; data?: string }): string {
     color: var(--text-tertiary);
   }
 
-  .capture-comment {
-    margin: 0 0 0.75rem;
-    font-size: 0.95rem;
-    line-height: 1.55;
-    color: var(--text-primary);
+  /* Field styling */
+  .field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
   }
 
-  .comment-label {
-    font-size: 0.75rem;
+  .field-group-inline {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .field-group-small {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .field-row {
+    display: flex;
+    gap: 1rem;
+  }
+
+  .field-label {
+    font-size: 0.72rem;
     font-weight: 500;
     text-transform: uppercase;
     letter-spacing: 0.04em;
     color: var(--text-tertiary);
-    margin-right: 0.5rem;
   }
 
-  .capture-text {
-    font-size: 0.92rem;
-    line-height: 1.6;
-    color: var(--text-secondary);
-    padding: 0.75rem;
-    background: var(--bg-subtle);
-    border-radius: 0.5rem;
-    white-space: pre-wrap;
-    word-break: break-word;
-  }
-
-  .capture-images {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    margin-top: 0.75rem;
-  }
-
-  .capture-image {
-    max-width: 100%;
-    max-height: 300px;
-    object-fit: contain;
-    border-radius: 0.5rem;
+  .field-input,
+  .field-textarea,
+  .field-select {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
     border: 1px solid var(--border-primary);
-    background: var(--bg-subtle);
-  }
-
-  .refined-title {
-    margin: 0 0 0.5rem;
-    font-size: 1.15rem;
-    font-weight: 500;
+    border-radius: 0.4rem;
+    background: var(--bg-card);
     color: var(--text-primary);
-  }
-
-  .refined-takeaway {
-    margin: 0 0 0.75rem;
     font-size: 0.9rem;
-    color: var(--text-secondary);
-    border-left: 2px solid var(--accent);
-    padding-left: 0.75rem;
+    font-family: inherit;
+    transition: border-color 0.15s ease;
   }
 
-  .refined-body {
-    font-size: 0.92rem;
-    line-height: 1.65;
-    color: var(--text-secondary);
-    margin-bottom: 0.75rem;
+  .field-input:focus,
+  .field-textarea:focus,
+  .field-select:focus {
+    outline: none;
+    border-color: var(--accent);
   }
 
-  .refined-tags {
+  .field-textarea {
+    resize: vertical;
+    min-height: 80px;
+    line-height: 1.5;
+  }
+
+  .field-title {
+    font-size: 1rem;
+    font-weight: 500;
+  }
+
+  /* Tags editor */
+  .tags-editor {
     display: flex;
-    gap: 0.5rem;
     flex-wrap: wrap;
+    gap: 0.35rem;
+    flex: 1;
+  }
+
+  .tags-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
   }
 
   .tag {
@@ -575,13 +752,124 @@ function getImageSrc(img: { url: string; data?: string }): string {
     border-radius: 0.25rem;
   }
 
-  .no-refinement {
-    text-align: center;
-    padding: 2rem;
-    color: var(--text-tertiary);
-    font-style: italic;
+  .editable-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding-right: 0.25rem;
   }
 
+  .tag-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1rem;
+    height: 1rem;
+    border: none;
+    background: transparent;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    font-size: 0.85rem;
+    line-height: 1;
+    border-radius: 50%;
+    transition: all 0.15s ease;
+  }
+
+  .tag-remove:hover {
+    background: #dc2626;
+    color: white;
+  }
+
+  .tag-input {
+    flex: 1;
+    min-width: 80px;
+    padding: 0.2rem 0.5rem;
+    border: 1px dashed var(--border-primary);
+    border-radius: 0.25rem;
+    background: transparent;
+    color: var(--text-primary);
+    font-size: 0.75rem;
+    font-family: inherit;
+  }
+
+  .tag-input:focus {
+    outline: none;
+    border-style: solid;
+    border-color: var(--accent);
+  }
+
+  /* Display styles for non-pending */
+  .display-title {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  .display-body {
+    font-size: 0.92rem;
+    line-height: 1.6;
+    color: var(--text-secondary);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .display-tags {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .display-classification {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .display-collection,
+  .display-note-type {
+    font-size: 0.72rem;
+    font-weight: 500;
+    padding: 0.2rem 0.5rem;
+    border-radius: 0.25rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .display-collection {
+    background: color-mix(in srgb, var(--accent) 15%, transparent);
+    color: var(--accent);
+  }
+
+  .display-note-type {
+    background: var(--bg-subtle);
+    color: var(--text-secondary);
+  }
+
+  /* Images */
+  .capture-images {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .capture-image {
+    max-width: 100%;
+    max-height: 300px;
+    object-fit: contain;
+    border-radius: 0.5rem;
+    border: 1px solid var(--border-primary);
+    background: var(--bg-subtle);
+    cursor: zoom-in;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  }
+
+  .capture-image:hover {
+    border-color: var(--accent);
+    box-shadow: 0 8px 20px -8px rgba(0, 0, 0, 0.25);
+    transform: scale(1.02);
+  }
+
+  /* Actions footer */
   .capture-actions {
     display: flex;
     justify-content: space-between;
@@ -589,9 +877,11 @@ function getImageSrc(img: { url: string; data?: string }): string {
     padding: 0.75rem 1rem;
     border-top: 1px solid var(--border-primary);
     background: var(--bg-subtle);
+    gap: 0.5rem;
   }
 
-  .action-group-primary {
+  .action-group-left,
+  .action-group-right {
     display: flex;
     gap: 0.5rem;
   }
@@ -618,6 +908,41 @@ function getImageSrc(img: { url: string; data?: string }): string {
     cursor: not-allowed;
   }
 
+  .action-btn.hidden {
+    display: none;
+  }
+
+  .action-refine {
+    background: color-mix(in srgb, #8b5cf6 15%, transparent);
+    border-color: #8b5cf6;
+    color: #8b5cf6;
+  }
+
+  .action-refine:hover:not(:disabled) {
+    background: #8b5cf6;
+    color: white;
+  }
+
+  .action-reset {
+    color: var(--text-tertiary);
+    border-color: var(--border-primary);
+  }
+
+  .action-reset:hover:not(:disabled) {
+    color: var(--text-secondary);
+  }
+
+  .action-save {
+    background: #f59e0b;
+    border-color: #f59e0b;
+    color: white;
+  }
+
+  .action-save:hover:not(:disabled) {
+    background: #d97706;
+    border-color: #d97706;
+  }
+
   .action-approve {
     background: var(--accent);
     border-color: var(--accent);
@@ -639,6 +964,16 @@ function getImageSrc(img: { url: string; data?: string }): string {
   .action-reject:hover:not(:disabled) {
     background: #dc2626;
     color: white;
+  }
+
+  .action-delete {
+    color: #dc2626;
+    border-color: transparent;
+    background: transparent;
+  }
+
+  .action-delete:hover:not(:disabled) {
+    background: color-mix(in srgb, #dc2626 15%, transparent);
   }
 
   .action-view {

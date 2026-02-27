@@ -192,7 +192,8 @@ function transformToNote(capture: Capture, useRefined: boolean): TransformResult
   // Add link fields for link-type notes
   if (noteType === 'link' && capture.url) {
     frontmatter.link = capture.url;
-    frontmatter.linkTitle = title;
+    // Use refined linkTitle (actual page title) if available, otherwise fall back to title
+    frontmatter.linkTitle = (useRefined && capture.refined?.linkTitle) || title;
   }
 
   // Add takeaway if available
