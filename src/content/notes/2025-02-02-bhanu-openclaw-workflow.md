@@ -1,9 +1,10 @@
 ---
-title: "OpenClaw Workflow Guide by Bhanu Teja"
+title: "A beginner-friendly OpenClaw workflow worth bookmarking"
 date: 2025-02-02
 tags: ["ai-tools", "workflow", "productivity"]
 type: "link"
 link: "https://x.com/pbteja1998/status/2017662163540971756"
+linkTitle: "OpenClaw Workflow Guide by Bhanu Teja"
 takeaway: "A detailed, beginner-friendly walkthrough for using OpenClaw effectively in your work"
 draft: false
 ---
