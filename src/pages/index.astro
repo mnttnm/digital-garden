@@ -86,8 +86,6 @@ function getImagePreviews(item: LearningLogItem) {
       <ul class="entries" aria-label="Journal entries">
         {visibleItems.map((item, index) => {
           const previews = getImagePreviews(item);
-          const hasMultiImagePreview = previews.length > 1;
-          const previewCountClass = `count-${Math.min(previews.length, 4)}`;
 
           return (
             <li
@@ -104,6 +102,15 @@ function getImagePreviews(item: LearningLogItem) {
                 </aside>
 
                 <div class="entry-main">
+                  {item.projectTitle && (
+                    <a
+                      class="project-label"
+                      href={resolveInternalHref(`/projects/${item.projectSlug}/`)}
+                    >
+                      {item.projectTitle}
+                    </a>
+                  )}
+
                   <h2 class="entry-title">
                     <a
                       href={resolveHref(item.href, item.isExternal)}
@@ -115,29 +122,35 @@ function getImagePreviews(item: LearningLogItem) {
                   </h2>
 
                   {previews.length > 0 && (
-                    <div
-                      class:list={['entry-thumbnail', { 'is-grid': hasMultiImagePreview }]}
-                      data-lightbox-gallery
-                    >
-                      {hasMultiImagePreview ? (
-                        <div class:list={['entry-thumbnail-grid', previewCountClass]}>
-                          {previews.slice(0, 4).map((preview) => (
+                    <div class="entry-thumbnails" data-lightbox-gallery>
+                      {previews.slice(0, 3).map((preview, i) => {
+                        const isLast = i === 2;
+                        const hasMore = isLast && previews.length > 3;
+                        const extraCount = previews.length - 3;
+
+                        return (
+                          <div class:list={['entry-thumbnail', { 'has-more': hasMore }]}>
                             <img
                               src={preview.src}
                               alt={preview.alt}
                               loading="lazy"
                               data-lightbox
                             />
-                          ))}
-                        </div>
-                      ) : (
+                            {hasMore && (
+                              <span class="thumbnail-more">+{extraCount}</span>
+                            )}
+                          </div>
+                        );
+                      })}
+                      {/* Hidden images for lightbox gallery navigation */}
+                      {previews.slice(3).map((preview) => (
                         <img
-                          src={previews[0].src}
-                          alt={previews[0].alt}
-                          loading="lazy"
+                          src={preview.src}
+                          alt={preview.alt}
+                          class="sr-only"
                           data-lightbox
                         />
-                      )}
+                      ))}
                     </div>
                   )}
 
@@ -217,8 +230,8 @@ function getImagePreviews(item: LearningLogItem) {
   </main>
 
   <script>
-    (() => {
-      const entries = document.querySelectorAll('.reveal');
+    function initRevealAnimations() {
+      const entries = document.querySelectorAll('.reveal:not(.visible)');
       if (!('IntersectionObserver' in window) || entries.length === 0) {
         entries.forEach(entry => entry.classList.add('visible'));
         return;
@@ -234,7 +247,13 @@ function getImagePreviews(item: LearningLogItem) {
       }, { threshold: 0.15 });
 
       entries.forEach(entry => observer.observe(entry));
-    })();
+    }
+
+    // Run on initial load
+    initRevealAnimations();
+
+    // Re-run after View Transitions navigation
+    document.addEventListener('astro:page-load', initRevealAnimations);
   </script>
 </Base>
 
@@ -348,6 +367,22 @@ function getImagePreviews(item: LearningLogItem) {
 
   .entry-title a:hover {
     color: var(--accent-hover);
+  }
+
+  .project-label {
+    display: block;
+    margin-bottom: 0.25rem;
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: color 0.15s ease;
+  }
+
+  .project-label:hover {
+    color: var(--accent);
   }
 
   .entry-body {
@@ -471,61 +506,69 @@ function getImagePreviews(item: LearningLogItem) {
     color: var(--text-tertiary);
   }
 
-  .entry-thumbnail {
-    display: block;
-    width: 100%;
+  .entry-thumbnails {
+    display: flex;
+    flex-direction: row;
+    gap: 0.5rem;
     margin-bottom: 1rem;
+  }
+
+  .entry-thumbnail {
+    position: relative;
+    display: block;
+    flex-shrink: 0;
     border: 1px solid var(--border-primary);
-    border-radius: 0.65rem;
+    border-radius: 0.5rem;
     background: var(--bg-card);
     overflow: hidden;
     transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
     cursor: zoom-in;
   }
 
+  .entry-thumbnail img {
+    width: 300px;
+    height: 200px;
+    object-fit: cover;
+    display: block;
+  }
+
   .entry-thumbnail:hover {
     border-color: color-mix(in srgb, var(--accent) 50%, var(--border-primary));
-    box-shadow: 0 12px 28px -8px rgba(0, 0, 0, 0.35);
-    transform: translateY(-2px);
+    box-shadow: 0 8px 20px -6px rgba(0, 0, 0, 0.3);
+    transform: translateY(-1px);
   }
 
-  .entry-thumbnail img {
-    width: 100%;
-    height: auto;
-    display: block;
+  .entry-thumbnail.has-more::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    pointer-events: none;
   }
 
-  .entry-thumbnail.is-grid {
+  .thumbnail-more {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 1.1rem;
+    font-weight: 600;
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
     padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
     border: 0;
-    background: transparent;
-    box-shadow: none;
-  }
-
-  .entry-thumbnail-grid {
-    display: grid;
-    gap: 0.6rem;
-  }
-
-  .entry-thumbnail-grid img {
-    width: 100%;
-    height: 100%;
-    aspect-ratio: 16 / 10;
-    object-fit: cover;
-    border-radius: 0.65rem;
-    border: 1px solid var(--border-primary);
-    background: var(--bg-card);
-    display: block;
-  }
-
-  .entry-thumbnail-grid.count-2,
-  .entry-thumbnail-grid.count-3,
-  .entry-thumbnail-grid.count-4 {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .entry-thumbnail-grid.count-3 img:first-child {
-    grid-column: 1 / -1;
   }
 
   .entry-action {
