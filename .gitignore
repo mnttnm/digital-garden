@@ -33,3 +33,7 @@ pnpm-debug.log*
 .vercel/
 .vercel
 .tmp/
+
+# Local archives and screenshots
+archived/
+resources-page*.png
