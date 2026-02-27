@@ -1,0 +1,116 @@
+---
+interface Props {
+  title: string;
+  url: string;
+  description: string;
+  tags?: string[];
+  featured?: boolean;
+}
+
+const { title, url, description, tags = [], featured = false } = Astro.props;
+
+function getDomain(url: string) {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '');
+  } catch {
+    return '';
+  }
+}
+
+const domain = getDomain(url);
+---
+
+<article class:list={['resource-card', { featured }]}>
+  <a href={url} target="_blank" rel="noopener" class="card-link">
+    <div class="card-header">
+      <h3 class="card-title">{title}</h3>
+      <span class="card-arrow" aria-hidden="true">↗</span>
+    </div>
+    <p class="card-domain">{domain}</p>
+    <p class="card-description">{description}</p>
+    {tags.length > 0 && (
+      <p class="card-tags">
+        {tags.slice(0, 3).map((tag, i) => (
+          <span>#{tag}{i < Math.min(tags.length, 3) - 1 && ' '}</span>
+        ))}
+      </p>
+    )}
+  </a>
+</article>
+
+<style>
+  .resource-card {
+    position: relative;
+    background: var(--bg-card);
+    border: 1px solid var(--border-primary);
+    border-radius: 0.65rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .resource-card:hover {
+    border-color: color-mix(in srgb, var(--accent) 40%, var(--border-primary));
+    box-shadow: 0 4px 12px -4px rgba(0, 0, 0, 0.08);
+  }
+
+  .resource-card.featured {
+    border-color: color-mix(in srgb, var(--accent) 25%, var(--border-primary));
+  }
+
+  .card-link {
+    display: block;
+    padding: 1.1rem 1.25rem;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .card-title {
+    margin: 0;
+    font-size: 1.05rem;
+    font-family: var(--entry-title-font);
+    font-weight: 500;
+    color: var(--text-primary);
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+  }
+
+  .card-arrow {
+    flex-shrink: 0;
+    font-size: 0.9rem;
+    color: var(--text-tertiary);
+    transition: transform 0.2s ease, color 0.2s ease;
+  }
+
+  .resource-card:hover .card-arrow {
+    transform: translate(1px, -1px);
+    color: var(--accent);
+  }
+
+  .card-domain {
+    margin: 0 0 0.6rem 0;
+    font-size: 0.72rem;
+    color: var(--text-tertiary);
+    letter-spacing: 0.02em;
+  }
+
+  .card-description {
+    margin: 0 0 0.75rem 0;
+    font-size: 0.88rem;
+    line-height: 1.55;
+    color: var(--text-secondary);
+  }
+
+  .card-tags {
+    margin: 0;
+    font-size: 0.72rem;
+    color: var(--text-tertiary);
+    letter-spacing: 0.01em;
+  }
+</style>

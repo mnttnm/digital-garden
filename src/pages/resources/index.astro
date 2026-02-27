@@ -1,0 +1,220 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getCollection } from 'astro:content';
+import ResourceCard from '../../components/ResourceCard.astro';
+
+export const prerender = true;
+
+const allResources = await getCollection('resources', ({ data }) => !data.draft);
+
+// Resource types in display order
+const resourceTypes = ['blog', 'newsletter', 'twitter', 'youtube', 'community', 'podcast', 'tool'] as const;
+
+type ResourceType = typeof resourceTypes[number];
+
+const typeLabels: Record<ResourceType, string> = {
+  blog: 'Blogs',
+  newsletter: 'Newsletters',
+  twitter: 'Twitter / X',
+  youtube: 'YouTube',
+  community: 'Communities',
+  podcast: 'Podcasts',
+  tool: 'Tools',
+};
+
+// Group resources by type
+const grouped = resourceTypes.reduce((acc, type) => {
+  const items = allResources
+    .filter(r => r.data.type === type)
+    .sort((a, b) => {
+      // Featured first, then alphabetical
+      if (a.data.featured !== b.data.featured) return a.data.featured ? -1 : 1;
+      return a.data.title.localeCompare(b.data.title);
+    });
+  if (items.length > 0) {
+    acc[type] = items;
+  }
+  return acc;
+}, {} as Record<ResourceType, typeof allResources>);
+
+const activeTypes = resourceTypes.filter(type => grouped[type]?.length > 0);
+---
+
+<Base title="Resources" description="Blogs, newsletters, and voices I follow to stay updated">
+  <main class="resources-page">
+    <header class="page-header">
+      <h1 class="page-title">Resources</h1>
+      <p class="page-subtitle">Blogs, newsletters, and voices I follow to stay updated.</p>
+    </header>
+
+    {activeTypes.length > 1 && (
+      <nav class="quick-nav" aria-label="Jump to section">
+        {activeTypes.map((type, i) => (
+          <>
+            <a href={`#${type}`} class="quick-nav-link">{typeLabels[type]}</a>
+            {i < activeTypes.length - 1 && <span class="quick-nav-sep">·</span>}
+          </>
+        ))}
+      </nav>
+    )}
+
+    {activeTypes.length === 0 ? (
+      <p class="empty-state">No resources yet.</p>
+    ) : (
+      <div class="resources-sections">
+        {activeTypes.map((type, sectionIndex) => (
+          <section class="resource-section" id={type}>
+            <h2 class="section-title">{typeLabels[type]}</h2>
+            <div class="resource-grid">
+              {grouped[type].map((resource, index) => (
+                <div
+                  class="resource-item reveal"
+                  style={`--reveal-delay: ${Math.min((sectionIndex * 3 + index) * 40, 300)}ms;`}
+                >
+                  <ResourceCard
+                    title={resource.data.title}
+                    url={resource.data.url}
+                    description={resource.data.description}
+                    tags={resource.data.tags}
+                    featured={resource.data.featured}
+                  />
+                </div>
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
+    )}
+  </main>
+
+  <script>
+    (() => {
+      const entries = document.querySelectorAll('.reveal');
+      if (!('IntersectionObserver' in window) || entries.length === 0) {
+        entries.forEach(entry => entry.classList.add('visible'));
+        return;
+      }
+
+      const observer = new IntersectionObserver((entryList) => {
+        entryList.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.1 });
+
+      entries.forEach(entry => observer.observe(entry));
+    })();
+  </script>
+</Base>
+
+<style>
+  .resources-page {
+    padding-top: clamp(0.1rem, 0.7vw, 0.42rem);
+    padding-bottom: clamp(2rem, 4vw, 3rem);
+  }
+
+  .page-header {
+    margin-bottom: clamp(1.2rem, 2.4vw, 1.8rem);
+  }
+
+  .page-title {
+    margin: 0 0 0.25rem 0;
+    font-size: clamp(1.4rem, 2.5vw, 1.8rem);
+    font-family: var(--entry-title-font);
+    font-weight: 500;
+    letter-spacing: -0.015em;
+    color: var(--text-primary);
+  }
+
+  .page-subtitle {
+    margin: 0;
+    font-size: 0.82rem;
+    color: var(--text-tertiary);
+    letter-spacing: 0.012em;
+  }
+
+  .quick-nav {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: clamp(1.8rem, 3.5vw, 2.4rem);
+    padding-bottom: clamp(1rem, 2vw, 1.4rem);
+    border-bottom: 1px solid color-mix(in srgb, var(--border-primary) 50%, transparent);
+  }
+
+  .quick-nav-link {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+
+  .quick-nav-link:hover {
+    color: var(--accent);
+  }
+
+  .quick-nav-sep {
+    color: var(--text-tertiary);
+    opacity: 0.5;
+  }
+
+  .empty-state {
+    color: var(--text-secondary);
+    text-align: center;
+    font-style: italic;
+    padding: 2.2rem 0;
+  }
+
+  .resources-sections {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(2.2rem, 4.5vw, 3rem);
+  }
+
+  .resource-section {
+    scroll-margin-top: 1.5rem;
+  }
+
+  .section-title {
+    margin: 0 0 clamp(0.9rem, 1.8vw, 1.2rem) 0;
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-tertiary);
+  }
+
+  .resource-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.9rem;
+  }
+
+  .resource-item {
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    transition-delay: var(--reveal-delay, 0ms);
+  }
+
+  .resource-item.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  @media (min-width: 540px) {
+    .resource-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+    }
+  }
+
+  @media (min-width: 900px) {
+    .resource-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+</style>
