@@ -5,6 +5,17 @@ import { getCollection } from 'astro:content';
 import { getProjectEventAnchor } from '../../lib/learning-log';
 
 type ProjectActivity = CollectionEntry<'projects'>['data']['activity'][number];
+type ActivityImage = {
+  src: string;
+  alt: string;
+  caption?: string;
+};
+type ActivityVideo = {
+  src: string;
+  poster?: string;
+  title?: string;
+  caption?: string;
+};
 
 export const prerender = true;
 
@@ -68,7 +79,62 @@ function getEventDotClass(type: ProjectActivity['type']) {
   return dots[type];
 }
 
-const activity = [...project.data.activity].sort((a, b) => b.date.valueOf() - a.date.valueOf());
+function getNormalizedImages(event: ProjectActivity): ActivityImage[] {
+  if (event.images.length > 0) {
+    return event.images
+      .filter((image) => Boolean(image.src))
+      .map((image) => ({
+        src: image.src,
+        alt: image.alt || event.title,
+        caption: image.caption,
+      }));
+  }
+
+  if (!event.image) return [];
+
+  return [{
+    src: event.image,
+    alt: event.imageAlt || event.title,
+    caption: event.imageCaption,
+  }];
+}
+
+function getNormalizedVideos(event: ProjectActivity): ActivityVideo[] {
+  return event.videos
+    .filter((video) => Boolean(video.src))
+    .map((video) => ({
+      src: video.src,
+      poster: video.poster,
+      title: video.title,
+      caption: video.caption,
+    }));
+}
+
+function getImageCaption(event: ProjectActivity, images: ActivityImage[]): string | undefined {
+  if (event.imageCaption) return event.imageCaption;
+  if (images.length === 1) return images[0].caption;
+  return undefined;
+}
+
+function getMediaGridClass(count: number): string {
+  if (count <= 1) return 'count-1';
+  if (count === 2) return 'count-2';
+  if (count === 3) return 'count-3';
+  if (count === 4) return 'count-4';
+  return 'count-many';
+}
+
+const activity = [...project.data.activity]
+  .sort((a, b) => b.date.valueOf() - a.date.valueOf())
+  .map((event) => {
+    const mediaImages = getNormalizedImages(event);
+    return {
+      ...event,
+      mediaImages,
+      mediaVideos: getNormalizedVideos(event),
+      mediaCaption: getImageCaption(event, mediaImages),
+    };
+  });
 const base = import.meta.env.BASE_URL;
 
 // Tab logic
@@ -176,11 +242,44 @@ const keyUpdates = activity.filter(e => keyUpdateTypes.includes(e.type));
                         )}
                       </ul>
                     )}
-                    {event.image && (
-                      <figure class="feed-media">
-                        <img src={event.image} alt={event.imageAlt || event.title} loading="lazy" />
-                        {event.imageCaption && <figcaption>{event.imageCaption}</figcaption>}
+                    {event.mediaImages.length > 0 && (
+                      <figure class="feed-media-showcase">
+                        <div class:list={['feed-media-grid', 'feed-media-images', getMediaGridClass(event.mediaImages.length)]} data-lightbox-gallery>
+                          {event.mediaImages.map((image) => (
+                            <div class="feed-media-item">
+                              <img
+                                src={image.src}
+                                alt={image.alt}
+                                loading="lazy"
+                                data-lightbox
+                                data-lightbox-caption={image.caption || ''}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                        {event.mediaCaption && <figcaption>{event.mediaCaption}</figcaption>}
                       </figure>
+                    )}
+                    {event.mediaVideos.length > 0 && (
+                      <div class="feed-video-showcase">
+                        <div class:list={['feed-media-grid', 'feed-media-videos', getMediaGridClass(event.mediaVideos.length)]}>
+                          {event.mediaVideos.map((video, index) => (
+                            <figure class="feed-video-item">
+                              <video
+                                controls
+                                preload="metadata"
+                                playsinline
+                                poster={video.poster}
+                                aria-label={video.title || `Video ${index + 1}`}
+                              >
+                                <source src={video.src} />
+                                Your browser does not support the video tag.
+                              </video>
+                              {video.caption && <figcaption>{video.caption}</figcaption>}
+                            </figure>
+                          ))}
+                        </div>
+                      </div>
                     )}
                     {event.code && (
                       <div class="code-block">
@@ -639,24 +738,103 @@ const keyUpdates = activity.filter(e => keyUpdateTypes.includes(e.type));
     margin: 0;
   }
 
-  .feed-media {
+  .feed-media-showcase {
     margin: 0 0 0.6rem 0;
+  }
+
+  .feed-media-grid {
+    display: grid;
+    gap: 0.45rem;
+  }
+
+  .feed-media-grid.count-1 {
+    grid-template-columns: 1fr;
+  }
+
+  .feed-media-grid.count-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .feed-media-grid.count-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .feed-media-grid.count-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .feed-media-grid.count-many {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .feed-media-item {
+    display: block;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.5rem;
+    background: var(--bg-card);
+    overflow: hidden;
+    cursor: zoom-in;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  }
+
+  .feed-media-item:hover {
+    border-color: color-mix(in srgb, var(--accent) 50%, var(--border-primary));
+    box-shadow: 0 8px 20px -8px rgba(0, 0, 0, 0.3);
+    transform: translateY(-1px);
+  }
+
+  .feed-media-images.count-1 .feed-media-item {
+    aspect-ratio: 16 / 9;
+  }
+
+  .feed-media-images.count-2 .feed-media-item,
+  .feed-media-images.count-3 .feed-media-item,
+  .feed-media-images.count-4 .feed-media-item,
+  .feed-media-images.count-many .feed-media-item {
+    aspect-ratio: 4 / 3;
+  }
+
+  .feed-media-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    margin: 0;
+    border-radius: 0;
+  }
+
+  .feed-media-showcase figcaption {
+    margin: 0;
+    padding: 0.4rem 0.6rem;
+    color: var(--text-tertiary);
+    font-size: 0.7rem;
+    text-align: center;
+    font-family: var(--font-serif);
+    font-style: italic;
+  }
+
+  .feed-video-showcase {
+    margin: 0 0 0.6rem 0;
+  }
+
+  .feed-video-item {
+    margin: 0;
     border: 1px solid var(--border-primary);
     border-radius: 0.5rem;
     background: var(--bg-card);
     overflow: hidden;
   }
 
-  .feed-media img {
+  .feed-media-videos video {
     width: 100%;
+    aspect-ratio: 16 / 9;
     display: block;
-    margin: 0;
-    border-radius: 0;
+    background: #000;
   }
 
-  .feed-media figcaption {
+  .feed-video-item figcaption {
     margin: 0;
-    padding: 0.4rem 0.6rem;
+    padding: 0.35rem 0.6rem;
     color: var(--text-tertiary);
     font-size: 0.7rem;
     text-align: center;
@@ -928,6 +1106,11 @@ const keyUpdates = activity.filter(e => keyUpdateTypes.includes(e.type));
 
     .tab {
       font-size: 0.9rem;
+    }
+
+    .feed-media-grid.count-3,
+    .feed-media-grid.count-many {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }
 </style>

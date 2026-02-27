@@ -1,6 +1,7 @@
 ---
 import '../styles/global.css';
 import { getLearningLogItems } from '../lib/learning-log';
+import ImageLightbox from '../components/ImageLightbox.astro';
 
 interface Props {
   title: string;
@@ -15,6 +16,7 @@ const normalizedBase = base.endsWith('/') ? base : `${base}/`;
 const homeHref = normalizedBase;
 const aboutHref = `${normalizedBase}about/`;
 const projectsHref = `${normalizedBase}projects/`;
+const resourcesHref = `${normalizedBase}resources/`;
 const currentPath = Astro.url.pathname.endsWith('/')
   ? Astro.url.pathname
   : `${Astro.url.pathname}/`;
@@ -104,6 +106,7 @@ const lastUpdatedRelativeLabel = latestLogItem ? getRelativeTimeLabel(latestLogI
         <nav class="site-nav">
           <a href={homeHref} class:list={['nav-link', { active: currentPath === homeHref }]}>learning.log</a>
           <a href={projectsHref} class:list={['nav-link', { active: currentPath.startsWith(projectsHref) }]}>projects</a>
+          <a href={resourcesHref} class:list={['nav-link', { active: currentPath.startsWith(resourcesHref) }]}>resources</a>
           <a href={aboutHref} class:list={['nav-link', { active: currentPath === aboutHref }]}>about</a>
         </nav>
 
@@ -290,5 +293,7 @@ const lastUpdatedRelativeLabel = latestLogItem ? getRelativeTimeLabel(latestLogI
       applyState();
     })();
   </script>
+
+  <ImageLightbox />
 </body>
 </html>

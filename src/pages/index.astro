@@ -64,6 +64,13 @@ function getCategoryDotClass(item: LearningLogItem) {
 function getTags(item: LearningLogItem) {
   return item.tags.slice(0, 3);
 }
+
+function getImagePreviews(item: LearningLogItem) {
+  if (item.imagePreviews && item.imagePreviews.length > 0) {
+    return item.imagePreviews;
+  }
+  return item.imagePreview ? [item.imagePreview] : [];
+}
 ---
 
 <Base title="learning.log" description="A digital journal for thoughts in progress.">
@@ -77,106 +84,123 @@ function getTags(item: LearningLogItem) {
       <p class="empty-state content-offset">No entries found for this category.</p>
     ) : (
       <ul class="entries" aria-label="Journal entries">
-        {visibleItems.map((item, index) => (
-          <li
-            class="entry-item reveal"
-            style={`--reveal-delay: ${Math.min(index * 42, 260)}ms;`}
-          >
-            <article class="entry-grid">
-              <aside class="entry-margin">
-                <time datetime={item.date.toISOString()}>{formatEntryDate(item.date)}</time>
-                <p class="entry-category">
-                  {getCategoryLabel(item)}
-                  <span class:list={['entry-dot', getCategoryDotClass(item)]} aria-hidden="true"></span>
-                </p>
-              </aside>
+        {visibleItems.map((item, index) => {
+          const previews = getImagePreviews(item);
+          const hasMultiImagePreview = previews.length > 1;
+          const previewCountClass = `count-${Math.min(previews.length, 4)}`;
 
-              <div class="entry-main">
-                <h2 class="entry-title">
-                  <a
-                    href={resolveHref(item.href, item.isExternal)}
-                    target={item.isExternal ? '_blank' : undefined}
-                    rel={item.isExternal ? 'noopener' : undefined}
-                  >
-                    {item.title}
-                  </a>
-                </h2>
+          return (
+            <li
+              class="entry-item reveal"
+              style={`--reveal-delay: ${Math.min(index * 42, 260)}ms;`}
+            >
+              <article class="entry-grid">
+                <aside class="entry-margin">
+                  <time datetime={item.date.toISOString()}>{formatEntryDate(item.date)}</time>
+                  <p class="entry-category">
+                    {getCategoryLabel(item)}
+                    <span class:list={['entry-dot', getCategoryDotClass(item)]} aria-hidden="true"></span>
+                  </p>
+                </aside>
 
-                {item.imagePreview ? (
-                  <a
-                    class="entry-thumbnail"
-                    href={resolveHref(item.href, item.isExternal)}
-                    target={item.isExternal ? '_blank' : undefined}
-                    rel={item.isExternal ? 'noopener' : undefined}
-                    aria-label={`View ${item.title}`}
-                  >
-                    <img
-                      src={item.imagePreview.src}
-                      alt={item.imagePreview.alt}
-                      loading="lazy"
-                    />
-                  </a>
-                ) : (
-                  <p class="entry-body">{item.crux}</p>
-                )}
-
-                {item.linkPreview && (
-                  <a
-                    class="link-preview"
-                    href={item.linkPreview.url}
-                    target="_blank"
-                    rel="noopener"
-                    aria-label={`Open ${item.linkPreview.title}`}
-                  >
-                    <div class="link-preview-main">
-                      <span class="link-icon" aria-hidden="true">◌</span>
-                      <div class="link-copy">
-                        <p class="link-title">{item.linkPreview.title}</p>
-                        <p class="link-domain">{item.linkPreview.domain}</p>
-                      </div>
-                    </div>
-                    <span class="link-arrow" aria-hidden="true">↗</span>
-                  </a>
-                )}
-
-                {item.codePreview && (
-                  <div class="code-block">
-                    <div class="code-block-header">
-                      <span>{item.codePreview.language}</span>
-                      <span>code</span>
-                    </div>
-                    <pre><code>{item.codePreview.code}</code></pre>
-                  </div>
-                )}
-
-                {item.actionLink && (
-                  <p class="entry-action">
+                <div class="entry-main">
+                  <h2 class="entry-title">
                     <a
-                      href={item.actionLink.isExternal ? item.actionLink.href : resolveInternalHref(item.actionLink.href)}
-                      target={item.actionLink.isExternal ? '_blank' : undefined}
-                      rel={item.actionLink.isExternal ? 'noopener' : undefined}
+                      href={resolveHref(item.href, item.isExternal)}
+                      target={item.isExternal ? '_blank' : undefined}
+                      rel={item.isExternal ? 'noopener' : undefined}
                     >
-                      {item.actionLink.label} →
+                      {item.title}
                     </a>
-                  </p>
-                )}
+                  </h2>
 
-                {getTags(item).length > 0 && (
-                  <p class="entry-tags">
-                    {getTags(item).map((tag, index) => (
-                      <span>
-                        #{tag.toUpperCase()}
-                        {index < getTags(item).length - 1 && <span class="tag-dot"> • </span>}
-                      </span>
-                    ))}
-                  </p>
-                )}
+                  {previews.length > 0 && (
+                    <div
+                      class:list={['entry-thumbnail', { 'is-grid': hasMultiImagePreview }]}
+                      data-lightbox-gallery
+                    >
+                      {hasMultiImagePreview ? (
+                        <div class:list={['entry-thumbnail-grid', previewCountClass]}>
+                          {previews.slice(0, 4).map((preview) => (
+                            <img
+                              src={preview.src}
+                              alt={preview.alt}
+                              loading="lazy"
+                              data-lightbox
+                            />
+                          ))}
+                        </div>
+                      ) : (
+                        <img
+                          src={previews[0].src}
+                          alt={previews[0].alt}
+                          loading="lazy"
+                          data-lightbox
+                        />
+                      )}
+                    </div>
+                  )}
 
-                <div class="entry-separator" aria-hidden="true"></div>
-              </div>
-            </article>
-          </li>
-        ))}
+                  <p class="entry-body">{item.crux}</p>
+
+                  {item.linkPreview && (
+                    <a
+                      class="link-preview"
+                      href={item.linkPreview.url}
+                      target="_blank"
+                      rel="noopener"
+                      aria-label={`Open ${item.linkPreview.title}`}
+                    >
+                      <div class="link-preview-main">
+                        <span class="link-icon" aria-hidden="true">◌</span>
+                        <div class="link-copy">
+                          <p class="link-title">{item.linkPreview.title}</p>
+                          <p class="link-domain">{item.linkPreview.domain}</p>
+                        </div>
+                      </div>
+                      <span class="link-arrow" aria-hidden="true">↗</span>
+                    </a>
+                  )}
+
+                  {item.codePreview && (
+                    <div class="code-block">
+                      <div class="code-block-header">
+                        <span>{item.codePreview.language}</span>
+                        <span>code</span>
+                      </div>
+                      <pre><code>{item.codePreview.code}</code></pre>
+                    </div>
+                  )}
+
+                  {item.actionLink && (
+                    <p class="entry-action">
+                      <a
+                        href={item.actionLink.isExternal ? item.actionLink.href : resolveInternalHref(item.actionLink.href)}
+                        target={item.actionLink.isExternal ? '_blank' : undefined}
+                        rel={item.actionLink.isExternal ? 'noopener' : undefined}
+                      >
+                        {item.actionLink.label} →
+                      </a>
+                    </p>
+                  )}
+
+                  {getTags(item).length > 0 && (
+                    <p class="entry-tags">
+                      {getTags(item).map((tag, index) => (
+                        <span>
+                          #{tag.toUpperCase()}
+                          {index < getTags(item).length - 1 && <span class="tag-dot"> • </span>}
+                        </span>
+                      ))}
+                    </p>
+                  )}
+
+                  <div class="entry-separator" aria-hidden="true"></div>
+                </div>
+              </article>
+            </li>
+          );
+        })}
       </ul>
     )}
 
@@ -455,18 +479,53 @@ function getTags(item: LearningLogItem) {
     border-radius: 0.65rem;
     background: var(--bg-card);
     overflow: hidden;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+    cursor: zoom-in;
   }
 
   .entry-thumbnail:hover {
     border-color: color-mix(in srgb, var(--accent) 50%, var(--border-primary));
-    box-shadow: 0 8px 20px -8px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 12px 28px -8px rgba(0, 0, 0, 0.35);
+    transform: translateY(-2px);
   }
 
   .entry-thumbnail img {
     width: 100%;
     height: auto;
     display: block;
+  }
+
+  .entry-thumbnail.is-grid {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .entry-thumbnail-grid {
+    display: grid;
+    gap: 0.6rem;
+  }
+
+  .entry-thumbnail-grid img {
+    width: 100%;
+    height: 100%;
+    aspect-ratio: 16 / 10;
+    object-fit: cover;
+    border-radius: 0.65rem;
+    border: 1px solid var(--border-primary);
+    background: var(--bg-card);
+    display: block;
+  }
+
+  .entry-thumbnail-grid.count-2,
+  .entry-thumbnail-grid.count-3,
+  .entry-thumbnail-grid.count-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .entry-thumbnail-grid.count-3 img:first-child {
+    grid-column: 1 / -1;
   }
 
   .entry-action {
