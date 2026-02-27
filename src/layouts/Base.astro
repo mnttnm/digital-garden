@@ -2,6 +2,7 @@
 import '../styles/global.css';
 import { getLearningLogItems } from '../lib/learning-log';
 import ImageLightbox from '../components/ImageLightbox.astro';
+import { ViewTransitions } from 'astro:transitions';
 
 interface Props {
   title: string;
@@ -59,7 +60,8 @@ const lastUpdatedRelativeLabel = latestLogItem ? getRelativeTimeLabel(latestLogI
   <meta name="description" content={description}>
   <title>{title} | {siteTitle}</title>
   <script is:inline>
-    (() => {
+    // Apply theme immediately to prevent flash (runs before paint)
+    (function applyTheme() {
       try {
         const root = document.documentElement;
         const storedAppearance = localStorage.getItem('learning-log-appearance') || 'auto';
@@ -79,6 +81,26 @@ const lastUpdatedRelativeLabel = latestLogItem ? getRelativeTimeLabel(latestLogI
         // no-op: localStorage can fail in strict privacy contexts
       }
     })();
+
+    // Preserve theme BEFORE swap to prevent flash
+    document.addEventListener('astro:before-swap', function(event) {
+      try {
+        const storedAppearance = localStorage.getItem('learning-log-appearance') || 'auto';
+        const warmth = localStorage.getItem('learning-log-warmth') || 'warm';
+        const font = localStorage.getItem('learning-log-font') || 'serif';
+
+        const resolvedAppearance = storedAppearance === 'auto'
+          ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+          : storedAppearance;
+
+        // Apply to the incoming document BEFORE it's swapped in
+        const newDoc = event.newDocument;
+        newDoc.documentElement.dataset.appearance = resolvedAppearance;
+        newDoc.documentElement.dataset.appearanceMode = storedAppearance;
+        newDoc.documentElement.dataset.warmth = warmth;
+        newDoc.documentElement.dataset.font = font;
+      } catch {}
+    });
   </script>
 
   <!-- Google Fonts -->
@@ -88,6 +110,7 @@ const lastUpdatedRelativeLabel = latestLogItem ? getRelativeTimeLabel(latestLogI
 
   <link rel="alternate" type="application/rss+xml" title={siteTitle} href={`${base}rss.xml`} />
   <link rel="icon" type="image/svg+xml" href={`${base}favicon.svg`} />
+  <ViewTransitions />
 </head>
 <body>
   <div class="container">
@@ -163,32 +186,22 @@ const lastUpdatedRelativeLabel = latestLogItem ? getRelativeTimeLabel(latestLogI
   </div>
 
   <script>
-    (() => {
+    // Theme controls - compatible with View Transitions
+    (function() {
       const root = document.documentElement;
-      const controls = document.querySelector('[data-theme-controls]');
-      const toggle = document.querySelector('[data-theme-toggle]');
-      const panel = document.querySelector('[data-theme-panel]');
-      const warmthButtons = Array.from(document.querySelectorAll('[data-warmth]'));
-      const fontButtons = Array.from(document.querySelectorAll('[data-font]'));
-      const appearanceButtons = Array.from(document.querySelectorAll('button[data-appearance]'));
-
-      if (!controls || !toggle || !panel) {
-        return;
-      }
-
       const STORAGE_KEYS = {
         warmth: 'learning-log-warmth',
         font: 'learning-log-font',
         appearance: 'learning-log-appearance'
       };
+      const systemDarkQuery = window.matchMedia('(prefers-color-scheme: dark)');
 
+      // Shared state (persists across navigations)
       const state = {
         warmth: localStorage.getItem(STORAGE_KEYS.warmth) || 'warm',
         font: localStorage.getItem(STORAGE_KEYS.font) || 'serif',
         appearanceMode: localStorage.getItem(STORAGE_KEYS.appearance) || 'auto'
       };
-
-      const systemDarkQuery = window.matchMedia('(prefers-color-scheme: dark)');
 
       function getResolvedAppearance() {
         if (state.appearanceMode === 'auto') {
@@ -199,22 +212,20 @@ const lastUpdatedRelativeLabel = latestLogItem ? getRelativeTimeLabel(latestLogI
 
       function applyState() {
         const resolvedAppearance = getResolvedAppearance();
-
         root.dataset.warmth = state.warmth;
         root.dataset.font = state.font;
         root.dataset.appearance = resolvedAppearance;
         root.dataset.appearanceMode = state.appearanceMode;
 
-        warmthButtons.forEach((button) => {
-          button.classList.toggle('active', button.getAttribute('data-warmth') === state.warmth);
+        // Update button states
+        document.querySelectorAll('[data-warmth]').forEach((btn) => {
+          btn.classList.toggle('active', btn.getAttribute('data-warmth') === state.warmth);
         });
-
-        fontButtons.forEach((button) => {
-          button.classList.toggle('active', button.getAttribute('data-font') === state.font);
+        document.querySelectorAll('[data-font]').forEach((btn) => {
+          btn.classList.toggle('active', btn.getAttribute('data-font') === state.font);
         });
-
-        appearanceButtons.forEach((button) => {
-          button.classList.toggle('active', button.getAttribute('data-appearance') === state.appearanceMode);
+        document.querySelectorAll('button[data-appearance]').forEach((btn) => {
+          btn.classList.toggle('active', btn.getAttribute('data-appearance') === state.appearanceMode);
         });
       }
 
@@ -224,51 +235,7 @@ const lastUpdatedRelativeLabel = latestLogItem ? getRelativeTimeLabel(latestLogI
         localStorage.setItem(STORAGE_KEYS.appearance, state.appearanceMode);
       }
 
-      function closePanel() {
-        panel.hidden = true;
-        panel.classList.remove('open');
-        toggle.setAttribute('aria-expanded', 'false');
-      }
-
-      function openPanel() {
-        panel.hidden = false;
-        requestAnimationFrame(() => panel.classList.add('open'));
-        toggle.setAttribute('aria-expanded', 'true');
-      }
-
-      toggle.addEventListener('click', () => {
-        if (panel.hidden) {
-          openPanel();
-        } else {
-          closePanel();
-        }
-      });
-
-      warmthButtons.forEach((button) => {
-        button.addEventListener('click', () => {
-          state.warmth = button.getAttribute('data-warmth') || 'warm';
-          applyState();
-          persistState();
-        });
-      });
-
-      fontButtons.forEach((button) => {
-        button.addEventListener('click', () => {
-          state.font = button.getAttribute('data-font') || 'serif';
-          applyState();
-          persistState();
-        });
-      });
-
-      appearanceButtons.forEach((button) => {
-        button.addEventListener('click', () => {
-          state.appearanceMode = button.getAttribute('data-appearance') || 'auto';
-          applyState();
-          persistState();
-        });
-      });
-
-      // Listen for system preference changes (only affects auto mode)
+      // Global listeners (only added once)
       systemDarkQuery.addEventListener('change', () => {
         if (state.appearanceMode === 'auto') {
           applyState();
@@ -276,21 +243,82 @@ const lastUpdatedRelativeLabel = latestLogItem ? getRelativeTimeLabel(latestLogI
       });
 
       document.addEventListener('click', (event) => {
-        if (panel.hidden) return;
+        const panel = document.querySelector('[data-theme-panel]');
+        const controls = document.querySelector('[data-theme-controls]');
+        const toggle = document.querySelector('[data-theme-toggle]');
+        if (!panel || panel.hidden || !controls) return;
         const target = event.target;
         if (!(target instanceof Node)) return;
         if (!controls.contains(target)) {
-          closePanel();
+          panel.hidden = true;
+          panel.classList.remove('open');
+          toggle?.setAttribute('aria-expanded', 'false');
         }
       });
 
       document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape') {
-          closePanel();
+          const panel = document.querySelector('[data-theme-panel]');
+          const toggle = document.querySelector('[data-theme-toggle]');
+          if (panel && !panel.hidden) {
+            panel.hidden = true;
+            panel.classList.remove('open');
+            toggle?.setAttribute('aria-expanded', 'false');
+          }
         }
       });
 
-      applyState();
+      // Setup element listeners (called on each page load)
+      function setupControls() {
+        const toggle = document.querySelector('[data-theme-toggle]');
+        const panel = document.querySelector('[data-theme-panel]');
+
+        if (!toggle || !panel) return;
+
+        toggle.addEventListener('click', () => {
+          if (panel.hidden) {
+            panel.hidden = false;
+            requestAnimationFrame(() => panel.classList.add('open'));
+            toggle.setAttribute('aria-expanded', 'true');
+          } else {
+            panel.hidden = true;
+            panel.classList.remove('open');
+            toggle.setAttribute('aria-expanded', 'false');
+          }
+        });
+
+        document.querySelectorAll('[data-warmth]').forEach((button) => {
+          button.addEventListener('click', () => {
+            state.warmth = button.getAttribute('data-warmth') || 'warm';
+            applyState();
+            persistState();
+          });
+        });
+
+        document.querySelectorAll('[data-font]').forEach((button) => {
+          button.addEventListener('click', () => {
+            state.font = button.getAttribute('data-font') || 'serif';
+            applyState();
+            persistState();
+          });
+        });
+
+        document.querySelectorAll('button[data-appearance]').forEach((button) => {
+          button.addEventListener('click', () => {
+            state.appearanceMode = button.getAttribute('data-appearance') || 'auto';
+            applyState();
+            persistState();
+          });
+        });
+
+        applyState();
+      }
+
+      // Initial setup
+      setupControls();
+
+      // Re-setup after View Transitions
+      document.addEventListener('astro:page-load', setupControls);
     })();
   </script>
 
