@@ -11,6 +11,7 @@ export interface LearningLogLinkPreview {
   title: string;
   url: string;
   domain: string;
+  tweetAuthor?: string; // For X/Twitter links, the @username
 }
 
 export interface LearningLogCodePreview {
@@ -109,6 +110,22 @@ function getDomain(url: string): string {
   }
 }
 
+function getTweetAuthor(url: string): string | undefined {
+  try {
+    const parsed = new URL(url);
+    const host = parsed.hostname.replace(/^www\./, '');
+    if (host !== 'twitter.com' && host !== 'x.com') return undefined;
+
+    // Match /user/status/123 pattern
+    const match = parsed.pathname.match(/^\/([^/]+)\/status\/(\d+)/);
+    if (!match) return undefined;
+
+    return match[1]; // Return the username
+  } catch {
+    return undefined;
+  }
+}
+
 function getCodePreview(markdown: string): LearningLogCodePreview | undefined {
   const match = markdown.match(/```([a-zA-Z0-9_-]+)?\n([\s\S]*?)```/);
   if (!match?.[2]) return undefined;
@@ -185,6 +202,7 @@ export async function getLearningLogItems(): Promise<LearningLogItem[]> {
           title: note.data.linkTitle || note.data.title,
           url: note.data.link,
           domain: getDomain(note.data.link),
+          tweetAuthor: getTweetAuthor(note.data.link),
         }
       : undefined;
     const codePreview = note.data.type === 'snippet' ? getCodePreview(note.body) : undefined;

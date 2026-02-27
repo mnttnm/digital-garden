@@ -158,17 +158,27 @@ function getImagePreviews(item: LearningLogItem) {
 
                   {item.linkPreview && (
                     <a
-                      class="link-preview"
+                      class:list={['link-preview', { 'link-preview-tweet': item.linkPreview.tweetAuthor }]}
                       href={item.linkPreview.url}
                       target="_blank"
                       rel="noopener"
                       aria-label={`Open ${item.linkPreview.title}`}
                     >
                       <div class="link-preview-main">
-                        <span class="link-icon" aria-hidden="true">◌</span>
+                        {item.linkPreview.tweetAuthor ? (
+                          <span class="link-icon link-icon-x" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                            </svg>
+                          </span>
+                        ) : (
+                          <span class="link-icon" aria-hidden="true">◌</span>
+                        )}
                         <div class="link-copy">
                           <p class="link-title">{item.linkPreview.title}</p>
-                          <p class="link-domain">{item.linkPreview.domain}</p>
+                          <p class="link-domain">
+                            {item.linkPreview.tweetAuthor ? `@${item.linkPreview.tweetAuthor}` : item.linkPreview.domain}
+                          </p>
                         </div>
                       </div>
                       <span class="link-arrow" aria-hidden="true">↗</span>
@@ -463,6 +473,15 @@ function getImagePreviews(item: LearningLogItem) {
 
   .link-preview:hover .link-arrow {
     transform: translate(0.5px, -0.5px);
+  }
+
+  .link-icon-x {
+    background: var(--text-primary);
+    color: var(--bg-primary);
+  }
+
+  .link-icon-x svg {
+    display: block;
   }
 
   .code-block {
