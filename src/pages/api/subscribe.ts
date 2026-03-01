@@ -7,7 +7,7 @@ const resend = new Resend(import.meta.env.RESEND_API_KEY);
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 type Frequency = 'daily' | 'weekly';
-type Preference = 'all' | 'projects';
+type Preference = 'all' | 'projects' | 'insights';
 
 function jsonResponse(
   status: number,
@@ -29,20 +29,48 @@ function normalizeFrequency(value: unknown): Frequency | null {
 function normalizePreference(value: unknown): Preference | null {
   if (typeof value !== 'string') return null;
   const normalized = value.trim().toLowerCase();
-  if (normalized === 'all' || normalized === 'projects') return normalized;
+  if (normalized === 'all' || normalized === 'projects' || normalized === 'insights') return normalized;
   return null;
 }
 
 // Welcome email template
 function getWelcomeEmail(frequency: Frequency, preference: Preference) {
   const frequencyText = frequency === 'daily' ? 'daily' : 'weekly';
-  const preferenceText =
-    preference === 'projects'
-      ? 'project launches, milestones, and updates'
-      : 'all updates: learnings, curated links, and project updates';
+
+  const preferenceConfig = {
+    all: {
+      text: 'everything: learnings, curated links, and project updates',
+      bullets: [
+        'Essays on AI, product building, and working smarter',
+        'Links to things that made me think',
+        'Code snippets and technical learnings',
+        'Updates on projects I\'m shipping',
+      ],
+    },
+    projects: {
+      text: 'project launches, milestones, and updates',
+      bullets: [
+        'New projects and launches',
+        'Behind-the-scenes build logs',
+        'Tools and techniques I discovered along the way',
+        'Milestone updates and lessons learned',
+      ],
+    },
+    insights: {
+      text: 'learnings, discoveries, and curated links',
+      bullets: [
+        'Essays on AI, product building, and working smarter',
+        'Links to things that made me think',
+        'Code snippets and technical learnings',
+        'Quick notes and discoveries',
+      ],
+    },
+  };
+
+  const config = preferenceConfig[preference];
 
   return {
-    subject: "Welcome to my corner of the internet 👋",
+    subject: "Welcome to my corner of the internet",
     html: `
 <!DOCTYPE html>
 <html>
@@ -53,7 +81,7 @@ function getWelcomeEmail(frequency: Frequency, preference: Preference) {
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 560px; margin: 0 auto; padding: 40px 20px;">
 
   <p style="font-size: 17px; margin-bottom: 24px;">
-    Hey there! 👋
+    Hey there!
   </p>
 
   <p style="font-size: 17px; margin-bottom: 24px;">
@@ -61,9 +89,9 @@ function getWelcomeEmail(frequency: Frequency, preference: Preference) {
   </p>
 
   <p style="font-size: 17px; margin-bottom: 24px;">
-    I'll be sending you a <strong>${frequencyText} digest</strong> of what I've been learning, building,
-    and finding interesting, focused on <strong>${preferenceText}</strong>. Think of it as a curated peek into my notes — the good stuff
-    without the noise.
+    Fair warning: this site is more of a living notebook than a polished publication.
+    There's no fixed schedule — just whatever I'm exploring at the moment.
+    I'll be sending you a <strong>${frequencyText} digest</strong> focused on <strong>${config.text}</strong>.
   </p>
 
   <p style="font-size: 17px; margin-bottom: 24px;">
@@ -71,10 +99,7 @@ function getWelcomeEmail(frequency: Frequency, preference: Preference) {
   </p>
 
   <ul style="font-size: 17px; margin-bottom: 24px; padding-left: 24px;">
-    <li style="margin-bottom: 8px;">Essays on AI, product building, and working smarter</li>
-    <li style="margin-bottom: 8px;">Links to things that made me think</li>
-    <li style="margin-bottom: 8px;">Code snippets and technical learnings</li>
-    <li style="margin-bottom: 8px;">Updates on projects I'm shipping</li>
+    ${config.bullets.map(b => `<li style="margin-bottom: 8px;">${b}</li>`).join('\n    ')}
   </ul>
 
   <p style="font-size: 17px; margin-bottom: 24px;">
@@ -99,17 +124,14 @@ function getWelcomeEmail(frequency: Frequency, preference: Preference) {
 </body>
 </html>
     `,
-    text: `Hey there! 
+    text: `Hey there!
 
 Thanks for subscribing — I'm genuinely glad you're here.
 
-I'll be sending you a ${frequencyText} digest of what I've been learning, building, and finding interesting, focused on ${preferenceText}. Think of it as a curated peek into my notes — the good stuff without the noise.
+Fair warning: this site is more of a living notebook than a polished publication. There's no fixed schedule — just whatever I'm exploring at the moment. I'll be sending you a ${frequencyText} digest focused on ${config.text}.
 
 Here's what you can expect:
-- Essays on AI, product building, and working smarter
-- Links to things that made me think
-- Code snippets and technical learnings
-- Updates on projects I'm shipping
+${config.bullets.map(b => `- ${b}`).join('\n')}
 
 In the meantime, feel free to explore the site or just reply to this email if you want to say hi. I read every response.
 

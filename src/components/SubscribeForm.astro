@@ -1,239 +1,416 @@
 ---
 interface Props {
-  variant?: 'inline' | 'card';
+  /**
+   * - card: Container with background/border, full layout
+   * - inline: No container, full layout (intro + form)
+   * - minimal: Just email + button, no intro or category selection
+   */
+  variant?: "inline" | "card" | "minimal";
 }
 
-const { variant = 'card' } = Astro.props;
+const { variant = "card" } = Astro.props;
 const base = import.meta.env.BASE_URL;
+const formId = `subscribe-form-${Math.random().toString(36).slice(2, 8)}`;
+const showIntro = variant !== "minimal";
 ---
 
-<div class:list={['subscribe-form', variant]} id="subscribe">
-  <form id="newsletter-form" data-base={base}>
-    <div class="form-header">
-      <p class="form-title">Subscribe</p>
-      <p class="form-note">You’ll get a weekly email. The site updates daily.</p>
+<div class:list={["subscribe-widget", variant]} id="subscribe">
+  {
+    showIntro && (
+      <div class="subscribe-intro">
+        <h3 class="subscribe-heading">Subscribe to updates</h3>
+        <p class="subscribe-note">
+          Heads up — this is more of a notebook than a newsletter. I write when
+          something clicks, not on a schedule. Project updates tend to come with
+          random discoveries and tools I tried along the way. If that sounds
+          like your kind of thing, hop in. Easy to leave if it's not.
+        </p>
+      </div>
+    )
+  }
+
+  <form class="subscribe-form" id={formId} data-base={base}>
+    {
+      showIntro && (
+        <fieldset class="preference-fieldset">
+          <legend class="preference-legend">What interests you?</legend>
+          <div class="preference-options">
+            <label class="preference-pill">
+              <input type="radio" name="preference" value="all" checked />
+              <span class="pill-label">Everything</span>
+            </label>
+            <label class="preference-pill">
+              <input type="radio" name="preference" value="projects" />
+              <span class="pill-label">Projects only</span>
+            </label>
+            <label class="preference-pill">
+              <input type="radio" name="preference" value="insights" />
+              <span class="pill-label">Insights only</span>
+            </label>
+          </div>
+        </fieldset>
+      )
+    }
+
+    <div class="form-row">
+      <div class="email-input-wrap">
+        <input
+          type="email"
+          name="email"
+          placeholder="you@example.com"
+          required
+          autocomplete="email"
+          aria-label="Email address"
+        />
+      </div>
+      <button type="submit" class="submit-btn">
+        <span class="btn-text">Subscribe</span>
+        <span class="btn-loading" aria-hidden="true">
+          <svg class="spinner" viewBox="0 0 24 24" fill="none">
+            <circle
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              stroke-width="2.5"
+              opacity="0.25"></circle>
+            <path
+              d="M12 2a10 10 0 0 1 10 10"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"></path>
+          </svg>
+        </span>
+      </button>
     </div>
-    <div class="form-fields">
-      <input
-        type="email"
-        name="email"
-        placeholder="you@example.com"
-        required
-        autocomplete="email"
-      />
-      <input type="hidden" name="frequency" value="weekly" />
-      <label class="preference-select">
-        <span>Content preference</span>
-        <select name="preference" required>
-          <option value="all" selected>All updates</option>
-          <option value="projects">Projects only</option>
-        </select>
-      </label>
-      <button type="submit">Subscribe</button>
-    </div>
-    <p class="form-message" id="form-message"></p>
+
+    {!showIntro && <input type="hidden" name="preference" value="all" />}
+    <input type="hidden" name="frequency" value="weekly" />
+    <p class="form-message" aria-live="polite"></p>
   </form>
 </div>
 
 <script>
-  const form = document.getElementById('newsletter-form') as HTMLFormElement;
-  const message = document.getElementById('form-message') as HTMLParagraphElement;
+  function initSubscribeForms() {
+    document
+      .querySelectorAll<HTMLFormElement>(".subscribe-form")
+      .forEach((form) => {
+        if (form.dataset.initialized) return;
+        form.dataset.initialized = "true";
 
-  form?.addEventListener('submit', async (e) => {
-    e.preventDefault();
+        const message =
+          form.querySelector<HTMLParagraphElement>(".form-message");
+        const button = form.querySelector<HTMLButtonElement>(".submit-btn");
 
-    const formData = new FormData(form);
-    const email = formData.get('email');
-    const frequency = formData.get('frequency');
-    const preference = formData.get('preference');
+        form.addEventListener("submit", async (e) => {
+          e.preventDefault();
 
-    // Update button state
-    const button = form.querySelector('button') as HTMLButtonElement;
-    const originalText = button.textContent;
-    button.textContent = 'Subscribing...';
-    button.disabled = true;
-    message.textContent = '';
-    message.className = 'form-message';
+          const formData = new FormData(form);
+          const email = formData.get("email");
+          const frequency = formData.get("frequency");
+          const preference = formData.get("preference");
 
-    try {
-      const base = form.dataset.base || '/';
-      const response = await fetch(`${base}api/subscribe`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, frequency, preference }),
+          // Update button state
+          button?.classList.add("loading");
+          if (button) button.disabled = true;
+          if (message) {
+            message.textContent = "";
+            message.className = "form-message";
+          }
+
+          try {
+            const base = form.dataset.base || "/";
+            const response = await fetch(`${base}api/subscribe`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ email, frequency, preference }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+              if (message) {
+                message.textContent = data?.message || "You're in!";
+                message.className = "form-message success";
+              }
+              form.reset();
+              // Re-check the "all" option after reset
+              const allOption =
+                form.querySelector<HTMLInputElement>('input[value="all"]');
+              if (allOption) allOption.checked = true;
+            } else {
+              if (message) {
+                message.textContent = data?.message || "Something went wrong";
+                message.className = "form-message error";
+              }
+            }
+          } catch (error) {
+            if (message) {
+              message.textContent = "Network error. Please try again.";
+              message.className = "form-message error";
+            }
+          } finally {
+            button?.classList.remove("loading");
+            if (button) button.disabled = false;
+          }
+        });
       });
+  }
 
-      const data = await response.json();
+  // Run on initial load
+  initSubscribeForms();
 
-      if (response.ok) {
-        message.textContent = data?.message || 'Subscribed!';
-        message.className = 'form-message success';
-        form.reset();
-      } else {
-        message.textContent = data?.message || 'Something went wrong';
-        message.className = 'form-message error';
-      }
-    } catch (error) {
-      message.textContent = 'Network error. Please try again.';
-      message.className = 'form-message error';
-    } finally {
-      button.textContent = originalText;
-      button.disabled = false;
-    }
-  });
+  // Re-run after View Transitions
+  document.addEventListener("astro:page-load", initSubscribeForms);
 </script>
 
 <style>
-  .subscribe-form {
-    margin: 2rem 0;
+  .subscribe-widget {
+    --pill-bg: var(--bg-subtle);
+    --pill-bg-active: var(--bg-card);
+    --pill-border: var(--border-primary);
+    --pill-border-active: var(--accent);
   }
 
-  .subscribe-form.card {
-    padding: 1.5rem;
-    background: var(--color-code-bg);
-    border-radius: 8px;
+  .subscribe-widget.card {
+    padding: 1.75rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border-primary);
+    border-radius: 0.85rem;
   }
 
-  .subscribe-form.inline {
+  .subscribe-widget.inline,
+  .subscribe-widget.minimal {
     padding: 0;
     background: none;
+    border: none;
   }
 
-  .form-header {
-    margin-bottom: 1rem;
+  .subscribe-intro {
+    margin-bottom: 1.25rem;
   }
 
-  .form-title {
+  .subscribe-heading {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.15rem;
     font-weight: 500;
-    margin: 0;
+    font-family: var(--font-serif);
+    color: var(--text-primary);
+    letter-spacing: -0.01em;
   }
 
-  .form-note {
-    margin: 0.35rem 0 0;
-    font-size: 0.82rem;
+  .subscribe-note {
+    margin: 0;
+    font-size: 0.95rem;
+    line-height: 1.65;
+    color: var(--text-secondary);
+    max-width: 72ch;
+  }
+
+  .subscribe-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .form-row {
+    display: flex;
+    gap: 0.5rem;
+    max-width: 520px;
+  }
+
+  .email-input-wrap {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .email-input-wrap input {
+    width: 100%;
+    padding: 0.72rem 0.95rem;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.5rem;
+    font-size: 1rem;
+    font-family: inherit;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    transition:
+      border-color 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+
+  .email-input-wrap input::placeholder {
     color: var(--text-tertiary);
   }
 
-  .form-fields {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-
-  input[type="email"] {
-    padding: 0.6rem 0.75rem;
-    border: 1px solid var(--color-border);
-    border-radius: 4px;
-    font-size: 0.95rem;
-    font-family: inherit;
-    background: var(--color-bg);
-    color: var(--color-text);
-  }
-
-  input[type="email"]:focus {
+  .email-input-wrap input:focus {
     outline: none;
-    border-color: var(--color-text);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent);
   }
 
-  .frequency-options {
-    display: flex;
-    gap: 1.25rem;
-  }
-
-  .preference-select {
-    display: flex;
-    flex-direction: column;
-    gap: 0.35rem;
-    color: var(--color-text-muted);
-    font-size: 0.82rem;
-    min-width: 180px;
-  }
-
-  .preference-select select {
-    padding: 0.56rem 0.75rem;
-    border: 1px solid var(--color-border);
-    border-radius: 4px;
-    background: var(--color-bg);
-    color: var(--color-text);
-    font-size: 0.88rem;
-    font-family: inherit;
-  }
-
-  .preference-select select:focus {
-    outline: none;
-    border-color: var(--color-text);
-  }
-
-  .frequency-option {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    cursor: pointer;
-    font-size: 0.9rem;
-    color: var(--color-text-muted);
-  }
-
-  .frequency-option input[type="radio"] {
-    accent-color: var(--color-text);
-  }
-
-  .frequency-option:has(input:checked) {
-    color: var(--color-text);
-  }
-
-  button {
-    padding: 0.6rem 1rem;
-    background: var(--color-text);
-    color: var(--color-bg);
+  .submit-btn {
+    position: relative;
+    padding: 0.72rem 1.4rem;
+    background: var(--text-primary);
+    color: var(--bg-primary);
     border: none;
-    border-radius: 4px;
-    font-size: 0.9rem;
+    border-radius: 0.5rem;
+    font-size: 0.95rem;
     font-weight: 500;
+    font-family: inherit;
     cursor: pointer;
-    transition: opacity 0.15s;
+    transition:
+      opacity 0.15s ease,
+      transform 0.1s ease;
+    flex-shrink: 0;
   }
 
-  button:hover {
-    opacity: 0.85;
+  .submit-btn:hover:not(:disabled) {
+    opacity: 0.88;
   }
 
-  button:disabled {
-    opacity: 0.6;
+  .submit-btn:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+
+  .submit-btn:disabled {
     cursor: not-allowed;
   }
 
-  .form-message {
-    margin: 0.75rem 0 0;
+  .submit-btn .btn-loading {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+  }
+
+  .submit-btn.loading .btn-text {
+    opacity: 0;
+  }
+
+  .submit-btn.loading .btn-loading {
+    opacity: 1;
+  }
+
+  .spinner {
+    width: 18px;
+    height: 18px;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .preference-fieldset {
+    border: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .preference-legend {
+    font-size: 0.78rem;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    color: var(--text-tertiary);
+    margin-bottom: 0.55rem;
+    text-transform: uppercase;
+  }
+
+  .preference-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+  }
+
+  .preference-pill {
+    position: relative;
+    cursor: pointer;
+  }
+
+  .preference-pill input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .pill-label {
+    display: inline-block;
+    padding: 0.4rem 0.85rem;
     font-size: 0.85rem;
-    min-height: 1.2em;
+    font-weight: 450;
+    color: var(--text-secondary);
+    background: var(--pill-bg);
+    border: 1px solid var(--pill-border);
+    border-radius: 999px;
+    transition: all 0.18s ease;
+  }
+
+  .preference-pill input:checked + .pill-label {
+    background: var(--pill-bg-active);
+    border-color: var(--pill-border-active);
+    color: var(--text-primary);
+    box-shadow: 0 0 0 1px var(--pill-border-active);
+  }
+
+  .preference-pill:hover .pill-label {
+    border-color: color-mix(in srgb, var(--accent) 50%, var(--border-primary));
+  }
+
+  .preference-pill input:focus-visible + .pill-label {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .form-message {
+    margin: 0;
+    font-size: 0.88rem;
+    min-height: 1.3em;
+    transition: color 0.2s ease;
+  }
+
+  .form-message:empty {
+    display: none;
   }
 
   .form-message.success {
-    color: #22c55e;
+    color: #16a34a;
   }
 
   .form-message.error {
-    color: #ef4444;
+    color: #dc2626;
   }
 
-  @media (min-width: 480px) {
-    .form-fields {
-      flex-direction: row;
-      flex-wrap: wrap;
-      align-items: flex-end;
+  /* Dark mode adjustments */
+  :global(html[data-appearance="dark"]) .form-message.success {
+    color: #4ade80;
+  }
+
+  :global(html[data-appearance="dark"]) .form-message.error {
+    color: #f87171;
+  }
+
+  @media (max-width: 480px) {
+    .form-row {
+      flex-direction: column;
+      max-width: none;
     }
 
-    input[type="email"] {
-      flex: 1;
-      min-width: 200px;
+    .submit-btn {
+      width: 100%;
     }
 
-    button {
-      flex-shrink: 0;
+    .preference-options {
+      gap: 0.4rem;
     }
 
-    .preference-select {
-      min-width: 170px;
+    .pill-label {
+      padding: 0.35rem 0.7rem;
+      font-size: 0.82rem;
     }
   }
 </style>

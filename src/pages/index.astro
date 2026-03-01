@@ -1,17 +1,21 @@
 ---
-import Base from '../layouts/Base.astro';
-import SubscribeForm from '../components/SubscribeForm.astro';
+import Base from "../layouts/Base.astro";
+import SubscribeForm from "../components/SubscribeForm.astro";
 import {
   getLearningLogItems,
   type LearningLogCategory,
   type LearningLogItem,
-} from '../lib/learning-log';
+} from "../lib/learning-log";
 
 const ITEMS_PER_PAGE = 30;
 const base = import.meta.env.BASE_URL;
 
-const requestedPage = Number.parseInt(Astro.url.searchParams.get('page') ?? '1', 10);
-const currentPage = Number.isFinite(requestedPage) && requestedPage > 0 ? requestedPage : 1;
+const requestedPage = Number.parseInt(
+  Astro.url.searchParams.get("page") ?? "1",
+  10,
+);
+const currentPage =
+  Number.isFinite(requestedPage) && requestedPage > 0 ? requestedPage : 1;
 
 const allItems = await getLearningLogItems();
 
@@ -20,7 +24,7 @@ const visibleItems = allItems.slice(0, visibleCount);
 const hasMore = allItems.length > visibleCount;
 
 function formatEntryDate(date: Date) {
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
 function buildUrl(page = 1) {
@@ -32,31 +36,31 @@ function buildUrl(page = 1) {
 
 function resolveHref(href: string, isExternal: boolean) {
   if (isExternal) return href;
-  const normalized = href.startsWith('/') ? href.slice(1) : href;
+  const normalized = href.startsWith("/") ? href.slice(1) : href;
   return `${base}${normalized}`;
 }
 
 function resolveInternalHref(href: string) {
-  const normalized = href.startsWith('/') ? href.slice(1) : href;
+  const normalized = href.startsWith("/") ? href.slice(1) : href;
   return `${base}${normalized}`;
 }
 
 function getCategoryLabel(item: LearningLogItem) {
   const labels: Record<LearningLogCategory, string> = {
-    projects: 'PROJECT UPDATE',
-    learnings: 'LEARNING',
-    resources: 'RESOURCE',
-    thoughts: 'THOUGHT',
+    projects: "PROJECT UPDATE",
+    learnings: "LEARNING",
+    resources: "RESOURCE",
+    thoughts: "THOUGHT",
   };
   return labels[item.category];
 }
 
 function getCategoryDotClass(item: LearningLogItem) {
   const dotClasses: Record<LearningLogCategory, string> = {
-    projects: 'dot-project',
-    learnings: 'dot-learning',
-    resources: 'dot-resource',
-    thoughts: 'dot-thought',
+    projects: "dot-project",
+    learnings: "dot-learning",
+    resources: "dot-resource",
+    thoughts: "dot-thought",
   };
   return dotClasses[item.category];
 }
@@ -73,197 +77,258 @@ function getImagePreviews(item: LearningLogItem) {
 }
 ---
 
-<Base title="learning.log" description="A digital journal for thoughts in progress.">
+<Base
+  title="learning.log"
+  description="A digital journal for thoughts in progress."
+>
   <main class="journal-page">
     <header class="page-header content-offset">
       <h1 class="page-title">learning.log</h1>
       <p class="page-subtitle">What I shipped, learned, and bookmarked.</p>
     </header>
 
-    {visibleItems.length === 0 ? (
-      <p class="empty-state content-offset">No entries found for this category.</p>
-    ) : (
-      <ul class="entries" aria-label="Journal entries">
-        {visibleItems.map((item, index) => {
-          const previews = getImagePreviews(item);
+    {
+      visibleItems.length === 0 ? (
+        <p class="empty-state content-offset">
+          No entries found for this category.
+        </p>
+      ) : (
+        <ul class="entries" aria-label="Journal entries">
+          {visibleItems.map((item, index) => {
+            const previews = getImagePreviews(item);
 
-          return (
-            <li
-              class="entry-item reveal"
-              style={`--reveal-delay: ${Math.min(index * 42, 260)}ms;`}
-            >
-              <article class="entry-grid">
-                <aside class="entry-margin">
-                  <time datetime={item.date.toISOString()}>{formatEntryDate(item.date)}</time>
-                  <p class="entry-category">
-                    {getCategoryLabel(item)}
-                    <span class:list={['entry-dot', getCategoryDotClass(item)]} aria-hidden="true"></span>
-                  </p>
-                </aside>
+            return (
+              <li
+                class="entry-item reveal"
+                style={`--reveal-delay: ${Math.min(index * 42, 260)}ms;`}
+              >
+                <article class="entry-grid">
+                  <aside class="entry-margin">
+                    <time datetime={item.date.toISOString()}>
+                      {formatEntryDate(item.date)}
+                    </time>
+                    <p class="entry-category">
+                      {getCategoryLabel(item)}
+                      <span
+                        class:list={["entry-dot", getCategoryDotClass(item)]}
+                        aria-hidden="true"
+                      />
+                    </p>
+                  </aside>
 
-                <div class="entry-main">
-                  {item.projectTitle && (
-                    <a
-                      class="project-label"
-                      href={resolveInternalHref(`/projects/${item.projectSlug}/`)}
-                    >
-                      {item.projectTitle}
-                    </a>
-                  )}
-
-                  <h2 class="entry-title">
-                    <a
-                      href={resolveHref(item.href, item.isExternal)}
-                      target={item.isExternal ? '_blank' : undefined}
-                      rel={item.isExternal ? 'noopener' : undefined}
-                    >
-                      {item.title}
-                    </a>
-                  </h2>
-
-                  {previews.length > 0 && (
-                    <div class="entry-thumbnails" data-lightbox-gallery>
-                      {previews.slice(0, 3).map((preview, i) => {
-                        const isLast = i === 2;
-                        const hasMore = isLast && previews.length > 3;
-                        const extraCount = previews.length - 3;
-
-                        return (
-                          <div class:list={['entry-thumbnail', { 'has-more': hasMore }]}>
-                            <img
-                              src={preview.src}
-                              alt={preview.alt}
-                              loading="lazy"
-                              data-lightbox
-                            />
-                            {hasMore && (
-                              <span class="thumbnail-more">+{extraCount}</span>
-                            )}
-                          </div>
-                        );
-                      })}
-                      {/* Hidden images for lightbox gallery navigation */}
-                      {previews.slice(3).map((preview) => (
-                        <img
-                          src={preview.src}
-                          alt={preview.alt}
-                          class="sr-only"
-                          data-lightbox
-                        />
-                      ))}
-                    </div>
-                  )}
-
-                  <p class="entry-body">{item.crux}</p>
-
-                  {item.linkPreview && (
-                    <a
-                      class:list={['link-preview', { 'link-preview-tweet': item.linkPreview.tweetAuthor }]}
-                      href={item.linkPreview.url}
-                      target="_blank"
-                      rel="noopener"
-                      aria-label={`Open ${item.linkPreview.title}`}
-                    >
-                      <div class="link-preview-main">
-                        {item.linkPreview.tweetAuthor ? (
-                          <span class="link-icon link-icon-x" aria-hidden="true">
-                            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-                            </svg>
-                          </span>
-                        ) : (
-                          <span class="link-icon" aria-hidden="true">◌</span>
-                        )}
-                        <div class="link-copy">
-                          <p class="link-title">{item.linkPreview.title}</p>
-                          <p class="link-domain">
-                            {item.linkPreview.tweetAuthor ? `@${item.linkPreview.tweetAuthor}` : item.linkPreview.domain}
-                          </p>
-                        </div>
-                      </div>
-                      <span class="link-arrow" aria-hidden="true">↗</span>
-                    </a>
-                  )}
-
-                  {item.codePreview && (
-                    <div class="code-block">
-                      <div class="code-block-header">
-                        <span>{item.codePreview.language}</span>
-                        <span>code</span>
-                      </div>
-                      <pre><code>{item.codePreview.code}</code></pre>
-                    </div>
-                  )}
-
-                  {item.actionLink && (
-                    <p class="entry-action">
+                  <div class="entry-main">
+                    {item.projectTitle && (
                       <a
-                        href={item.actionLink.isExternal ? item.actionLink.href : resolveInternalHref(item.actionLink.href)}
-                        target={item.actionLink.isExternal ? '_blank' : undefined}
-                        rel={item.actionLink.isExternal ? 'noopener' : undefined}
+                        class="project-label"
+                        href={resolveInternalHref(
+                          `/projects/${item.projectSlug}/`,
+                        )}
                       >
-                        {item.actionLink.label} →
+                        {item.projectTitle}
                       </a>
-                    </p>
-                  )}
+                    )}
 
-                  {getTags(item).length > 0 && (
-                    <p class="entry-tags">
-                      {getTags(item).map((tag, index) => (
-                        <span>
-                          #{tag.toUpperCase()}
-                          {index < getTags(item).length - 1 && <span class="tag-dot"> • </span>}
+                    <h2 class="entry-title">
+                      <a
+                        href={resolveHref(item.href, item.isExternal)}
+                        target={item.isExternal ? "_blank" : undefined}
+                        rel={item.isExternal ? "noopener" : undefined}
+                      >
+                        {item.title}
+                      </a>
+                    </h2>
+
+                    {previews.length > 0 && (
+                      <div class="entry-thumbnails" data-lightbox-gallery>
+                        {previews.slice(0, 3).map((preview, i) => {
+                          const isLast = i === 2;
+                          const hasMore = isLast && previews.length > 3;
+                          const extraCount = previews.length - 3;
+
+                          return (
+                            <div
+                              class:list={[
+                                "entry-thumbnail",
+                                { "has-more": hasMore },
+                              ]}
+                            >
+                              <img
+                                src={preview.src}
+                                alt={preview.alt}
+                                loading="lazy"
+                                data-lightbox
+                              />
+                              {hasMore && (
+                                <span class="thumbnail-more">
+                                  +{extraCount}
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })}
+                        {/* Hidden images for lightbox gallery navigation */}
+                        {previews.slice(3).map((preview) => (
+                          <img
+                            src={preview.src}
+                            alt={preview.alt}
+                            class="sr-only"
+                            data-lightbox
+                          />
+                        ))}
+                      </div>
+                    )}
+
+                    <p class="entry-body">{item.crux}</p>
+
+                    {item.linkPreview && (
+                      <a
+                        class:list={[
+                          "link-preview",
+                          {
+                            "link-preview-tweet": item.linkPreview.tweetAuthor,
+                          },
+                        ]}
+                        href={item.linkPreview.url}
+                        target="_blank"
+                        rel="noopener"
+                        aria-label={`Open ${item.linkPreview.title}`}
+                      >
+                        <div class="link-preview-main">
+                          {item.linkPreview.tweetAuthor ? (
+                            <span
+                              class="link-icon link-icon-x"
+                              aria-hidden="true"
+                            >
+                              <svg
+                                viewBox="0 0 24 24"
+                                width="16"
+                                height="16"
+                                fill="currentColor"
+                              >
+                                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                              </svg>
+                            </span>
+                          ) : (
+                            <span class="link-icon" aria-hidden="true">
+                              ◌
+                            </span>
+                          )}
+                          <div class="link-copy">
+                            <p class="link-title">{item.linkPreview.title}</p>
+                            <p class="link-domain">
+                              {item.linkPreview.tweetAuthor
+                                ? `@${item.linkPreview.tweetAuthor}`
+                                : item.linkPreview.domain}
+                            </p>
+                          </div>
+                        </div>
+                        <span class="link-arrow" aria-hidden="true">
+                          ↗
                         </span>
-                      ))}
-                    </p>
-                  )}
+                      </a>
+                    )}
 
-                  <div class="entry-separator" aria-hidden="true"></div>
-                </div>
-              </article>
-            </li>
-          );
-        })}
-      </ul>
-    )}
+                    {item.codePreview && (
+                      <div class="code-block">
+                        <div class="code-block-header">
+                          <span>{item.codePreview.language}</span>
+                          <span>code</span>
+                        </div>
+                        <pre>
+                          <code>{item.codePreview.code}</code>
+                        </pre>
+                      </div>
+                    )}
 
-    {hasMore && (
-      <div class="content-offset load-more-wrap">
-        <a class="load-more" href={buildUrl(currentPage + 1)}>Load more entries</a>
-      </div>
-    )}
+                    {item.actionLink && (
+                      <p class="entry-action">
+                        <a
+                          href={
+                            item.actionLink.isExternal
+                              ? item.actionLink.href
+                              : resolveInternalHref(item.actionLink.href)
+                          }
+                          target={
+                            item.actionLink.isExternal ? "_blank" : undefined
+                          }
+                          rel={
+                            item.actionLink.isExternal ? "noopener" : undefined
+                          }
+                        >
+                          {item.actionLink.label} →
+                        </a>
+                      </p>
+                    )}
 
-    <section class="subscribe-section content-offset" aria-label="Newsletter subscription">
-      <p class="subscribe-heading">Get new entries in your inbox</p>
+                    {getTags(item).length > 0 && (
+                      <p class="entry-tags">
+                        {getTags(item).map((tag, index) => (
+                          <span>
+                            #{tag.toUpperCase()}
+                            {index < getTags(item).length - 1 && (
+                              <span class="tag-dot"> • </span>
+                            )}
+                          </span>
+                        ))}
+                      </p>
+                    )}
+
+                    <div class="entry-separator" aria-hidden="true" />
+                  </div>
+                </article>
+              </li>
+            );
+          })}
+        </ul>
+      )
+    }
+
+    {
+      hasMore && (
+        <div class="content-offset load-more-wrap">
+          <a class="load-more" href={buildUrl(currentPage + 1)}>
+            Load more entries
+          </a>
+        </div>
+      )
+    }
+
+    <section
+      class="subscribe-section content-offset"
+      aria-label="Newsletter subscription"
+    >
       <SubscribeForm variant="inline" />
     </section>
   </main>
 
   <script>
     function initRevealAnimations() {
-      const entries = document.querySelectorAll('.reveal:not(.visible)');
-      if (!('IntersectionObserver' in window) || entries.length === 0) {
-        entries.forEach(entry => entry.classList.add('visible'));
+      const entries = document.querySelectorAll(".reveal:not(.visible)");
+      if (!("IntersectionObserver" in window) || entries.length === 0) {
+        entries.forEach((entry) => entry.classList.add("visible"));
         return;
       }
 
-      const observer = new IntersectionObserver((entryList) => {
-        entryList.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('visible');
-            observer.unobserve(entry.target);
-          }
-        });
-      }, { threshold: 0.15 });
+      const observer = new IntersectionObserver(
+        (entryList) => {
+          entryList.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add("visible");
+              observer.unobserve(entry.target);
+            }
+          });
+        },
+        { threshold: 0.15 },
+      );
 
-      entries.forEach(entry => observer.observe(entry));
+      entries.forEach((entry) => observer.observe(entry));
     }
 
     // Run on initial load
     initRevealAnimations();
 
     // Re-run after View Transitions navigation
-    document.addEventListener('astro:page-load', initRevealAnimations);
+    document.addEventListener("astro:page-load", initRevealAnimations);
   </script>
 </Base>
 
@@ -306,7 +371,9 @@ function getImagePreviews(item: LearningLogItem) {
   .entry-item {
     opacity: 0;
     transform: translateY(6px);
-    transition: opacity 0.58s ease, transform 0.58s ease;
+    transition:
+      opacity 0.58s ease,
+      transform 0.58s ease;
     transition-delay: var(--reveal-delay, 0ms);
     padding-bottom: clamp(1rem, 1.8vw, 1.45rem);
   }
@@ -352,10 +419,18 @@ function getImagePreviews(item: LearningLogItem) {
     border-radius: 999px;
   }
 
-  .dot-project { background: #94a3b8; }
-  .dot-learning { background: #fbbf24; }
-  .dot-resource { background: #10b981; }
-  .dot-thought { background: #c084fc; }
+  .dot-project {
+    background: #94a3b8;
+  }
+  .dot-learning {
+    background: #fbbf24;
+  }
+  .dot-resource {
+    background: #10b981;
+  }
+  .dot-thought {
+    background: #c084fc;
+  }
 
   .entry-main {
     min-width: 0;
@@ -400,7 +475,7 @@ function getImagePreviews(item: LearningLogItem) {
     font-size: 1.02rem;
     line-height: 1.65;
     color: var(--text-secondary);
-    max-width: 62ch;
+    max-width: 78ch;
   }
 
   .link-preview {
@@ -415,7 +490,9 @@ function getImagePreviews(item: LearningLogItem) {
     margin-bottom: 0.9rem;
     color: var(--text-primary);
     text-decoration: none;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    transition:
+      border-color 0.2s ease,
+      box-shadow 0.2s ease;
   }
 
   .link-preview:hover {
@@ -540,7 +617,10 @@ function getImagePreviews(item: LearningLogItem) {
     border-radius: 0.5rem;
     background: var(--bg-card);
     overflow: hidden;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+    transition:
+      border-color 0.2s ease,
+      box-shadow 0.2s ease,
+      transform 0.2s ease;
     cursor: zoom-in;
   }
 
@@ -558,7 +638,7 @@ function getImagePreviews(item: LearningLogItem) {
   }
 
   .entry-thumbnail.has-more::after {
-    content: '';
+    content: "";
     position: absolute;
     inset: 0;
     background: rgba(0, 0, 0, 0.45);
@@ -610,7 +690,8 @@ function getImagePreviews(item: LearningLogItem) {
   .entry-separator {
     margin-top: clamp(2.6rem, 5.2vw, 3.45rem);
     width: 66%;
-    border-top: 1px solid color-mix(in srgb, var(--border-primary) 40%, transparent);
+    border-top: 1px solid
+      color-mix(in srgb, var(--border-primary) 40%, transparent);
   }
 
   .entry-item:last-child .entry-separator {
@@ -645,21 +726,13 @@ function getImagePreviews(item: LearningLogItem) {
   }
 
   .subscribe-section {
-    margin-top: clamp(1.4rem, 3vw, 2.2rem);
-    padding-top: clamp(1.2rem, 2.4vw, 1.8rem);
-    border-top: 1px solid color-mix(in srgb, var(--border-primary) 60%, transparent);
+    margin-top: clamp(2rem, 4vw, 3rem);
+    padding-top: clamp(1.5rem, 3vw, 2rem);
+    border-top: 1px solid
+      color-mix(in srgb, var(--border-primary) 60%, transparent);
   }
 
-  .subscribe-heading {
-    margin: 0 0 0.7rem 0;
-    font-size: 0.78rem;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--text-tertiary);
-    font-weight: 500;
-  }
-
-  .subscribe-section :global(.subscribe-form.inline) {
+  .subscribe-section :global(.subscribe-widget.inline) {
     margin: 0;
   }
 
