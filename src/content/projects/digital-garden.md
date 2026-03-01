@@ -9,53 +9,53 @@ outcome: "From static pages to a product-style changelog: capture quickly, curat
 tags: ["digital-garden", "publishing-system", "changelog", "workflow", "design"]
 activity:
   - date: 2026-01-19
-    title: "Editorial foundation shipped for a unified learning.log"
-    summary: "The site shifted to a timeline-first model where updates are consumed as one continuous stream instead of disconnected content silos."
-    tags: ["editorial", "information-architecture", "ux"]
+    title: "Why I built learning.log — a personal publishing system"
+    summary: "I wanted a place to think out loud, ship what I learn, and build in public without the pressure of perfection. learning.log is my attempt at a calm, continuous feed where projects evolve as changelogs and discoveries land as they happen — not polished essays that never ship."
+    tags: ["vision", "publishing", "building-in-public"]
     type: "milestone"
     highlights:
-      - "Unified stream structure for notes, learnings, and project updates"
-      - "Project narrative framed as changelog-style progression"
-      - "Clearer reading flow for repeat visitors"
-    image: "/images/projects/digital-garden/changelog/editorial-foundation.png"
-    imageAlt: "Editorial foundation and unified learning.log feed"
-    imageCaption: "The product baseline moved to a timeline-first reading experience."
+      - "One unified stream instead of scattered blog posts, project pages, and notes"
+      - "Changelog-style updates that show work-in-progress, not just finished work"
+      - "Capture-first workflow so ideas don't get lost between mobile and desktop"
+      - "A calm reading experience that invites return visits"
+    image: "/images/projects/digital-garden/changelog/feed-entries.png"
+    imageAlt: "learning.log unified feed showing project updates and discoveries"
+    imageCaption: "A single timeline for everything I'm learning and building."
 
   - date: 2026-02-08
-    title: "Multi-theme system introduced for a calm reading experience"
-    summary: "Theme controls and system-aware auto mode were added to support a cleaner visual rhythm while preserving editorial consistency."
+    title: "Multi-theme system introduced for a calm reading experience - thank you CC"
+    summary: "Why not make it dynamic++ when it is increasingly easily to do so, just don't overdo it and make sure the theme stays relevant for your project"
     tags: ["design-system", "theming", "accessibility"]
-    type: "learning"
+    type: "update"
     highlights:
       - "Multiple visual modes including system-following auto theme"
       - "Reduced visual noise through spacing and typography tuning"
       - "Consistent look across feed, project pages, and details"
-    image: "/images/projects/digital-garden/changelog/theme-system.png"
-    imageAlt: "Theme controls and clean reading design"
-    imageCaption: "Calm aesthetics became a core product feature, not just styling."
-
-  - date: 2026-02-11
-    title: "Project pages now publish milestones as product updates"
-    summary: "Projects were redesigned around update feeds so milestones, discoveries, and learnings can be read like release notes over time."
-    tags: ["projects", "timeline", "product-updates"]
-    type: "milestone"
-    highlights:
-      - "Feed tab for complete update history"
-      - "Key Updates tab for milestone-heavy reading"
-      - "Structured entries with highlights, links, media, and actions"
+    images:
+      - src: "/images/projects/digital-garden/changelog/theme-system.png"
+        alt: "Theme controls showing warmth, font, and appearance options"
+        caption: "Calm aesthetics became a core product feature, not just styling."
+      - src: "/images/projects/digital-garden/changelog/dark-theme.png"
+        alt: "Learning.log feed in dark mode"
+      - src: "/images/projects/digital-garden/changelog/light-theme.png"
+        alt: "Learning.log feed in light mode"
 
   - date: 2026-02-13
     title: "Capture pipeline launched with iOS Shortcuts + Raycast input"
-    summary: "Content can now be captured from mobile share sheet and desktop command workflow, then routed into one review and publish queue."
+    summary: "Built a capture solution using Apple Shortcuts for mobile and Raycast interface on Mac, This was my first time building workflows using shortcuts and I think they are really powerful. The Raycast to capture resources is also pretty cool imo"
     tags: ["capture", "ios-shortcuts", "raycast", "workflow"]
-    type: "discovery"
+    type: "learning"
     highlights:
-      - "Fast mobile capture for in-the-moment ideas"
+      - "You can build crazy workflows using the native apple shortcults tool"
       - "Desktop quick capture for low-friction publishing"
       - "Review-first flow before public release"
-    image: "/images/projects/digital-garden/changelog/capture-pipeline.png"
-    imageAlt: "Capture review queue with media-rich entries"
-    imageCaption: "Two capture surfaces, one editorial pipeline."
+    images:
+      - src: "/images/projects/digital-garden/changelog/capture-by-shortcuts.png"
+        alt: "iOS Shortcuts workflow showing capture actions and API integration"
+        caption: "Mobile capture via Share Sheet sends content straight to the review queue."
+      - src: "/images/projects/digital-garden/changelog/raycast-capture-mac.png"
+        alt: "Raycast extension with fields for content, image, comment, project, and tags"
+        caption: "Desktop capture with structured input for quick publishing."
 
   - date: 2026-02-13
     title: "Newsletter shipping moved into a repeatable automation loop"
@@ -67,15 +67,16 @@ activity:
       - "Batch publishing aligns site updates and email output"
       - "Operational rhythm improved for regular shipping"
 
-  - date: 2026-02-15
-    title: "Refinement quality and media browsing upgraded"
-    summary: "Content refinement now better preserves source intent, while feed entries gained richer image previews for quicker scanning."
-    tags: ["quality", "ai-refinement", "media-ux"]
-    type: "learning"
+  - date: 2026-02-28
+    title: "Built a skill that turns Claude Code sessions into feed entries"
+    summary: "I kept noticing that useful things come up during Claude Code sessions — tricks, gotchas, tooling patterns — but I'd lose them once the session ended. So I built a harvest-feed skill that scans the conversation history and proposes 4-5 draft entries, classified by type, written in first person, and saved as drafts for review. Now I can capture insights without worrying about missing something important."
+    tags: ["skills", "content-pipeline", "claude-code", "workflow"]
+    type: "update"
     highlights:
-      - "Intent-preserving refinement behavior"
-      - "Clickable image previews in feed entries"
-      - "Higher confidence in publish-ready output"
+      - "Type /harvest-feed at the end of any session and get draft posts from what just happened"
+      - "Auto-classifies each suggestion as TIL, essay, or project update based on what fits"
+      - "Writes everything with draft: true — nothing publishes until I review it"
+      - "Bonus: built the whole skill using the skill-creator skill — init_skill.py scaffolds the structure, you just fill in the logic"
 draft: false
 ---
 
