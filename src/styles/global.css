@@ -576,7 +576,7 @@ th {
   .footer-grid {
     grid-template-columns: 1fr auto;
     gap: 3rem;
-    align-items: end;
+    align-items: start;
   }
 }
 
@@ -587,7 +587,7 @@ th {
 .footer-info {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 1.5rem;
 }
 
 @media (min-width: 768px) {
@@ -595,6 +595,26 @@ th {
     text-align: right;
     align-items: flex-end;
   }
+}
+
+.footer-contact {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.footer-label {
+  font-size: 0.69rem;
+  font-weight: 500;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+.footer-bottom {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
 }
 
 .site-footer a {
@@ -617,7 +637,7 @@ th {
 .footer-links {
   list-style: none;
   padding: 0;
-  margin: 0.5rem 0;
+  margin: 0;
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
@@ -625,11 +645,6 @@ th {
 
 .footer-links li {
   margin: 0;
-}
-
-.footer-disclaimer {
-  font-size: 0.75rem;
-  margin-top: 0.5rem;
 }
 
 .footer-copyright {
