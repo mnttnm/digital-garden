@@ -1,13 +1,12 @@
 ---
 import Base from "../layouts/Base.astro";
-import SubscribeForm from "../components/SubscribeForm.astro";
 import {
   getLearningLogItems,
   type LearningLogCategory,
   type LearningLogItem,
 } from "../lib/learning-log";
 
-const ITEMS_PER_PAGE = 30;
+const ITEMS_PER_PAGE = 10;
 const base = import.meta.env.BASE_URL;
 
 const requestedPage = Number.parseInt(
@@ -25,13 +24,6 @@ const hasMore = allItems.length > visibleCount;
 
 function formatEntryDate(date: Date) {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-}
-
-function buildUrl(page = 1) {
-  if (page > 1) {
-    return `${base}?page=${page}`;
-  }
-  return base;
 }
 
 function resolveHref(href: string, isExternal: boolean) {
@@ -283,22 +275,24 @@ function getImagePreviews(item: LearningLogItem) {
       )
     }
 
-    {
-      hasMore && (
-        <div class="content-offset load-more-wrap">
-          <a class="load-more" href={buildUrl(currentPage + 1)}>
-            Load more entries
-          </a>
-        </div>
-      )
-    }
-
-    <section
-      class="subscribe-section content-offset"
-      aria-label="Newsletter subscription"
+    <div
+      class="content-offset load-more-wrap"
+      data-has-more={hasMore ? "true" : "false"}
+      data-current-page={currentPage}
     >
-      <SubscribeForm variant="inline" />
-    </section>
+      {
+        hasMore ? (
+          <div class="load-more-container" data-load-more-container>
+            <p class="load-more-prompt">Want to see more?</p>
+            <button class="load-more-btn" type="button" data-load-more>
+              <span class="btn-text">Load All Entries</span>
+            </button>
+          </div>
+        ) : (
+          <span class="load-end">You've seen it all</span>
+        )
+      }
+    </div>
   </main>
 
   <script>
@@ -324,15 +318,71 @@ function getImagePreviews(item: LearningLogItem) {
       entries.forEach((entry) => observer.observe(entry));
     }
 
+    function initLoadMore() {
+      const wrap = document.querySelector<HTMLElement>(".load-more-wrap");
+      const button =
+        document.querySelector<HTMLButtonElement>("[data-load-more]");
+      const entriesList = document.querySelector(".entries");
+
+      if (!wrap || !button || !entriesList) return;
+
+      // Prevent duplicate event listeners
+      if (button.dataset.initialized === "true") return;
+      button.dataset.initialized = "true";
+
+      let currentPage = parseInt(wrap.dataset.currentPage || "1", 10);
+      let isLoading = false;
+
+      button.addEventListener("click", async () => {
+        if (isLoading) return;
+
+        isLoading = true;
+        button.textContent = "Loading...";
+        button.disabled = true;
+
+        try {
+          const nextPage = currentPage + 1;
+          const response = await fetch(`/api/feed?page=${nextPage}`);
+          const data = await response.json();
+
+          if (data.html) {
+            entriesList.insertAdjacentHTML("beforeend", data.html);
+            initRevealAnimations();
+          }
+
+          currentPage = data.page;
+          wrap.dataset.currentPage = String(currentPage);
+
+          if (!data.hasMore) {
+            wrap.innerHTML =
+              '<span class="load-end">You\'ve seen it all</span>';
+          } else {
+            button.textContent = "Load All Entries";
+            button.disabled = false;
+          }
+        } catch (error) {
+          console.error("Failed to load more entries:", error);
+          button.textContent = "Load All Entries";
+          button.disabled = false;
+        } finally {
+          isLoading = false;
+        }
+      });
+    }
+
     // Run on initial load
     initRevealAnimations();
+    initLoadMore();
 
     // Re-run after View Transitions navigation
-    document.addEventListener("astro:page-load", initRevealAnimations);
+    document.addEventListener("astro:page-load", () => {
+      initRevealAnimations();
+      initLoadMore();
+    });
   </script>
 </Base>
 
-<style>
+<style is:global>
   .journal-page {
     padding-top: clamp(0.1rem, 0.7vw, 0.42rem);
     padding-bottom: clamp(1.4rem, 2.8vw, 2.2rem);
@@ -625,9 +675,11 @@ function getImagePreviews(item: LearningLogItem) {
   }
 
   .entry-thumbnail img {
-    width: 300px;
-    height: 200px;
-    object-fit: cover;
+    width: auto;
+    max-width: 300px;
+    height: auto;
+    max-height: 200px;
+    object-fit: contain;
     display: block;
   }
 
@@ -703,19 +755,79 @@ function getImagePreviews(item: LearningLogItem) {
     margin-bottom: clamp(1.8rem, 4vw, 2.4rem);
   }
 
-  .load-more {
-    font-size: 0.8rem;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--text-secondary);
-    border-bottom: 1px solid transparent;
-    padding-bottom: 0.15rem;
-    text-decoration: none;
+  .load-more-container {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.4rem;
   }
 
-  .load-more:hover {
-    color: var(--accent);
-    border-bottom-color: var(--border-primary);
+  .load-more-prompt {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--text-tertiary);
+    letter-spacing: 0.01em;
+  }
+
+  .load-more-btn {
+    position: relative;
+    font-size: 0.78rem;
+    font-family: inherit;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-tertiary);
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+  }
+
+  .load-more-btn .btn-text {
+    display: inline-block;
+    background: linear-gradient(
+      90deg,
+      var(--accent) 0%,
+      var(--accent) 50%,
+      var(--text-secondary) 50%,
+      var(--text-secondary) 100%
+    );
+    background-size: 200% 100%;
+    background-position: 100% 0;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: text-fill 3s ease-in-out infinite;
+  }
+
+  @keyframes text-fill {
+    0%, 100% {
+      background-position: 100% 0;
+    }
+    50% {
+      background-position: 0% 0;
+    }
+  }
+
+  .load-more-btn:hover .btn-text {
+    animation: none;
+    background-position: 0% 0;
+  }
+
+  .load-more-btn:disabled {
+    cursor: default;
+  }
+
+  .load-more-btn:disabled .btn-text {
+    animation: none;
+    background: none;
+    color: var(--text-tertiary);
+  }
+
+  .load-end {
+    font-size: 0.82rem;
+    color: var(--text-tertiary);
+    font-style: italic;
+    letter-spacing: 0.01em;
   }
 
   .empty-state {
