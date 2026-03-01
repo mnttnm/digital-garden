@@ -1,32 +1,36 @@
 ---
-import '../styles/global.css';
-import { getLearningLogItems } from '../lib/learning-log';
-import ImageLightbox from '../components/ImageLightbox.astro';
-import { ViewTransitions } from 'astro:transitions';
+import "../styles/global.css";
+import { getLearningLogItems } from "../lib/learning-log";
+import ImageLightbox from "../components/ImageLightbox.astro";
+import SubscribeForm from "../components/SubscribeForm.astro";
+import { ViewTransitions } from "astro:transitions";
 
 interface Props {
   title: string;
   description?: string;
 }
 
-const { title, description = "learning.log: project updates and discoveries from Mohit" } = Astro.props;
+const {
+  title,
+  description = "learning.log: project updates and discoveries from Mohit",
+} = Astro.props;
 const siteTitle = "Mohit Tater";
 const brandTitle = "Mohit Tater - learning.log";
 const base = import.meta.env.BASE_URL;
-const normalizedBase = base.endsWith('/') ? base : `${base}/`;
+const normalizedBase = base.endsWith("/") ? base : `${base}/`;
 const homeHref = normalizedBase;
 const aboutHref = `${normalizedBase}about/`;
 const projectsHref = `${normalizedBase}projects/`;
 const resourcesHref = `${normalizedBase}resources/`;
-const currentPath = Astro.url.pathname.endsWith('/')
+const currentPath = Astro.url.pathname.endsWith("/")
   ? Astro.url.pathname
   : `${Astro.url.pathname}/`;
 const latestLogItem = (await getLearningLogItems())[0];
 const lastUpdatedLabel = latestLogItem
-  ? latestLogItem.date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
+  ? latestLogItem.date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
     })
   : null;
 
@@ -35,8 +39,8 @@ function getRelativeTimeLabel(date: Date) {
   const day = 1000 * 60 * 60 * 24;
   const days = Math.round(ms / day);
 
-  if (days <= 0) return 'today';
-  if (days === 1) return '1d ago';
+  if (days <= 0) return "today";
+  if (days === 1) return "1d ago";
   if (days < 7) return `${days}d ago`;
 
   const weeks = Math.round(days / 7);
@@ -49,279 +53,379 @@ function getRelativeTimeLabel(date: Date) {
   return `${years}y ago`;
 }
 
-const lastUpdatedRelativeLabel = latestLogItem ? getRelativeTimeLabel(latestLogItem.date) : null;
+const lastUpdatedRelativeLabel = latestLogItem
+  ? getRelativeTimeLabel(latestLogItem.date)
+  : null;
 ---
 
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content={description}>
-  <title>{title} | {siteTitle}</title>
-  <script is:inline>
-    // Apply theme immediately to prevent flash (runs before paint)
-    (function applyTheme() {
-      try {
-        const root = document.documentElement;
-        const storedAppearance = localStorage.getItem('learning-log-appearance') || 'auto';
-        const warmth = localStorage.getItem('learning-log-warmth') || 'warm';
-        const font = localStorage.getItem('learning-log-font') || 'serif';
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content={description} />
+    <title>{title} | {siteTitle}</title>
+    <script is:inline>
+      // Apply theme immediately to prevent flash (runs before paint)
+      (function applyTheme() {
+        try {
+          const root = document.documentElement;
+          const storedAppearance =
+            localStorage.getItem("learning-log-appearance") || "auto";
+          const warmth = localStorage.getItem("learning-log-warmth") || "warm";
+          const font = localStorage.getItem("learning-log-font") || "serif";
 
-        // Resolve auto to actual light/dark
-        const resolvedAppearance = storedAppearance === 'auto'
-          ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
-          : storedAppearance;
+          // Resolve auto to actual light/dark
+          const resolvedAppearance =
+            storedAppearance === "auto"
+              ? window.matchMedia("(prefers-color-scheme: dark)").matches
+                ? "dark"
+                : "light"
+              : storedAppearance;
 
-        root.dataset.appearance = resolvedAppearance;
-        root.dataset.appearanceMode = storedAppearance;
-        root.dataset.warmth = warmth;
-        root.dataset.font = font;
-      } catch {
-        // no-op: localStorage can fail in strict privacy contexts
-      }
-    })();
-
-    // Preserve theme BEFORE swap to prevent flash
-    document.addEventListener('astro:before-swap', function(event) {
-      try {
-        const storedAppearance = localStorage.getItem('learning-log-appearance') || 'auto';
-        const warmth = localStorage.getItem('learning-log-warmth') || 'warm';
-        const font = localStorage.getItem('learning-log-font') || 'serif';
-
-        const resolvedAppearance = storedAppearance === 'auto'
-          ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
-          : storedAppearance;
-
-        // Apply to the incoming document BEFORE it's swapped in
-        const newDoc = event.newDocument;
-        newDoc.documentElement.dataset.appearance = resolvedAppearance;
-        newDoc.documentElement.dataset.appearanceMode = storedAppearance;
-        newDoc.documentElement.dataset.warmth = warmth;
-        newDoc.documentElement.dataset.font = font;
-      } catch {}
-    });
-  </script>
-
-  <!-- Google Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-
-  <link rel="alternate" type="application/rss+xml" title={siteTitle} href={`${base}rss.xml`} />
-  <link rel="icon" type="image/svg+xml" href={`${base}favicon.svg`} />
-  <ViewTransitions />
-</head>
-<body>
-  <div class="container">
-    <header class="site-header">
-      <div class="site-brand">
-        <a href={homeHref} class="site-title">{brandTitle}</a>
-        {lastUpdatedLabel && (
-          <p class="site-updated">
-            Updated {lastUpdatedLabel}
-            {lastUpdatedRelativeLabel && <span class="site-updated-sep"> · </span>}
-            {lastUpdatedRelativeLabel}
-          </p>
-        )}
-      </div>
-      <div class="site-header-actions">
-        <nav class="site-nav">
-          <a href={homeHref} class:list={['nav-link', { active: currentPath === homeHref }]}>learning.log</a>
-          <a href={projectsHref} class:list={['nav-link', { active: currentPath.startsWith(projectsHref) }]}>projects</a>
-          <a href={resourcesHref} class:list={['nav-link', { active: currentPath.startsWith(resourcesHref) }]}>resources</a>
-          <a href={aboutHref} class:list={['nav-link', { active: currentPath === aboutHref }]}>about</a>
-        </nav>
-
-        <div class="theme-controls" data-theme-controls>
-          <button
-            class="theme-toggle-button"
-            type="button"
-            aria-label="Open theme settings"
-            aria-expanded="false"
-            data-theme-toggle
-          >
-            theme
-          </button>
-          <section class="theme-panel" hidden data-theme-panel aria-label="Theme settings">
-            <div class="theme-row">
-              <span class="theme-label">Warmth</span>
-              <div class="theme-swatch-group" role="radiogroup" aria-label="Warmth">
-                <button class="theme-swatch warmth-cool" type="button" data-warmth="cool" aria-label="Cool"></button>
-                <button class="theme-swatch warmth-warm" type="button" data-warmth="warm" aria-label="Warm"></button>
-                <button class="theme-swatch warmth-warmer" type="button" data-warmth="warmer" aria-label="Warmer"></button>
-              </div>
-            </div>
-            <div class="theme-row">
-              <span class="theme-label">Font</span>
-              <div class="theme-segmented" role="radiogroup" aria-label="Entry title font">
-                <button type="button" data-font="serif">Serif</button>
-                <button type="button" data-font="sans">Sans</button>
-              </div>
-            </div>
-            <div class="theme-row">
-              <span class="theme-label">Appearance</span>
-              <div class="theme-segmented" role="radiogroup" aria-label="Appearance mode">
-                <button type="button" data-appearance="light">Light</button>
-                <button type="button" data-appearance="dark">Dark</button>
-                <button type="button" data-appearance="auto">Auto</button>
-              </div>
-            </div>
-          </section>
-        </div>
-      </div>
-    </header>
-
-    <main>
-      <slot />
-    </main>
-
-    <footer class="site-footer">
-      <p>
-        <a href={`${base}rss.xml`}>RSS</a> ·
-        <a href="https://twitter.com/yourhandle" target="_blank" rel="noopener">Twitter</a> ·
-        <a href="https://github.com/yourusername" target="_blank" rel="noopener">GitHub</a>
-      </p>
-    </footer>
-  </div>
-
-  <script>
-    // Theme controls - compatible with View Transitions
-    (function() {
-      const root = document.documentElement;
-      const STORAGE_KEYS = {
-        warmth: 'learning-log-warmth',
-        font: 'learning-log-font',
-        appearance: 'learning-log-appearance'
-      };
-      const systemDarkQuery = window.matchMedia('(prefers-color-scheme: dark)');
-
-      // Shared state (persists across navigations)
-      const state = {
-        warmth: localStorage.getItem(STORAGE_KEYS.warmth) || 'warm',
-        font: localStorage.getItem(STORAGE_KEYS.font) || 'serif',
-        appearanceMode: localStorage.getItem(STORAGE_KEYS.appearance) || 'auto'
-      };
-
-      function getResolvedAppearance() {
-        if (state.appearanceMode === 'auto') {
-          return systemDarkQuery.matches ? 'dark' : 'light';
+          root.dataset.appearance = resolvedAppearance;
+          root.dataset.appearanceMode = storedAppearance;
+          root.dataset.warmth = warmth;
+          root.dataset.font = font;
+        } catch {
+          // no-op: localStorage can fail in strict privacy contexts
         }
-        return state.appearanceMode;
-      }
+      })();
 
-      function applyState() {
-        const resolvedAppearance = getResolvedAppearance();
-        root.dataset.warmth = state.warmth;
-        root.dataset.font = state.font;
-        root.dataset.appearance = resolvedAppearance;
-        root.dataset.appearanceMode = state.appearanceMode;
+      // Preserve theme BEFORE swap to prevent flash
+      document.addEventListener("astro:before-swap", function (event) {
+        try {
+          const storedAppearance =
+            localStorage.getItem("learning-log-appearance") || "auto";
+          const warmth = localStorage.getItem("learning-log-warmth") || "warm";
+          const font = localStorage.getItem("learning-log-font") || "serif";
 
-        // Update button states
-        document.querySelectorAll('[data-warmth]').forEach((btn) => {
-          btn.classList.toggle('active', btn.getAttribute('data-warmth') === state.warmth);
+          const resolvedAppearance =
+            storedAppearance === "auto"
+              ? window.matchMedia("(prefers-color-scheme: dark)").matches
+                ? "dark"
+                : "light"
+              : storedAppearance;
+
+          // Apply to the incoming document BEFORE it's swapped in
+          const newDoc = event.newDocument;
+          newDoc.documentElement.dataset.appearance = resolvedAppearance;
+          newDoc.documentElement.dataset.appearanceMode = storedAppearance;
+          newDoc.documentElement.dataset.warmth = warmth;
+          newDoc.documentElement.dataset.font = font;
+        } catch {}
+      });
+    </script>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+
+    <link
+      rel="alternate"
+      type="application/rss+xml"
+      title={siteTitle}
+      href={`${base}rss.xml`}
+    />
+    <link rel="icon" type="image/svg+xml" href={`${base}favicon.svg`} />
+    <ViewTransitions />
+  </head>
+  <body>
+    <div class="container">
+      <header class="site-header">
+        <div class="site-brand">
+          <a href={homeHref} class="site-title">{brandTitle}</a>
+          {
+            lastUpdatedLabel && (
+              <p class="site-updated">
+                Updated {lastUpdatedLabel}
+                {lastUpdatedRelativeLabel && (
+                  <span class="site-updated-sep"> · </span>
+                )}
+                {lastUpdatedRelativeLabel}
+              </p>
+            )
+          }
+        </div>
+        <div class="site-header-actions">
+          <nav class="site-nav">
+            <a
+              href={homeHref}
+              class:list={["nav-link", { active: currentPath === homeHref }]}
+              >learning.log</a
+            >
+            <a
+              href={projectsHref}
+              class:list={[
+                "nav-link",
+                { active: currentPath.startsWith(projectsHref) },
+              ]}>projects</a
+            >
+            <a
+              href={resourcesHref}
+              class:list={[
+                "nav-link",
+                { active: currentPath.startsWith(resourcesHref) },
+              ]}>my stack</a
+            >
+            <a
+              href={aboutHref}
+              class:list={["nav-link", { active: currentPath === aboutHref }]}
+              >about</a
+            >
+          </nav>
+
+          <div class="theme-controls" data-theme-controls>
+            <button
+              class="theme-toggle-button"
+              type="button"
+              aria-label="Open theme settings"
+              aria-expanded="false"
+              data-theme-toggle
+            >
+              theme
+            </button>
+            <section
+              class="theme-panel"
+              hidden
+              data-theme-panel
+              aria-label="Theme settings"
+            >
+              <div class="theme-row">
+                <span class="theme-label">Warmth</span>
+                <div
+                  class="theme-swatch-group"
+                  role="radiogroup"
+                  aria-label="Warmth"
+                >
+                  <button
+                    class="theme-swatch warmth-cool"
+                    type="button"
+                    data-warmth="cool"
+                    aria-label="Cool"></button>
+                  <button
+                    class="theme-swatch warmth-warm"
+                    type="button"
+                    data-warmth="warm"
+                    aria-label="Warm"></button>
+                  <button
+                    class="theme-swatch warmth-warmer"
+                    type="button"
+                    data-warmth="warmer"
+                    aria-label="Warmer"></button>
+                </div>
+              </div>
+              <div class="theme-row">
+                <span class="theme-label">Font</span>
+                <div
+                  class="theme-segmented"
+                  role="radiogroup"
+                  aria-label="Entry title font"
+                >
+                  <button type="button" data-font="serif">Serif</button>
+                  <button type="button" data-font="sans">Sans</button>
+                </div>
+              </div>
+              <div class="theme-row">
+                <span class="theme-label">Appearance</span>
+                <div
+                  class="theme-segmented"
+                  role="radiogroup"
+                  aria-label="Appearance mode"
+                >
+                  <button type="button" data-appearance="light">Light</button>
+                  <button type="button" data-appearance="dark">Dark</button>
+                  <button type="button" data-appearance="auto">Auto</button>
+                </div>
+              </div>
+            </section>
+          </div>
+        </div>
+      </header>
+
+      <main>
+        <slot />
+      </main>
+
+      <footer class="site-footer">
+        <div class="footer-grid">
+          <div class="footer-subscribe">
+            <SubscribeForm variant="inline" />
+          </div>
+          <div class="footer-info">
+            <p class="footer-tagline">Ship small, learn lots, share openly.</p>
+            <ul class="footer-links">
+              <li><a href={`${base}rss.xml`}>RSS</a></li>
+              <li><a href="https://x.com/tatermohit" target="_blank" rel="noopener">Twitter/X</a></li>
+              <li><a href="https://www.linkedin.com/in/tatermohit/" target="_blank" rel="noopener">LinkedIn</a></li>
+              <li><a href="https://github.com/mnttnm" target="_blank" rel="noopener">GitHub</a></li>
+              <li><a href="mailto:mohittater.iiita@gmail.com">Email</a></li>
+            </ul>
+            <p class="footer-disclaimer">Developed and maintained with the help of the technology of the new world.</p>
+            <p class="footer-copyright">© {new Date().getFullYear()} Mohit Tater</p>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script>
+      // Theme controls - compatible with View Transitions
+      (function () {
+        const root = document.documentElement;
+        const STORAGE_KEYS = {
+          warmth: "learning-log-warmth",
+          font: "learning-log-font",
+          appearance: "learning-log-appearance",
+        };
+        const systemDarkQuery = window.matchMedia(
+          "(prefers-color-scheme: dark)",
+        );
+
+        // Shared state (persists across navigations)
+        const state = {
+          warmth: localStorage.getItem(STORAGE_KEYS.warmth) || "warm",
+          font: localStorage.getItem(STORAGE_KEYS.font) || "serif",
+          appearanceMode:
+            localStorage.getItem(STORAGE_KEYS.appearance) || "auto",
+        };
+
+        function getResolvedAppearance() {
+          if (state.appearanceMode === "auto") {
+            return systemDarkQuery.matches ? "dark" : "light";
+          }
+          return state.appearanceMode;
+        }
+
+        function applyState() {
+          const resolvedAppearance = getResolvedAppearance();
+          root.dataset.warmth = state.warmth;
+          root.dataset.font = state.font;
+          root.dataset.appearance = resolvedAppearance;
+          root.dataset.appearanceMode = state.appearanceMode;
+
+          // Update button states
+          document.querySelectorAll("[data-warmth]").forEach((btn) => {
+            btn.classList.toggle(
+              "active",
+              btn.getAttribute("data-warmth") === state.warmth,
+            );
+          });
+          document.querySelectorAll("[data-font]").forEach((btn) => {
+            btn.classList.toggle(
+              "active",
+              btn.getAttribute("data-font") === state.font,
+            );
+          });
+          document
+            .querySelectorAll("button[data-appearance]")
+            .forEach((btn) => {
+              btn.classList.toggle(
+                "active",
+                btn.getAttribute("data-appearance") === state.appearanceMode,
+              );
+            });
+        }
+
+        function persistState() {
+          localStorage.setItem(STORAGE_KEYS.warmth, state.warmth);
+          localStorage.setItem(STORAGE_KEYS.font, state.font);
+          localStorage.setItem(STORAGE_KEYS.appearance, state.appearanceMode);
+        }
+
+        // Global listeners (only added once)
+        systemDarkQuery.addEventListener("change", () => {
+          if (state.appearanceMode === "auto") {
+            applyState();
+          }
         });
-        document.querySelectorAll('[data-font]').forEach((btn) => {
-          btn.classList.toggle('active', btn.getAttribute('data-font') === state.font);
-        });
-        document.querySelectorAll('button[data-appearance]').forEach((btn) => {
-          btn.classList.toggle('active', btn.getAttribute('data-appearance') === state.appearanceMode);
-        });
-      }
 
-      function persistState() {
-        localStorage.setItem(STORAGE_KEYS.warmth, state.warmth);
-        localStorage.setItem(STORAGE_KEYS.font, state.font);
-        localStorage.setItem(STORAGE_KEYS.appearance, state.appearanceMode);
-      }
+        document.addEventListener("click", (event) => {
+          const panel = document.querySelector("[data-theme-panel]");
+          const controls = document.querySelector("[data-theme-controls]");
+          const toggle = document.querySelector("[data-theme-toggle]");
+          if (!panel || panel.hidden || !controls) return;
+          const target = event.target;
+          if (!(target instanceof Node)) return;
+          if (!controls.contains(target)) {
+            panel.hidden = true;
+            panel.classList.remove("open");
+            toggle?.setAttribute("aria-expanded", "false");
+          }
+        });
 
-      // Global listeners (only added once)
-      systemDarkQuery.addEventListener('change', () => {
-        if (state.appearanceMode === 'auto') {
+        document.addEventListener("keydown", (event) => {
+          if (event.key === "Escape") {
+            const panel = document.querySelector("[data-theme-panel]");
+            const toggle = document.querySelector("[data-theme-toggle]");
+            if (panel && !panel.hidden) {
+              panel.hidden = true;
+              panel.classList.remove("open");
+              toggle?.setAttribute("aria-expanded", "false");
+            }
+          }
+        });
+
+        // Setup element listeners (called on each page load)
+        function setupControls() {
+          const toggle = document.querySelector("[data-theme-toggle]");
+          const panel = document.querySelector("[data-theme-panel]");
+
+          if (!toggle || !panel) return;
+
+          toggle.addEventListener("click", () => {
+            if (panel.hidden) {
+              panel.hidden = false;
+              requestAnimationFrame(() => panel.classList.add("open"));
+              toggle.setAttribute("aria-expanded", "true");
+            } else {
+              panel.hidden = true;
+              panel.classList.remove("open");
+              toggle.setAttribute("aria-expanded", "false");
+            }
+          });
+
+          document.querySelectorAll("[data-warmth]").forEach((button) => {
+            button.addEventListener("click", () => {
+              state.warmth = button.getAttribute("data-warmth") || "warm";
+              applyState();
+              persistState();
+            });
+          });
+
+          document.querySelectorAll("[data-font]").forEach((button) => {
+            button.addEventListener("click", () => {
+              state.font = button.getAttribute("data-font") || "serif";
+              applyState();
+              persistState();
+            });
+          });
+
+          document
+            .querySelectorAll("button[data-appearance]")
+            .forEach((button) => {
+              button.addEventListener("click", () => {
+                state.appearanceMode =
+                  button.getAttribute("data-appearance") || "auto";
+                applyState();
+                persistState();
+              });
+            });
+
           applyState();
         }
-      });
 
-      document.addEventListener('click', (event) => {
-        const panel = document.querySelector('[data-theme-panel]');
-        const controls = document.querySelector('[data-theme-controls]');
-        const toggle = document.querySelector('[data-theme-toggle]');
-        if (!panel || panel.hidden || !controls) return;
-        const target = event.target;
-        if (!(target instanceof Node)) return;
-        if (!controls.contains(target)) {
-          panel.hidden = true;
-          panel.classList.remove('open');
-          toggle?.setAttribute('aria-expanded', 'false');
-        }
-      });
+        // Initial setup
+        setupControls();
 
-      document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape') {
-          const panel = document.querySelector('[data-theme-panel]');
-          const toggle = document.querySelector('[data-theme-toggle]');
-          if (panel && !panel.hidden) {
-            panel.hidden = true;
-            panel.classList.remove('open');
-            toggle?.setAttribute('aria-expanded', 'false');
-          }
-        }
-      });
+        // Re-setup after View Transitions
+        document.addEventListener("astro:page-load", setupControls);
+      })();
+    </script>
 
-      // Setup element listeners (called on each page load)
-      function setupControls() {
-        const toggle = document.querySelector('[data-theme-toggle]');
-        const panel = document.querySelector('[data-theme-panel]');
-
-        if (!toggle || !panel) return;
-
-        toggle.addEventListener('click', () => {
-          if (panel.hidden) {
-            panel.hidden = false;
-            requestAnimationFrame(() => panel.classList.add('open'));
-            toggle.setAttribute('aria-expanded', 'true');
-          } else {
-            panel.hidden = true;
-            panel.classList.remove('open');
-            toggle.setAttribute('aria-expanded', 'false');
-          }
-        });
-
-        document.querySelectorAll('[data-warmth]').forEach((button) => {
-          button.addEventListener('click', () => {
-            state.warmth = button.getAttribute('data-warmth') || 'warm';
-            applyState();
-            persistState();
-          });
-        });
-
-        document.querySelectorAll('[data-font]').forEach((button) => {
-          button.addEventListener('click', () => {
-            state.font = button.getAttribute('data-font') || 'serif';
-            applyState();
-            persistState();
-          });
-        });
-
-        document.querySelectorAll('button[data-appearance]').forEach((button) => {
-          button.addEventListener('click', () => {
-            state.appearanceMode = button.getAttribute('data-appearance') || 'auto';
-            applyState();
-            persistState();
-          });
-        });
-
-        applyState();
-      }
-
-      // Initial setup
-      setupControls();
-
-      // Re-setup after View Transitions
-      document.addEventListener('astro:page-load', setupControls);
-    })();
-  </script>
-
-  <ImageLightbox />
-</body>
+    <ImageLightbox />
+  </body>
 </html>
