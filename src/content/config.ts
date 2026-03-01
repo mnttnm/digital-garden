@@ -25,6 +25,7 @@ const til = defineCollection({
     title: z.string(),
     date: z.coerce.date(),
     tags: z.array(z.string()).default([]),
+    project: z.string().optional(), // Links to a project by slug
     image: z.string().optional(),
     imageAlt: z.string().optional(),
     draft: z.boolean().default(false),

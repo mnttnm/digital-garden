@@ -9,7 +9,7 @@ tags: ["claude-code", "ai-systems", "freelance-ops", "workflow"]
 image: "/images/business-co-pilot-system.svg"
 activity:
   - date: 2026-01-20
-    title: "Context-first operating model established for daily execution"
+    title: "New Project: Context-first operating model established for daily execution"
     summary: "The system was structured around a small set of source-of-truth files so daily plans are generated from real constraints instead of generic productivity prompts."
     tags: ["system-design", "planning", "context-architecture"]
     type: "milestone"

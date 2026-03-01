@@ -1,6 +1,6 @@
 ---
-title: "A beginner-friendly OpenClaw workflow worth bookmarking"
-date: 2025-02-02
+title: "A workflow and deep dive on seeting up your team of OpenClaws"
+date: 2026-02-02
 tags: ["ai-tools", "workflow", "productivity"]
 type: "link"
 link: "https://x.com/pbteja1998/status/2017662163540971756"
