@@ -1,8 +1,11 @@
 ---
-import Base from '../layouts/Base.astro';
+import Base from "../layouts/Base.astro";
 ---
 
-<Base title="About" description="Builder and tinkerer sharing notes on AI, tools, and side projects.">
+<Base
+  title="About"
+  description="Builder and tinkerer sharing notes on AI, tools, and side projects."
+>
   <main class="about-page">
     <header class="page-header content-offset">
       <h1 class="page-title">About</h1>
@@ -16,20 +19,23 @@ import Base from '../layouts/Base.astro';
         </aside>
         <div class="section-content">
           <p>
-            I'm Mohit — a developer and designer based in Bengaluru. I've been building
-            things for the web for 10+ years, and these days I'm mostly obsessed with
-            AI-assisted workflows, agentic development, and finding the right tool for
-            every job.
+            I'm Mohit — a developer and product engineer based in Bengaluru.
+            I've been building things for 10+ years, and these days I'm mostly
+            obsessed with AI-assisted workflows, agentic development, and
+            finding the right tools and knowledge for every job.
           </p>
           <p>
-            This site is where I share what I'm learning, tools I discover, resources I
-            find useful, and updates on whatever I'm building. Think of it as my public
-            notebook.
+            <em class="highlight"
+              >This site is where I share what I'm learning, the tools I
+              discover, resources I find useful, and updates on whatever I'm
+              building. Think of it as my public notebook.</em
+            >
           </p>
           <p>
-            By day I do freelance consulting — helping teams build AI-powered products
-            and sort out their frontend and UX. The rest of the time I'm usually
-            tinkering with side projects or going down some new rabbit hole.
+            By day, I do freelance consulting — helping teams build tools and
+            apps by taking care of product and development for them. The rest of
+            the time, I'm usually tinkering with side projects or going down
+            some new rabbit hole.
           </p>
           <div class="section-separator" aria-hidden="true"></div>
         </div>
@@ -41,8 +47,8 @@ import Base from '../layouts/Base.astro';
         </aside>
         <div class="section-content">
           <p>
-            Compound engineering, AI agents, skillifying workflows into reusable systems,
-            and how small teams can punch way above their weight with the right tools.
+            AI engineering, agentic workflows, developer tools, UX strategy, and
+            side projects that ship.
           </p>
           <div class="section-separator" aria-hidden="true"></div>
         </div>
@@ -54,17 +60,29 @@ import Base from '../layouts/Base.astro';
         </aside>
         <div class="section-content">
           <p>
-            If something here resonated or you just want to say hi — I'm always happy to chat.
+            If something here resonated or you just want to say hi — I'm always
+            happy to chat.
           </p>
           <ul class="contact-links">
             <li>
-              <a href="https://x.com/tatermohit" target="_blank" rel="noopener">Twitter/X</a>
+              <a href="https://x.com/tatermohit" target="_blank" rel="noopener"
+                >Twitter/X</a
+              >
             </li>
             <li>
-              <a href="https://www.linkedin.com/in/tatermohit/" target="_blank" rel="noopener">LinkedIn</a>
+              <a
+                href="https://www.linkedin.com/in/tatermohit/"
+                target="_blank"
+                rel="noopener">LinkedIn</a
+              >
             </li>
             <li>
-              <a href="https://github.com/mnttnm" target="_blank" rel="noopener">GitHub</a>
+              <a href="https://github.com/mnttnm" target="_blank" rel="noopener"
+                >GitHub</a
+              >
+            </li>
+            <li>
+              <a href="mailto:mohittater.iiita@gmail.com">Email</a>
             </li>
           </ul>
         </div>
@@ -145,10 +163,15 @@ import Base from '../layouts/Base.astro';
     margin-bottom: 0;
   }
 
+  .section-content .highlight {
+    color: var(--accent);
+  }
+
   .section-separator {
     margin-top: clamp(2.2rem, 4.5vw, 3rem);
     width: 66%;
-    border-top: 1px solid color-mix(in srgb, var(--border-primary) 40%, transparent);
+    border-top: 1px solid
+      color-mix(in srgb, var(--border-primary) 40%, transparent);
   }
 
   .contact-links {
