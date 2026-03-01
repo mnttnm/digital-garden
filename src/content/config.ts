@@ -12,6 +12,8 @@ const notes = defineCollection({
     link: z.string().url().optional(),
     linkTitle: z.string().optional(),
     takeaway: z.string().optional(),
+    image: z.string().optional(),
+    imageAlt: z.string().optional(),
     draft: z.boolean().default(false),
   }),
 });
@@ -23,6 +25,8 @@ const til = defineCollection({
     title: z.string(),
     date: z.coerce.date(),
     tags: z.array(z.string()).default([]),
+    image: z.string().optional(),
+    imageAlt: z.string().optional(),
     draft: z.boolean().default(false),
   }),
 });

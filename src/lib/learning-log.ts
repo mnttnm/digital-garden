@@ -206,7 +206,15 @@ export async function getLearningLogItems(): Promise<LearningLogItem[]> {
         }
       : undefined;
     const codePreview = note.data.type === 'snippet' ? getCodePreview(note.body) : undefined;
-    const imagePreviews = getImagePreviews(note.body);
+    const bodyImagePreviews = getImagePreviews(note.body);
+
+    // Prefer frontmatter image, fall back to body markdown images
+    const frontmatterImage = note.data.image
+      ? { src: note.data.image, alt: note.data.imageAlt || note.data.title }
+      : undefined;
+    const imagePreviews = frontmatterImage
+      ? [frontmatterImage, ...bodyImagePreviews]
+      : bodyImagePreviews;
 
     return {
       id: `note-${note.slug}`,
@@ -276,7 +284,15 @@ export async function getLearningLogItems(): Promise<LearningLogItem[]> {
 
   const tilItems: LearningLogItem[] = tils.map((til) => {
     const crux = firstSentenceOrExcerpt(til.body) || til.data.title;
-    const imagePreviews = getImagePreviews(til.body);
+    const bodyImagePreviews = getImagePreviews(til.body);
+
+    // Prefer frontmatter image, fall back to body markdown images
+    const frontmatterImage = til.data.image
+      ? { src: til.data.image, alt: til.data.imageAlt || til.data.title }
+      : undefined;
+    const imagePreviews = frontmatterImage
+      ? [frontmatterImage, ...bodyImagePreviews]
+      : bodyImagePreviews;
 
     return {
       id: `til-${til.slug}`,

@@ -82,6 +82,12 @@ const base = import.meta.env.BASE_URL;
       )}
     </header>
 
+    {note.data.image && (
+      <figure class="article-image">
+        <img src={note.data.image} alt={note.data.imageAlt || note.data.title} />
+      </figure>
+    )}
+
     <div class="article-content">
       <Content />
     </div>
@@ -211,6 +217,17 @@ const base = import.meta.env.BASE_URL;
 
   .article-link {
     margin-bottom: 0;
+  }
+
+  .article-image {
+    margin: 0 0 2rem 0;
+  }
+
+  .article-image img {
+    width: 100%;
+    height: auto;
+    border-radius: 6px;
+    border: 1px solid var(--color-border);
   }
 
   .article-content {

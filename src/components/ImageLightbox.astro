@@ -49,9 +49,36 @@
 </div>
 
 <script>
-  (() => {
+  // Global state that persists across View Transitions
+  interface LightboxState {
+    gallery: HTMLImageElement[];
+    index: number;
+    isOpen: boolean;
+    // Function references that get updated on each setup
+    close: () => void;
+    showPrev: () => void;
+    showNext: () => void;
+  }
+
+  const state: LightboxState = {
+    gallery: [],
+    index: 0,
+    isOpen: false,
+    close: () => {},
+    showPrev: () => {},
+    showNext: () => {},
+  };
+
+  // Track if we've already set up the global keyboard listener
+  let keyboardListenerReady = false;
+
+  function setupLightbox() {
     const lightbox = document.getElementById('image-lightbox');
     if (!lightbox) return;
+
+    // Skip if this specific DOM element is already set up
+    if (lightbox.dataset.ready === 'true') return;
+    lightbox.dataset.ready = 'true';
 
     const backdrop = lightbox.querySelector('.lightbox-backdrop');
     const closeBtn = lightbox.querySelector('.lightbox-close');
@@ -63,14 +90,10 @@
     const currentSpan = lightbox.querySelector('.lightbox-current') as HTMLElement;
     const totalSpan = lightbox.querySelector('.lightbox-total') as HTMLElement;
 
-    let currentGallery: HTMLImageElement[] = [];
-    let currentIndex = 0;
-    let isOpen = false;
-
     function open(img: HTMLImageElement, gallery: HTMLImageElement[] = []) {
-      currentGallery = gallery.length > 0 ? gallery : [img];
-      currentIndex = currentGallery.indexOf(img);
-      if (currentIndex === -1) currentIndex = 0;
+      state.gallery = gallery.length > 0 ? gallery : [img];
+      state.index = state.gallery.indexOf(img);
+      if (state.index === -1) state.index = 0;
 
       updateImage();
       updateNavigation();
@@ -78,20 +101,18 @@
       lightbox.setAttribute('aria-hidden', 'false');
       lightbox.classList.add('is-opening');
       document.body.style.overflow = 'hidden';
-      isOpen = true;
+      state.isOpen = true;
 
-      // Trigger animation
       requestAnimationFrame(() => {
         lightbox.classList.remove('is-opening');
         lightbox.classList.add('is-open');
       });
 
-      // Focus the close button for accessibility
       setTimeout(() => closeBtn?.focus(), 100);
     }
 
     function close() {
-      if (!isOpen) return;
+      if (!state.isOpen) return;
 
       lightbox.classList.remove('is-open');
       lightbox.classList.add('is-closing');
@@ -100,16 +121,15 @@
         lightbox.classList.remove('is-closing');
         lightbox.setAttribute('aria-hidden', 'true');
         document.body.style.overflow = '';
-        isOpen = false;
-        currentGallery = [];
+        state.isOpen = false;
+        state.gallery = [];
       }, 200);
     }
 
     function updateImage() {
-      const img = currentGallery[currentIndex];
+      const img = state.gallery[state.index];
       if (!img) return;
 
-      // Use the full-resolution src (data-lightbox-src) if available, otherwise the img src
       const src = img.dataset.lightboxSrc || img.src;
       const alt = img.alt || '';
       const captionText = img.dataset.lightboxCaption || img.closest('figure')?.querySelector('figcaption')?.textContent || '';
@@ -124,10 +144,9 @@
         caption.hidden = true;
       }
 
-      // Update counter
-      if (currentGallery.length > 1) {
-        currentSpan.textContent = String(currentIndex + 1);
-        totalSpan.textContent = String(currentGallery.length);
+      if (state.gallery.length > 1) {
+        currentSpan.textContent = String(state.index + 1);
+        totalSpan.textContent = String(state.gallery.length);
         counter.hidden = false;
       } else {
         counter.hidden = true;
@@ -135,130 +154,121 @@
     }
 
     function updateNavigation() {
-      const hasMultiple = currentGallery.length > 1;
+      const hasMultiple = state.gallery.length > 1;
       prevBtn.hidden = !hasMultiple;
       nextBtn.hidden = !hasMultiple;
 
       if (hasMultiple) {
-        prevBtn.disabled = currentIndex === 0;
-        nextBtn.disabled = currentIndex === currentGallery.length - 1;
+        prevBtn.disabled = state.index === 0;
+        nextBtn.disabled = state.index === state.gallery.length - 1;
       }
     }
 
     function showPrev() {
-      if (currentIndex > 0) {
-        currentIndex--;
+      if (state.index > 0) {
+        state.index--;
         updateImage();
         updateNavigation();
       }
     }
 
     function showNext() {
-      if (currentIndex < currentGallery.length - 1) {
-        currentIndex++;
+      if (state.index < state.gallery.length - 1) {
+        state.index++;
         updateImage();
         updateNavigation();
       }
     }
 
-    // Event listeners
+    // Store current functions in global state so keyboard handler can access them
+    state.close = close;
+    state.showPrev = showPrev;
+    state.showNext = showNext;
+
+    // DOM event listeners (these are on specific elements, ok to add each time)
     closeBtn?.addEventListener('click', close);
     backdrop?.addEventListener('click', close);
     prevBtn?.addEventListener('click', showPrev);
     nextBtn?.addEventListener('click', showNext);
 
-    // Keyboard navigation
-    document.addEventListener('keydown', (e) => {
-      if (!isOpen) return;
+    // Global keyboard listener (only add once, uses state functions)
+    if (!keyboardListenerReady) {
+      keyboardListenerReady = true;
+      document.addEventListener('keydown', (e) => {
+        if (!state.isOpen) return;
 
-      switch (e.key) {
-        case 'Escape':
-          close();
-          break;
-        case 'ArrowLeft':
-          showPrev();
-          break;
-        case 'ArrowRight':
-          showNext();
-          break;
-      }
-    });
+        switch (e.key) {
+          case 'Escape':
+            state.close();
+            break;
+          case 'ArrowLeft':
+            state.showPrev();
+            break;
+          case 'ArrowRight':
+            state.showNext();
+            break;
+        }
+      });
+    }
 
-    // Make images clickable
-    function initializeLightboxImages() {
-      // Find all images that should open in lightbox
-      const lightboxImages = document.querySelectorAll<HTMLImageElement>(
-        // Images with explicit data-lightbox attribute
+    // Initialize clickable images
+    function initImages() {
+      const imgs = document.querySelectorAll<HTMLImageElement>(
         'img[data-lightbox],' +
-        // Images in feed thumbnails (index page)
         '.entry-thumbnail img,' +
-        // Images in project detail feed
         '.feed-media-item img,' +
-        // Images in capture cards
         '.capture-image'
       );
 
-      lightboxImages.forEach((img) => {
-        // Skip if already initialized
+      imgs.forEach((img) => {
         if (img.dataset.lightboxInit) return;
         img.dataset.lightboxInit = 'true';
-
-        // Add hover class
         img.classList.add('lightbox-trigger');
 
-        // Find gallery context for grouping images
-        const galleryContainer = img.closest('[data-lightbox-gallery], .entry-thumbnails, .feed-media-grid, .capture-images');
+        const container = img.closest('[data-lightbox-gallery], .entry-thumbnails, .feed-media-grid, .capture-images');
 
         img.addEventListener('click', (e) => {
           e.preventDefault();
           e.stopPropagation();
 
           let gallery: HTMLImageElement[] = [];
-          if (galleryContainer) {
-            gallery = Array.from(galleryContainer.querySelectorAll<HTMLImageElement>('img'));
+          if (container) {
+            gallery = Array.from(container.querySelectorAll<HTMLImageElement>('img'));
           }
-
           open(img, gallery);
-        });
-      });
-
-      // Also handle anchor-wrapped images in feed (prevent navigation)
-      const thumbnailLinks = document.querySelectorAll<HTMLAnchorElement>(
-        '.entry-thumbnail:not(.is-grid),' +
-        '.feed-media-item'
-      );
-
-      thumbnailLinks.forEach((link) => {
-        const img = link.querySelector('img');
-        if (!img || img.dataset.lightboxInit) return;
-
-        link.addEventListener('click', (e) => {
-          // Only intercept if clicking on or near the image
-          const target = e.target as Element;
-          if (target === img || target.closest('.entry-thumbnail, .feed-media-item')) {
-            e.preventDefault();
-          }
         });
       });
     }
 
-    // Initialize on load
-    initializeLightboxImages();
+    initImages();
 
-    // Re-initialize after Astro page transitions or dynamic content
-    document.addEventListener('astro:page-load', initializeLightboxImages);
+    // Watch for new images
+    const observer = new MutationObserver(() => initImages());
+    observer.observe(document.body, { childList: true, subtree: true });
+  }
 
-    // Observe for dynamically added content
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.addedNodes.length > 0) {
-          initializeLightboxImages();
-        }
-      });
+  // Reset overflow before page swap (in case lightbox was open)
+  document.addEventListener('astro:before-swap', () => {
+    document.body.style.overflow = '';
+    state.isOpen = false;
+  });
+
+  // Initialize
+  setupLightbox();
+
+  // Re-initialize after View Transitions
+  document.addEventListener('astro:page-load', () => {
+    // Reset lightbox ready state
+    const lb = document.getElementById('image-lightbox');
+    if (lb) delete lb.dataset.ready;
+
+    // Clear stale lightboxInit from images (View Transitions may preserve them)
+    document.querySelectorAll('[data-lightbox-init]').forEach((el) => {
+      delete (el as HTMLElement).dataset.lightboxInit;
     });
 
-    observer.observe(document.body, { childList: true, subtree: true });
-  })();
+    setupLightbox();
+  });
 </script>
 
 <style>
