@@ -5,7 +5,7 @@
  * Decorative only - hidden from screen readers.
  */
 
-import type { LearningLogItem } from '../../lib/learning-log';
+import type { LearningLogItem } from "../../lib/learning-log";
 
 interface Voice {
   display_name: string;
@@ -23,30 +23,41 @@ interface Props {
 const { items, voices = [], speed = 40 } = Astro.props;
 
 // Prioritize variety - show learnings/resources/thoughts more prominently
-const learnings = items.filter(i => i.category === 'learnings' || i.category === 'resources' || i.category === 'thoughts');
-const projects = items.filter(i => i.category === 'projects');
+const learnings = items.filter(
+  (i) =>
+    i.category === "learnings" ||
+    i.category === "resources" ||
+    i.category === "thoughts",
+);
+const projects = items.filter((i) => i.category === "projects");
 
 // Convert top voices to marquee items format
-const topVoices = voices.slice(0, 5).map(v => ({
+const topVoices = voices.slice(0, 5).map((v) => ({
   title: v.display_name,
   crux: v.one_liner,
-  category: 'voices' as const,
+  category: "voices" as const,
   avatar: v.avatar_url,
   image: undefined as string | undefined,
 }));
 
 // Build marquee: 3 learnings, 1 voice, 1 project pattern
-type MarqueeItem = { title: string; crux: string; category: string; avatar?: string; image?: string };
+type MarqueeItem = {
+  title: string;
+  crux: string;
+  category: string;
+  avatar?: string;
+  image?: string;
+};
 
 // Convert LearningLogItems to MarqueeItems with images
-const learningMarquee: MarqueeItem[] = learnings.map(i => ({
+const learningMarquee: MarqueeItem[] = learnings.map((i) => ({
   title: i.title,
   crux: i.crux,
   category: i.category,
   image: i.imagePreview?.src,
 }));
 
-const projectMarquee: MarqueeItem[] = projects.map(i => ({
+const projectMarquee: MarqueeItem[] = projects.map((i) => ({
   title: i.title,
   crux: i.crux,
   category: i.category,
@@ -54,10 +65,16 @@ const projectMarquee: MarqueeItem[] = projects.map(i => ({
 }));
 
 const marqueeItems: MarqueeItem[] = [];
-let li = 0, vi = 0, pi = 0;
+let li = 0,
+  vi = 0,
+  pi = 0;
 while (marqueeItems.length < 14) {
   // Add 3 learnings
-  for (let i = 0; i < 3 && li < learningMarquee.length && marqueeItems.length < 14; i++) {
+  for (
+    let i = 0;
+    i < 3 && li < learningMarquee.length && marqueeItems.length < 14;
+    i++
+  ) {
     marqueeItems.push(learningMarquee[li++]);
   }
   // Add 1 voice
@@ -69,16 +86,21 @@ while (marqueeItems.length < 14) {
     marqueeItems.push(projectMarquee[pi++]);
   }
   // Break if we've exhausted all sources
-  if (li >= learningMarquee.length && vi >= topVoices.length && pi >= projectMarquee.length) break;
+  if (
+    li >= learningMarquee.length &&
+    vi >= topVoices.length &&
+    pi >= projectMarquee.length
+  )
+    break;
 }
 
 // Category to dot color mapping (matches index.astro)
 const categoryColors: Record<string, string> = {
-  projects: '#94a3b8',
-  learnings: '#fbbf24',
-  resources: '#10b981',
-  thoughts: '#c084fc',
-  voices: '#f472b6', // pink for voices
+  projects: "#94a3b8",
+  learnings: "#fbbf24",
+  resources: "#10b981",
+  thoughts: "#c084fc",
+  voices: "#f472b6", // pink for voices
 };
 ---
 
@@ -93,56 +115,95 @@ const categoryColors: Record<string, string> = {
     </div>
     <div class="marquee-gradient marquee-gradient-top"></div>
 
-  <div class="marquee-track" style={`--marquee-speed: ${speed}s`}>
-    {/* First set of items */}
-    {marqueeItems.map((item) => (
-      <div class:list={["marquee-card", { "voice-card": item.category === 'voices', "has-image": !!item.image }]}>
-        <div class="card-header">
-          <span
-            class="category-dot"
-            style={`background: ${categoryColors[item.category] || '#94a3b8'}`}
-          ></span>
-          <span class="category-label">{item.category === 'voices' ? 'voice I follow' : item.category}</span>
-        </div>
-        <div class="card-body">
-          {item.avatar && <img src={item.avatar} alt="" class="voice-avatar" loading="lazy" />}
-          <div class="card-text">
-            <h3 class="card-title">{item.title}</h3>
-            <p class="card-crux">{item.crux}</p>
+    <div class="marquee-track" style={`--marquee-speed: ${speed}s`}>
+      {/* First set of items */}
+      {
+        marqueeItems.map((item) => (
+          <div
+            class:list={[
+              "marquee-card",
+              {
+                "voice-card": item.category === "voices",
+                "has-image": !!item.image,
+              },
+            ]}
+          >
+            <div class="card-header">
+              <span
+                class="category-dot"
+                style={`background: ${categoryColors[item.category] || "#94a3b8"}`}
+              />
+              <span class="category-label">
+                {item.category === "voices" ? "voice I follow" : item.category}
+              </span>
+            </div>
+            <div class="card-body">
+              {item.avatar && (
+                <img
+                  src={item.avatar}
+                  alt=""
+                  class="voice-avatar"
+                  loading="lazy"
+                />
+              )}
+              <div class="card-text">
+                <h3 class="card-title">{item.title}</h3>
+                <p class="card-crux">{item.crux}</p>
+              </div>
+            </div>
+            {item.image && (
+              <div class="card-image">
+                <img src={item.image} alt="" loading="lazy" />
+              </div>
+            )}
           </div>
-        </div>
-        {item.image && (
-          <div class="card-image">
-            <img src={item.image} alt="" loading="lazy" />
+        ))
+      }
+      {/* Duplicate for seamless loop */}
+      {
+        marqueeItems.map((item) => (
+          <div
+            class:list={[
+              "marquee-card",
+              {
+                "voice-card": item.category === "voices",
+                "has-image": !!item.image,
+              },
+            ]}
+            aria-hidden="true"
+          >
+            <div class="card-header">
+              <span
+                class="category-dot"
+                style={`background: ${categoryColors[item.category] || "#94a3b8"}`}
+              />
+              <span class="category-label">
+                {item.category === "voices" ? "voice I follow" : item.category}
+              </span>
+            </div>
+            <div class="card-body">
+              {item.avatar && (
+                <img
+                  src={item.avatar}
+                  alt=""
+                  class="voice-avatar"
+                  loading="lazy"
+                />
+              )}
+              <div class="card-text">
+                <h3 class="card-title">{item.title}</h3>
+                <p class="card-crux">{item.crux}</p>
+              </div>
+            </div>
+            {item.image && (
+              <div class="card-image">
+                <img src={item.image} alt="" loading="lazy" />
+              </div>
+            )}
           </div>
-        )}
-      </div>
-    ))}
-    {/* Duplicate for seamless loop */}
-    {marqueeItems.map((item) => (
-      <div class:list={["marquee-card", { "voice-card": item.category === 'voices', "has-image": !!item.image }]} aria-hidden="true">
-        <div class="card-header">
-          <span
-            class="category-dot"
-            style={`background: ${categoryColors[item.category] || '#94a3b8'}`}
-          ></span>
-          <span class="category-label">{item.category === 'voices' ? 'voice I follow' : item.category}</span>
-        </div>
-        <div class="card-body">
-          {item.avatar && <img src={item.avatar} alt="" class="voice-avatar" loading="lazy" />}
-          <div class="card-text">
-            <h3 class="card-title">{item.title}</h3>
-            <p class="card-crux">{item.crux}</p>
-          </div>
-        </div>
-        {item.image && (
-          <div class="card-image">
-            <img src={item.image} alt="" loading="lazy" />
-          </div>
-        )}
-      </div>
-    ))}
-  </div>
+        ))
+      }
+    </div>
 
     <div class="marquee-gradient marquee-gradient-bottom"></div>
   </div>
@@ -159,7 +220,9 @@ const categoryColors: Record<string, string> = {
   }
 
   @keyframes fade-in-wrapper {
-    to { opacity: 1; }
+    to {
+      opacity: 1;
+    }
   }
 
   .marquee-label {
@@ -175,8 +238,8 @@ const categoryColors: Record<string, string> = {
 
   .marquee-container {
     position: relative;
-    height: 65vh;
-    max-height: 520px;
+    height: 60vh;
+    max-height: 640px;
     overflow: hidden;
     border-radius: 0.75rem;
     background: color-mix(in srgb, var(--bg-card) 40%, transparent);
@@ -208,16 +271,25 @@ const categoryColors: Record<string, string> = {
   }
 
   @keyframes shimmer {
-    0% { background-position: 200% 0; }
-    100% { background-position: -200% 0; }
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
   }
 
   @keyframes fade-out-shimmer {
-    to { opacity: 0; pointer-events: none; }
+    to {
+      opacity: 0;
+      pointer-events: none;
+    }
   }
 
   @keyframes fade-in-track {
-    to { opacity: 1; }
+    to {
+      opacity: 1;
+    }
   }
 
   .marquee-gradient {
@@ -240,11 +312,7 @@ const categoryColors: Record<string, string> = {
 
   .marquee-gradient-bottom {
     bottom: 0;
-    background: linear-gradient(
-      to top,
-      var(--bg-primary) 0%,
-      transparent 100%
-    );
+    background: linear-gradient(to top, var(--bg-primary) 0%, transparent 100%);
   }
 
   .marquee-track {

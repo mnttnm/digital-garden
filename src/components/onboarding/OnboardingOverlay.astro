@@ -46,12 +46,6 @@ const { items, voices = [] } = Astro.props;
       <ContentMarquee items={items} voices={voices} />
     </div>
   </div>
-
-  <footer class="onboarding-footer" id="onboarding-footer">
-    <button class="enter-button" id="enter-button" data-onboarding-enter>
-      Start reading <span class="arrow" aria-hidden="true">→</span>
-    </button>
-  </footer>
 </div>
 
 <style>
@@ -112,7 +106,7 @@ const { items, voices = [] } = Astro.props;
     flex: 1;
     display: grid;
     grid-template-columns: 1fr 380px;
-    gap: 3rem;
+    gap: 8rem;
     max-width: 1100px;
     width: 100%;
     margin: 0 auto;
@@ -133,85 +127,13 @@ const { items, voices = [] } = Astro.props;
     justify-content: flex-start;
     position: relative;
     height: 100%;
-    max-height: 520px;
+    max-height: 700px;
     padding-top: 1.5rem;
-  }
-
-  /* Footer with Enter button */
-  .onboarding-footer {
-    flex-shrink: 0;
-    display: flex;
-    justify-content: center;
-    padding: 0 2rem 3.5rem;
-    opacity: 0;
-    transform: translateY(20px);
-    pointer-events: none;
-    animation: slide-up-footer 0.6s 2.5s ease forwards;
-  }
-
-  @keyframes slide-up-footer {
-    to {
-      opacity: 1;
-      transform: translateY(0);
-      pointer-events: auto;
-    }
-  }
-
-  /* Enter button */
-  .enter-button {
-    font-family: var(--font-sans);
-    font-size: 1.05rem;
-    font-weight: 500;
-    color: var(--bg-primary);
-    background: var(--text-primary);
-    border: none;
-    padding: 1.1rem 4rem;
-    border-radius: 0.6rem;
-    cursor: pointer;
-    position: relative;
-    transition:
-      background 0.2s ease,
-      transform 0.15s ease;
-  }
-
-  .enter-button .arrow {
-    display: inline-block;
-    margin-left: 0.5rem;
-    transition: transform 0.2s ease;
-  }
-
-  .enter-button:hover {
-    background: var(--accent);
-    transform: translateY(-1px);
-  }
-
-  .enter-button:hover .arrow {
-    transform: translateX(3px);
-  }
-
-  .enter-button:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 3px;
-  }
-
-  .enter-button:active {
-    transform: scale(0.98);
   }
 
   @media (prefers-reduced-motion: reduce) {
     .onboarding-header {
       opacity: 1;
-      animation: none;
-    }
-
-    .onboarding-footer {
-      opacity: 1;
-      transform: none;
-      pointer-events: auto;
-      animation: none;
-    }
-
-    .enter-button.glow {
       animation: none;
     }
   }
@@ -233,16 +155,6 @@ const { items, voices = [] } = Astro.props;
 
     .onboarding-right {
       display: none;
-    }
-
-    .onboarding-footer {
-      padding: 1.5rem 1.5rem 2rem;
-    }
-
-    .enter-button {
-      width: 100%;
-      max-width: 320px;
-      text-align: center;
     }
   }
 </style>

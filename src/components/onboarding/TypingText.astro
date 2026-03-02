@@ -43,6 +43,9 @@ const subtitle = "tinkering in public";
           <span class="char" data-char={i}>{char === ' ' ? '\u00A0' : char}</span>
         ))}</p>
     </div>
+    <button class="start-reading-btn" id="enter-button" data-onboarding-enter>
+      Start reading <span class="arrow" aria-hidden="true">→</span>
+    </button>
   </div>
   <span class="cursor" id="typing-cursor"></span>
 </div>
@@ -92,6 +95,45 @@ const subtitle = "tinkering in public";
     display: flex;
     flex-direction: column;
     gap: 0.3rem;
+  }
+
+  .start-reading-btn {
+    margin-top: 2rem;
+    font-family: var(--font-sans);
+    font-size: 0.9rem;
+    font-weight: 500;
+    white-space: nowrap;
+    color: var(--bg-primary);
+    background: var(--text-primary);
+    border: none;
+    border-radius: 0.5rem;
+    padding: 0.75rem 1.4rem;
+    cursor: pointer;
+    opacity: 0;
+    transform: translateY(8px);
+    pointer-events: none;
+    transition: all 0.2s ease;
+  }
+
+  .start-reading-btn.visible {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  .start-reading-btn:hover {
+    background: var(--accent);
+    transform: translateY(-1px);
+  }
+
+  .start-reading-btn .arrow {
+    display: inline-block;
+    margin-left: 0.4rem;
+    transition: transform 0.2s ease;
+  }
+
+  .start-reading-btn:hover .arrow {
+    transform: translateX(3px);
   }
 
   .signature .char.visible {
@@ -187,10 +229,13 @@ const subtitle = "tinkering in public";
       "(prefers-reduced-motion: reduce)",
     ).matches;
 
+    const startBtn = document.querySelector<HTMLButtonElement>(".start-reading-btn");
+
     if (reducedMotion) {
       container
         .querySelectorAll(".char")
         .forEach((c) => c.classList.add("visible"));
+      if (startBtn) startBtn.classList.add("visible");
       window.dispatchEvent(new CustomEvent("typing-complete"));
       return;
     }
@@ -212,6 +257,9 @@ const subtitle = "tinkering in public";
     function typeNext() {
       if (currentIndex >= allChars.length) {
         cursor.classList.add("blink");
+        if (startBtn) {
+          setTimeout(() => startBtn.classList.add("visible"), 300);
+        }
         window.dispatchEvent(new CustomEvent("typing-complete"));
         return;
       }
