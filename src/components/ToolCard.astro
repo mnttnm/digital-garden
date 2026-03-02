@@ -1,0 +1,144 @@
+---
+interface Props {
+  name: string;
+  description: string;
+  url: string;
+  logo: string;
+  commentary?: string;
+  index?: number;
+}
+
+const { name, description, url, logo, commentary, index = 0 } = Astro.props;
+
+function getDomain(urlStr: string): string {
+  try {
+    const parsed = new URL(urlStr);
+    return parsed.hostname.replace(/^www\./, '');
+  } catch {
+    return urlStr;
+  }
+}
+---
+
+<article class="tool-entry reveal" style={`--reveal-delay: ${Math.min(index * 42, 260)}ms;`}>
+  <a href={url} target="_blank" rel="noopener" class="tool-link">
+    <img src={logo} alt="" class="tool-logo" loading="lazy" />
+    <div class="tool-content">
+      <div class="tool-header">
+        <span class="tool-name">{name}</span>
+        <span class="tool-domain">{getDomain(url)}</span>
+        <span class="tool-arrow" aria-hidden="true">↗</span>
+      </div>
+      <p class="tool-description">{description}</p>
+      {commentary && <p class="tool-commentary">{commentary}</p>}
+    </div>
+  </a>
+</article>
+
+<style>
+  .tool-entry {
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity 0.58s ease, transform 0.58s ease;
+    transition-delay: var(--reveal-delay, 0ms);
+  }
+
+  .tool-entry.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .tool-link {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.9rem;
+    padding: 1rem 0;
+    text-decoration: none;
+    color: inherit;
+    border-bottom: 1px solid color-mix(in srgb, var(--border-primary) 40%, transparent);
+    transition: border-color 0.2s ease;
+  }
+
+  .tool-entry:last-child .tool-link {
+    border-bottom: none;
+  }
+
+  .tool-link:hover {
+    border-color: color-mix(in srgb, var(--accent) 30%, var(--border-primary));
+  }
+
+  .tool-logo {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.4rem;
+    flex-shrink: 0;
+    object-fit: contain;
+    background: var(--bg-card);
+    border: 1px solid var(--border-primary);
+    padding: 0.2rem;
+  }
+
+  .tool-content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .tool-header {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.35rem;
+  }
+
+  .tool-name {
+    font-size: clamp(1.05rem, 1.8vw, 1.2rem);
+    font-family: var(--entry-title-font);
+    font-weight: 500;
+    color: var(--text-primary);
+    letter-spacing: -0.01em;
+  }
+
+  .tool-domain {
+    font-size: 0.78rem;
+    color: var(--text-tertiary);
+    text-transform: lowercase;
+  }
+
+  .tool-arrow {
+    margin-left: auto;
+    color: var(--text-tertiary);
+    font-size: 0.9rem;
+    flex-shrink: 0;
+    transition: transform 0.2s ease, color 0.2s ease;
+  }
+
+  .tool-link:hover .tool-arrow {
+    transform: translate(1px, -1px);
+    color: var(--accent);
+  }
+
+  .tool-description {
+    margin: 0;
+    font-size: 0.95rem;
+    line-height: 1.55;
+    color: var(--text-secondary);
+    max-width: 65ch;
+  }
+
+  .tool-commentary {
+    margin: 0.6rem 0 0 0;
+    font-size: 0.88rem;
+    line-height: 1.55;
+    color: var(--text-tertiary);
+    font-style: italic;
+    max-width: 65ch;
+  }
+
+  @media (min-width: 768px) {
+    .tool-logo {
+      width: 2.25rem;
+      height: 2.25rem;
+    }
+  }
+</style>

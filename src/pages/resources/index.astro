@@ -1,125 +1,216 @@
 ---
-import Base from '../../layouts/Base.astro';
-import { getCollection } from 'astro:content';
-import ResourceCard from '../../components/ResourceCard.astro';
+import Base from "../../layouts/Base.astro";
+import VoiceCard from "../../components/VoiceCard.astro";
+import ToolCard from "../../components/ToolCard.astro";
+import tools from "../../resources/tools.json";
+import accounts from "../../resources/x-accounts.json";
 
 export const prerender = true;
 
-const allResources = await getCollection('resources', ({ data }) => !data.draft);
+// Sort accounts by rating (highest first), show top 13 by default
+const sortedAccounts = [...accounts].sort((a, b) => b.rating - a.rating);
+const featuredVoices = sortedAccounts.slice(0, 13);
+const moreVoices = sortedAccounts.slice(13);
 
-// Resource types in display order
-const resourceTypes = ['blog', 'newsletter', 'twitter', 'youtube', 'community', 'podcast', 'tool'] as const;
-
-type ResourceType = typeof resourceTypes[number];
-
-const typeLabels: Record<ResourceType, string> = {
-  blog: 'Blogs',
-  newsletter: 'Newsletters',
-  twitter: 'Twitter / X',
-  youtube: 'YouTube',
-  community: 'Communities',
-  podcast: 'Podcasts',
-  tool: 'Tools',
-};
-
-// Group resources by type
-const grouped = resourceTypes.reduce((acc, type) => {
-  const items = allResources
-    .filter(r => r.data.type === type)
-    .sort((a, b) => {
-      // Featured first, then alphabetical
-      if (a.data.featured !== b.data.featured) return a.data.featured ? -1 : 1;
-      return a.data.title.localeCompare(b.data.title);
-    });
-  if (items.length > 0) {
-    acc[type] = items;
-  }
-  return acc;
-}, {} as Record<ResourceType, typeof allResources>);
-
-const activeTypes = resourceTypes.filter(type => grouped[type]?.length > 0);
+// Tools - daily drivers first, then others
+const dailyDrivers = tools.filter((t) => t.dailyDriver);
+const otherTools = tools.filter((t) => !t.dailyDriver);
 ---
 
-<Base title="Resources" description="Blogs, newsletters, and voices I follow to stay updated">
-  <main class="resources-page">
-    <header class="page-header">
-      <h1 class="page-title">Resources</h1>
-      <p class="page-subtitle">Blogs, newsletters, and voices I follow to stay updated.</p>
+<Base
+  title="My Stack"
+  description="Voices I follow and tools I use to build, write, and think"
+>
+  <main class="stack-page">
+    <header class="page-header content-offset">
+      <h1 class="page-title">My Stack</h1>
+      <p class="page-subtitle">
+        Voices I follow. Tools I use to build, write, and think. My way of
+        keeping up with a world that’s moving fast.
+      </p>
     </header>
 
-    {activeTypes.length > 1 && (
-      <nav class="quick-nav" aria-label="Jump to section">
-        {activeTypes.map((type, i) => (
-          <>
-            <a href={`#${type}`} class="quick-nav-link">{typeLabels[type]}</a>
-            {i < activeTypes.length - 1 && <span class="quick-nav-sep">·</span>}
-          </>
-        ))}
-      </nav>
-    )}
+    <nav class="quick-nav content-offset" aria-label="Jump to section">
+      <a href="#voices" class="quick-nav-link">Voices</a>
+      <span class="quick-nav-sep">·</span>
+      <a href="#tools" class="quick-nav-link">Tools</a>
+    </nav>
 
-    {activeTypes.length === 0 ? (
-      <p class="empty-state">No resources yet.</p>
-    ) : (
-      <div class="resources-sections">
-        {activeTypes.map((type, sectionIndex) => (
-          <section class="resource-section" id={type}>
-            <h2 class="section-title">{typeLabels[type]}</h2>
-            <div class="resource-grid">
-              {grouped[type].map((resource, index) => (
-                <div
-                  class="resource-item reveal"
-                  style={`--reveal-delay: ${Math.min((sectionIndex * 3 + index) * 40, 300)}ms;`}
-                >
-                  <ResourceCard
-                    title={resource.data.title}
-                    url={resource.data.url}
-                    description={resource.data.description}
-                    tags={resource.data.tags}
-                    featured={resource.data.featured}
-                  />
-                </div>
-              ))}
-            </div>
-          </section>
-        ))}
+    <!-- Voices Section -->
+    <section id="voices" class="stack-section content-offset">
+      <h2 class="section-title">Voices I Follow</h2>
+
+      <div class="voices-list">
+        {
+          featuredVoices.map((account, index) => (
+            <VoiceCard
+              displayName={account.display_name}
+              username={account.username}
+              handleUrl={account.handle_url}
+              avatarUrl={account.avatar_url}
+              oneLiner={account.one_liner}
+              index={index}
+            />
+          ))
+        }
       </div>
-    )}
+
+      {
+        moreVoices.length > 0 && (
+          <div class="load-more-wrap" data-voices-more>
+            <div class="load-more-container">
+              <p class="load-more-prompt">Want to see more?</p>
+              <button class="load-more-btn" type="button" data-show-all-voices>
+                <span class="btn-text">
+                  Show all {accounts.length} accounts
+                </span>
+              </button>
+            </div>
+          </div>
+        )
+      }
+
+      <div class="voices-hidden" data-voices-hidden hidden>
+        {
+          moreVoices.map((account, index) => (
+            <VoiceCard
+              displayName={account.display_name}
+              username={account.username}
+              handleUrl={account.handle_url}
+              avatarUrl={account.avatar_url}
+              oneLiner={account.one_liner}
+              index={index}
+            />
+          ))
+        }
+      </div>
+    </section>
+
+    <hr class="section-divider content-offset" />
+
+    <!-- Tools Section -->
+    <section id="tools" class="stack-section content-offset">
+      <h2 class="section-title">My Toolstack</h2>
+
+      <div class="tools-subsection">
+        <h3 class="subsection-title">Daily Drivers</h3>
+        <div class="tools-list">
+          {
+            dailyDrivers.map((tool, index) => (
+              <ToolCard
+                name={tool.name}
+                description={tool.description}
+                url={tool.url}
+                logo={tool.logo}
+                index={index}
+              />
+            ))
+          }
+        </div>
+      </div>
+
+      {
+        otherTools.length > 0 && (
+          <div class="tools-subsection tools-more">
+            <h3 class="subsection-title">More in My Toolkit</h3>
+            <p class="inline-tools">
+              {otherTools.map((tool, index) => (
+                <>
+                  <a
+                    href={tool.url}
+                    target="_blank"
+                    rel="noopener"
+                    class="inline-tool-link"
+                  >
+                    {tool.name}
+                  </a>
+                  {index < otherTools.length - 1 && (
+                    <span class="tool-sep"> · </span>
+                  )}
+                </>
+              ))}
+            </p>
+          </div>
+        )
+      }
+    </section>
   </main>
 
   <script>
     function initRevealAnimations() {
-      const entries = document.querySelectorAll('.reveal:not(.visible)');
-      if (!('IntersectionObserver' in window) || entries.length === 0) {
-        entries.forEach(entry => entry.classList.add('visible'));
+      const entries = document.querySelectorAll(".reveal:not(.visible)");
+      if (!("IntersectionObserver" in window) || entries.length === 0) {
+        entries.forEach((entry) => entry.classList.add("visible"));
         return;
       }
 
-      const observer = new IntersectionObserver((entryList) => {
-        entryList.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('visible');
-            observer.unobserve(entry.target);
-          }
-        });
-      }, { threshold: 0.1 });
+      const observer = new IntersectionObserver(
+        (entryList) => {
+          entryList.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add("visible");
+              observer.unobserve(entry.target);
+            }
+          });
+        },
+        { threshold: 0.1 },
+      );
 
-      entries.forEach(entry => observer.observe(entry));
+      entries.forEach((entry) => observer.observe(entry));
     }
 
+    function initShowAllVoices() {
+      const button = document.querySelector<HTMLButtonElement>(
+        "[data-show-all-voices]",
+      );
+      const hiddenSection = document.querySelector<HTMLElement>(
+        "[data-voices-hidden]",
+      );
+      const loadMoreWrap =
+        document.querySelector<HTMLElement>("[data-voices-more]");
+
+      if (!button || !hiddenSection || !loadMoreWrap) return;
+
+      // Prevent duplicate listeners
+      if (button.dataset.initialized === "true") return;
+      button.dataset.initialized = "true";
+
+      button.addEventListener("click", () => {
+        hiddenSection.hidden = false;
+        loadMoreWrap.innerHTML =
+          '<span class="load-end">You\'ve seen them all</span>';
+
+        // Trigger reveal animations for newly shown items
+        requestAnimationFrame(() => {
+          initRevealAnimations();
+        });
+      });
+    }
+
+    // Run on initial load
     initRevealAnimations();
-    document.addEventListener('astro:page-load', initRevealAnimations);
+    initShowAllVoices();
+
+    // Re-run after View Transitions navigation
+    document.addEventListener("astro:page-load", () => {
+      initRevealAnimations();
+      initShowAllVoices();
+    });
   </script>
 </Base>
 
 <style>
-  .resources-page {
+  .stack-page {
     padding-top: clamp(0.1rem, 0.7vw, 0.42rem);
     padding-bottom: clamp(2rem, 4vw, 3rem);
   }
 
+  .content-offset {
+    padding-left: 0;
+  }
+
   .page-header {
-    margin-bottom: clamp(1.2rem, 2.4vw, 1.8rem);
+    margin-bottom: clamp(1rem, 2vw, 1.4rem);
   }
 
   .page-title {
@@ -140,16 +231,16 @@ const activeTypes = resourceTypes.filter(type => grouped[type]?.length > 0);
 
   .quick-nav {
     display: flex;
-    flex-wrap: wrap;
     align-items: center;
     gap: 0.5rem;
     margin-bottom: clamp(1.8rem, 3.5vw, 2.4rem);
     padding-bottom: clamp(1rem, 2vw, 1.4rem);
-    border-bottom: 1px solid color-mix(in srgb, var(--border-primary) 50%, transparent);
+    border-bottom: 1px solid
+      color-mix(in srgb, var(--border-primary) 50%, transparent);
   }
 
   .quick-nav-link {
-    font-size: 0.78rem;
+    font-size: 0.82rem;
     color: var(--text-secondary);
     text-decoration: none;
     transition: color 0.2s ease;
@@ -164,60 +255,159 @@ const activeTypes = resourceTypes.filter(type => grouped[type]?.length > 0);
     opacity: 0.5;
   }
 
-  .empty-state {
-    color: var(--text-secondary);
-    text-align: center;
-    font-style: italic;
-    padding: 2.2rem 0;
-  }
-
-  .resources-sections {
-    display: flex;
-    flex-direction: column;
-    gap: clamp(2.2rem, 4.5vw, 3rem);
-  }
-
-  .resource-section {
-    scroll-margin-top: 1.5rem;
+  .stack-section {
+    scroll-margin-top: 2rem;
   }
 
   .section-title {
-    margin: 0 0 clamp(0.9rem, 1.8vw, 1.2rem) 0;
-    font-size: 0.68rem;
+    margin: 0 0 clamp(1rem, 2vw, 1.4rem) 0;
+    font-size: 0.72rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.08em;
     color: var(--text-tertiary);
   }
 
-  .resource-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 0.9rem;
+  .section-divider {
+    margin: clamp(2.5rem, 5vw, 3.5rem) 0;
+    border: none;
+    border-top: 1px solid var(--border-primary);
   }
 
-  .resource-item {
-    opacity: 0;
-    transform: translateY(6px);
-    transition: opacity 0.5s ease, transform 0.5s ease;
-    transition-delay: var(--reveal-delay, 0ms);
+  .voices-list,
+  .tools-list {
+    margin-bottom: 0;
   }
 
-  .resource-item.visible {
-    opacity: 1;
-    transform: translateY(0);
+  .voices-hidden {
+    margin-top: 0;
   }
 
-  @media (min-width: 540px) {
-    .resource-grid {
-      grid-template-columns: repeat(2, 1fr);
-      gap: 1rem;
+  .load-more-wrap {
+    margin-top: clamp(1.5rem, 3vw, 2rem);
+    margin-bottom: clamp(0.5rem, 1vw, 0.8rem);
+  }
+
+  .load-more-container {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.4rem;
+  }
+
+  .load-more-prompt {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--text-tertiary);
+    letter-spacing: 0.01em;
+  }
+
+  .load-more-btn {
+    position: relative;
+    font-size: 0.78rem;
+    font-family: inherit;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-tertiary);
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+  }
+
+  .load-more-btn .btn-text {
+    display: inline-block;
+    background: linear-gradient(
+      90deg,
+      var(--accent) 0%,
+      var(--accent) 50%,
+      var(--text-secondary) 50%,
+      var(--text-secondary) 100%
+    );
+    background-size: 200% 100%;
+    background-position: 100% 0;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: text-fill 3s ease-in-out infinite;
+  }
+
+  @keyframes text-fill {
+    0%,
+    100% {
+      background-position: 100% 0;
+    }
+    50% {
+      background-position: 0% 0;
     }
   }
 
-  @media (min-width: 900px) {
-    .resource-grid {
-      grid-template-columns: repeat(3, 1fr);
+  .load-more-btn:hover .btn-text {
+    animation: none;
+    background-position: 0% 0;
+  }
+
+  .load-end {
+    font-size: 0.82rem;
+    color: var(--text-tertiary);
+    font-style: italic;
+    letter-spacing: 0.01em;
+  }
+
+  .tools-subsection {
+    margin-bottom: clamp(2rem, 4vw, 2.8rem);
+  }
+
+  .tools-subsection:last-child {
+    margin-bottom: 0;
+  }
+
+  .subsection-title {
+    margin: 0 0 clamp(0.8rem, 1.6vw, 1.1rem) 0;
+    font-size: 0.68rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-tertiary);
+    opacity: 0.8;
+  }
+
+  .tools-more {
+    padding-top: clamp(1rem, 2vw, 1.4rem);
+    border-top: 1px dashed
+      color-mix(in srgb, var(--border-primary) 50%, transparent);
+  }
+
+  .inline-tools {
+    margin: 0;
+    font-size: 0.95rem;
+    line-height: 1.8;
+    color: var(--text-secondary);
+  }
+
+  .inline-tool-link {
+    color: var(--text-secondary);
+    text-decoration: none;
+    border-bottom: 1px solid
+      color-mix(in srgb, var(--border-primary) 60%, transparent);
+    transition:
+      color 0.2s ease,
+      border-color 0.2s ease;
+  }
+
+  .inline-tool-link:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .tool-sep {
+    color: var(--text-tertiary);
+    opacity: 0.6;
+  }
+
+  @media (min-width: 768px) {
+    .content-offset {
+      padding-left: 188px;
     }
   }
 </style>

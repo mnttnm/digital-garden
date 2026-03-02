@@ -1,0 +1,522 @@
+[
+  {
+    "display_name": "Thariq",
+    "username": "trq212",
+    "handle_url": "https://x.com/trq212",
+    "avatar_url": "https://pbs.twimg.com/profile_images/1976939058741039104/r3GgzqRh.jpg",
+    "bio": "Claude Code @anthropicai.   prev YC W20, mit media lab. \ntowards machines of loving grace",
+    "followers": 97536,
+    "rating": 9,
+    "one_liner": "A developer on the Claude team who shares easy tips and secret tricks for building with AI."
+  },
+  {
+    "display_name": "Paras Chopra",
+    "username": "paraschopra",
+    "handle_url": "https://x.com/paraschopra",
+    "avatar_url": "https://pbs.twimg.com/profile_images/1982070651423694848/0vUKWPER.jpg",
+    "bio": "life is a game 🕹️ •  building @lossfunk",
+    "followers": 229728,
+    "rating": 7,
+    "one_liner": "Shares simple ideas on how to use AI in everyday life and business."
+  },
+  {
+    "display_name": "Peter Yang",
+    "username": "petergyang",
+    "handle_url": "https://x.com/petergyang",
+    "avatar_url": "https://pbs.twimg.com/profile_images/1454103621516206083/_klMwpkk.jpg",
+    "bio": "I share extremely practical AI tutorials and interviews | Join 140K+ readers at https://t.co/XYKTmGVH14 | Product at Roblox",
+    "followers": 179023,
+    "rating": 8,
+    "one_liner": "Makes super practical AI tutorials that anyone can follow."
+  },
+  {
+    "display_name": "OpenAI Devs",
+    "username": "OpenAIDevs",
+    "handle_url": "https://x.com/OpenAIDevs",
+    "avatar_url": "https://pbs.twimg.com/profile_images/2022002720971096064/l3Kyt4qt.jpg",
+    "bio": "Official updates for developers building with Codex & the OpenAI Platform • Service status: https://t.co/kZwnwdYYEq",
+    "followers": 278165,
+    "rating": 6,
+    "one_liner": "Official account with news and updates for people building apps with OpenAI."
+  },
+  {
+    "display_name": "Sarvam AI",
+    "username": "SarvamAI",
+    "handle_url": "https://x.com/SarvamAI",
+    "avatar_url": "https://pbs.twimg.com/profile_images/2021450761734062080/XMvWk_lJ.png",
+    "bio": "Building full-stack generative AI for population scale. Experience Sarvam at https://t.co/pxOFDoSBYj\n\nIndus is live in beta. Try now: https://t.co/LEh9a4CXG6",
+    "followers": 69453,
+    "rating": 7,
+    "one_liner": "Indian AI company building tools that work for millions of people."
+  },
+  {
+    "display_name": "Nader Dabit",
+    "username": "dabit3",
+    "handle_url": "https://x.com/dabit3",
+    "avatar_url": "https://pbs.twimg.com/profile_images/1951619597695672321/c1FsysWP.jpg",
+    "bio": "Growth @cognition (@devinai, @windsurf). Agentic AI.",
+    "followers": 187069,
+    "rating": 8,
+    "one_liner": "Helps people understand and build with smart AI agents."
+  },
+  {
+    "display_name": "Julian Lehr",
+    "username": "julianlehr",
+    "handle_url": "https://x.com/julianlehr",
+    "avatar_url": "https://pbs.twimg.com/profile_images/1321095958877396992/33NIx2sQ.jpg",
+    "bio": "Fitter, happier, more productive.\nCreative Director at @linear.",
+    "followers": 20207,
+    "rating": 5,
+    "one_liner": "Design leader at Linear who shares thoughts on building great products."
+  },
+  {
+    "display_name": "Karri Saarinen",
+    "username": "karrisaarinen",
+    "handle_url": "https://x.com/karrisaarinen",
+    "avatar_url": "https://pbs.twimg.com/profile_images/1755734420798259200/Y_94Rjjx.jpg",
+    "bio": "ceo of @linear 🇫🇮🇺🇸 previously: @coinbase @airbnb, YC alumni",
+    "followers": 74759,
+    "rating": 6,
+    "one_liner": "CEO of Linear who shares how to run a fast-growing tech company."
+  },
+  {
+    "display_name": "John Rush",
+    "username": "johnrushx",
+    "handle_url": "https://x.com/johnrushx",
+    "avatar_url": "https://pbs.twimg.com/profile_images/1466385933612240901/qNMrMDlG.jpg",
+    "bio": "I run the most automated org on earth,\nusing the AI Agents I built.\n\n@unicornplatform\n@indexrusher\n@listingbott\n@seobotai\nhttps://t.co/QIghafVlCy\n\n24 startups → https://t.co/1ML5MmAQ7X",
+    "followers": 116745,
+    "rating": 7,
+    "one_liner": "Runs many businesses completely with AI agents and shares how he does it."
+  },
+  {
+    "display_name": "Sam Altman",
+    "username": "sama",
+    "handle_url": "https://x.com/sama",
+    "avatar_url": "https://pbs.twimg.com/profile_images/1904933748015255552/k43GMz63.jpg",
+    "bio": "AI is cool i guess",
+    "followers": 4423308,
+    "rating": 8,
+    "one_liner": "CEO of OpenAI who shares big thoughts about the future of AI."
+  },
+  {
+    "display_name": "Steph Smith",
+    "username": "stephsmithio",
+    "handle_url": "https://x.com/stephsmithio",
+    "avatar_url": "https://pbs.twimg.com/profile_images/1586792485015035904/F98UUD2K.jpg",
+    "bio": "Growth @NVIDIA | prev Head of Growth @GroqInc\n\n📌 Also: @a16z @HubSpot @TheHustle\n💻 Chronically online @internet_pipes\n🎙 Podcasting @sydlis 👇",
+    "followers": 161765,
+    "rating": 7,
+    "one_liner": "Growth expert at NVIDIA who shares how to grow AI companies."
+  },
+  {
+    "display_name": "Andrej Karpathy",
+    "username": "karpathy",
+    "handle_url": "https://x.com/karpathy",
+    "avatar_url": "https://pbs.twimg.com/profile_images/1296667294148382721/9Pr6XrPB.jpg",
+    "bio": "I like to train large deep neural nets. Previously Director of AI @ Tesla, founding team @ OpenAI, PhD @ Stanford.",
+    "followers": 1857091,
+    "rating": 8,
+    "one_liner": "Famous AI teacher who explains deep learning in simple ways."
+  },
+  {
+    "display_name": "Muratcan Koylan",
+    "username": "koylanai",
+    "handle_url": "https://x.com/koylanai",
+    "avatar_url": "https://pbs.twimg.com/profile_images/2017468785473548288/43nF1d1X.jpg",
+    "bio": "Context Engineer, Research @ https://t.co/ytKLwdts2F - prev: AI Agent Systems Manager 99Ravens - HCI & Marketing - Builder, creator, optimist and open source AI dev",
+    "followers": 18549,
+    "rating": 7,
+    "one_liner": "Helps people understand how to give better instructions to AI."
+  },
+  {
+    "display_name": "Guillermo Rauch",
+    "username": "rauchg",
+    "handle_url": "https://x.com/rauchg",
+    "avatar_url": "https://pbs.twimg.com/profile_images/1783856060249595904/8TfcCN0r.jpg",
+    "bio": "@vercel CEO",
+    "followers": 379900,
+    "rating": 6,
+    "one_liner": "CEO of Vercel who shares thoughts on building modern websites."
+  },
+  {
+    "display_name": "Balaji Srinivasan",
+    "username": "balajis",
+    "handle_url": "https://x.com/balajis",
+    "avatar_url": "https://pbs.twimg.com/profile_images/1406974882919813128/LOUb2m4R.jpg",
+    "bio": "Author of the Network State. Founder of the Network School.",
+    "followers": 1347515,
+    "rating": 9,
+    "one_liner": "Big thinker who talks about technology, society, and the future."
+  },
+  {
+    "display_name": "OpenAI",
+    "username": "OpenAI",
+    "handle_url": "https://x.com/OpenAI",
+    "avatar_url": "https://pbs.twimg.com/profile_images/1885410181409820672/ztsaR0JW.jpg",
+    "bio": "OpenAI’s mission is to ensure that artificial general intelligence benefits all of humanity. We’re hiring: https://t.co/dJGr6LgzPA",
+    "followers": 4652670,
+    "rating": 7,
+    "one_liner": "Official OpenAI account with product updates and AI news."
+  },
+  {
+    "display_name": "Maggie Appleton",
+    "username": "Wattenberger",
+    "handle_url": "https://x.com/Wattenberger",
+    "avatar_url": "https://pbs.twimg.com/profile_images/1484537078687875072/SESFNpAA.png",
+    "bio": "design, AI, web dev, data viz, tools for thought\n\n✨ @shv, Intent lead @Augmentcode, previously R&D @GitHubNext, design @AdeptAILabs",
+    "followers": 34116,
+    "rating": 6,
+    "one_liner": "Designer who creates beautiful tools and explains AI simply."
+  },
+  {
+    "display_name": "Luke Wroblewski",
+    "username": "LukeW",
+    "handle_url": "https://x.com/LukeW",
+    "avatar_url": "https://pbs.twimg.com/profile_images/1264660438458851328/GeFMuwZ3.png",
+    "bio": "Humanizing tech. MD: Sutter Hill Ventures Founder: Polar (Google acquired) Bagcheck (Twitter acquired) Wrote: Mobile First, Web Form Design Pre: NCSA eBay Yahoo",
+    "followers": 207650,
+    "rating": 5,
+    "one_liner": "Product expert who shares easy ways to design better apps."
+  },
+  {
+    "display_name": "Farza",
+    "username": "FarzaTV",
+    "handle_url": "https://x.com/FarzaTV",
+    "avatar_url": "https://pbs.twimg.com/profile_images/1323391305834143745/4zqOJh66.jpg",
+    "bio": "hi. i create things. prev founder @_buildspace.",
+    "followers": 88429,
+    "rating": 7,
+    "one_liner": "Fun creator who shows how he builds things with AI."
+  },
+  {
+    "display_name": "Ridd",
+    "username": "ridd_design",
+    "handle_url": "https://x.com/ridd_design",
+    "avatar_url": "https://pbs.twimg.com/profile_images/1345910398722125827/rt_vhp2A.png",
+    "bio": "building https://t.co/LNk32UFmdg ✈️ learning https://t.co/HJo7GSZ1S8 🤿",
+    "followers": 70459,
+    "rating": 6,
+    "one_liner": "Designer who shares what he is learning while building cool products."
+  },
+  {
+    "display_name": "J.M. Trivedi",
+    "username": "jmtrivedi",
+    "handle_url": "https://x.com/jmtrivedi",
+    "avatar_url": "https://pbs.twimg.com/profile_images/2012658763111522304/vFTzzHu4.jpg",
+    "bio": "Designer, prototyper, and engineer. @OpenAI × LoveFrom.\n\nBefore: @airbnb, @browsercompany, @netflix, SpringBoard at ",
+    "followers": 37390,
+    "rating": 6,
+    "one_liner": "Designer and engineer at OpenAI who shows fast prototypes."
+  },
+  {
+    "display_name": "Ryan Carson",
+    "username": "ryancarson",
+    "handle_url": "https://x.com/ryancarson",
+    "avatar_url": "https://pbs.twimg.com/profile_images/2016785876261679104/LJFhaQ17.jpg",
+    "bio": "Dad, Dev, CEO, 4x Founder.",
+    "followers": 173938,
+    "rating": 7,
+    "one_liner": "Serial founder who shares lessons from building startups."
+  },
+  {
+    "display_name": "Lee Robinson",
+    "username": "leerob",
+    "handle_url": "https://x.com/leerob",
+    "avatar_url": "https://pbs.twimg.com/profile_images/1862717563311968256/xfgt1L9l.jpg",
+    "bio": "Teaching developers @cursor_ai, previously @vercel",
+    "followers": 226397,
+    "rating": 8,
+    "one_liner": "Popular teacher who helps developers learn new tools quickly."
+  },
+  {
+    "display_name": "Simon Willison",
+    "username": "simonw",
+    "handle_url": "https://x.com/simonw",
+    "avatar_url": "https://pbs.twimg.com/profile_images/378800000261649705/be9cc55e64014e6d7663c50d7cb9fc75.jpeg",
+    "bio": "Creator @datasetteproj, co-creator Django. PSF board. Hangs out with @natbat. He/Him. Mastodon: https://t.co/t0MrmnJW0K Bsky: https://t.co/OnWIyhX4CH",
+    "followers": 149193,
+    "rating": 8,
+    "one_liner": "Python expert who builds useful tools and shares how he does it."
+  },
+  {
+    "display_name": "Paige Bailey",
+    "username": "DynamicWebPaige",
+    "handle_url": "https://x.com/DynamicWebPaige",
+    "avatar_url": "https://pbs.twimg.com/profile_images/626762747330457600/X3Bx503W.jpg",
+    "bio": "✨ AI should be about empowering humans, building understanding, and making dreams realities. 👩‍💻 DevX Eng. Lead @GoogleDeepMind ex-@GitHub || views = my own!",
+    "followers": 73389,
+    "rating": 7,
+    "one_liner": "Google DeepMind engineer who explains how to use AI for good."
+  },
+  {
+    "display_name": "Peter Steinberger 🦞",
+    "username": "steipete",
+    "handle_url": "https://x.com/steipete",
+    "avatar_url": "https://pbs.twimg.com/profile_images/1131851609774985216/OcsssQ9J.png",
+    "bio": "Polyagentmorous ClawFather. Came back from retirement to mess with AI and help a lobster take over the world @openclaw🦞",
+    "followers": 404061,
+    "rating": 7,
+    "one_liner": "Funny iOS expert who now experiments with AI in a fun way."
+  },
+  {
+    "display_name": "Lydia Hallie",
+    "username": "lydiahallie",
+    "handle_url": "https://x.com/lydiahallie",
+    "avatar_url": "https://pbs.twimg.com/profile_images/1994238936345137154/exEBW2UI.jpg",
+    "bio": "Claude Code @AnthropicAI",
+    "followers": 65931,
+    "rating": 8,
+    "one_liner": "Claude developer who shares practical coding tips."
+  },
+  {
+    "display_name": "Matt Pocock",
+    "username": "mattpocockuk",
+    "handle_url": "https://x.com/mattpocockuk",
+    "avatar_url": "https://pbs.twimg.com/profile_images/1666460461884211204/SmBm505D.jpg",
+    "bio": "I teach devs for a living. Author of Total TypeScript and AI Hero. Ex-@vercel. Used to be a voice coach.",
+    "followers": 242237,
+    "rating": 8,
+    "one_liner": "Popular TypeScript teacher who also explains AI tools."
+  },
+  {
+    "display_name": "David Breunig",
+    "username": "dbreunig",
+    "handle_url": "https://x.com/dbreunig",
+    "avatar_url": "https://pbs.twimg.com/profile_images/1247992288552214528/dExsBwMe.jpg",
+    "bio": "Writing about and working on AI, geo, and data.",
+    "followers": 7524,
+    "rating": 5,
+    "one_liner": "Writes clear articles about AI, maps, and data."
+  },
+  {
+    "display_name": "Geoffrey Litt",
+    "username": "geoffreylitt",
+    "handle_url": "https://x.com/geoffreylitt",
+    "avatar_url": "https://pbs.twimg.com/profile_images/722626068293763072/4erM-SPN.jpg",
+    "bio": "malleable software @NotionHQ / prev @inkandswitch, @MIT_CSAIL / 🇯🇵🇺🇸",
+    "followers": 21887,
+    "rating": 6,
+    "one_liner": "Notion engineer who builds tools that you can change easily."
+  },
+  {
+    "display_name": "Michael Truell",
+    "username": "mntruell",
+    "handle_url": "https://x.com/mntruell",
+    "avatar_url": "https://pbs.twimg.com/profile_images/1887065642261737472/QdLiAFfD.jpg",
+    "bio": "@cursor_ai CEO",
+    "followers": 66606,
+    "rating": 7,
+    "one_liner": "CEO of Cursor who shares how AI is changing coding."
+  },
+  {
+    "display_name": "Logan Kilpatrick",
+    "username": "OfficialLoganK",
+    "handle_url": "https://x.com/OfficialLoganK",
+    "avatar_url": "https://pbs.twimg.com/profile_images/1943787288955084800/QOl7OJMc.jpg",
+    "bio": "Member of technical staff, working on @GoogleAIStudio, the Gemini API, & Kaggle. My views!",
+    "followers": 279982,
+    "rating": 7,
+    "one_liner": "Google engineer who works on Gemini and shares updates."
+  },
+  {
+    "display_name": "Ian Nuttall",
+    "username": "iannuttall",
+    "handle_url": "https://x.com/iannuttall",
+    "avatar_url": "https://pbs.twimg.com/profile_images/1932749344836390914/JUlNRQim.jpg",
+    "bio": "TLDR; I make software with AI and talk about it. Serial internet biz builder with multiple 6 & 7 figure exits. Always learning.",
+    "followers": 76737,
+    "rating": 7,
+    "one_liner": "Builder who uses AI to make and sell online businesses."
+  },
+  {
+    "display_name": "swyx",
+    "username": "swyx",
+    "handle_url": "https://x.com/swyx",
+    "avatar_url": "https://pbs.twimg.com/profile_images/1867875781676007424/RIF4Kt7U_400x400.jpg",
+    "bio": "AI Engineer. Prev: Temporal, Netlify, AWS. Writing about LLMs & devtools at https://swyx.io. Co-founder of Latent Space.",
+    "followers": 124000,
+    "rating": 9,
+    "one_liner": "AI engineer who writes simple guides about new AI tools."
+  },
+  {
+    "display_name": "Chip",
+    "username": "chipro",
+    "handle_url": "https://x.com/chipro",
+    "avatar_url": "https://pbs.twimg.com/profile_images/1953498653685161984/gMssInYX.jpg",
+    "bio": "@aisysbooks @goodailist\nAI Engineering: https://t.co/94dv4uTU1H\nDesigning MLSys: https://t.co/G81hL2dWmr\nReading @chipslib",
+    "followers": 125979,
+    "rating": 8,
+    "one_liner": "AI systems expert who shares lists and learning resources."
+  },
+  {
+    "display_name": "Tobias Lütke",
+    "username": "tobi",
+    "handle_url": "https://x.com/tobi",
+    "avatar_url": "https://pbs.twimg.com/profile_images/1999293930936909824/_HWYanot.jpg",
+    "bio": "Shopify CEO by day, Dad in evening, hacker at night, Aspiring comprehensivist.",
+    "followers": 452147,
+    "rating": 6,
+    "one_liner": "CEO of Shopify who shares thoughts on business and technology."
+  },
+  {
+    "display_name": "Pranav Teja",
+    "username": "pbteja1998",
+    "handle_url": "https://x.com/pbteja1998",
+    "avatar_url": "https://pbs.twimg.com/profile_images/1277492092676145152/kmEJVcrt.jpg",
+    "bio": "Founder @SiteGPT and https://t.co/HMjWoQP8jq • Previously built and exited Feather for $250K • Tweeting about SiteGPT's journey from $10K MRR → $1M ARR.",
+    "followers": 54184,
+    "rating": 7,
+    "one_liner": "Founder who shares his real journey building an AI company."
+  },
+  {
+    "display_name": "Gemini",
+    "username": "GeminiApp",
+    "handle_url": "https://x.com/GeminiApp",
+    "avatar_url": "https://pbs.twimg.com/profile_images/1940093473564073984/jiafRcO0.png",
+    "bio": "The Gemini app turns research into reality, bringing frontier AI experiences like Veo 3.1, Deep Think, Nano Banana, and more to hundreds of millions of people.",
+    "followers": 433327,
+    "rating": 6,
+    "one_liner": "Official account for Google's Gemini AI app."
+  },
+  {
+    "display_name": "Stephan Angermüller",
+    "username": "kepano",
+    "handle_url": "https://x.com/kepano",
+    "avatar_url": "https://pbs.twimg.com/profile_images/1563635599906549761/wIum4L8I.jpg",
+    "bio": "making @obsdmd",
+    "followers": 89140,
+    "rating": 6,
+    "one_liner": "Creator of the popular Obsidian note-taking app."
+  },
+  {
+    "display_name": "Google AI Studio",
+    "username": "GoogleAIStudio",
+    "handle_url": "https://x.com/GoogleAIStudio",
+    "avatar_url": "https://pbs.twimg.com/profile_images/1957558782067896323/6jXpPKD4.png",
+    "bio": "The fastest path from prompt to production with Gemini",
+    "followers": 118549,
+    "rating": 6,
+    "one_liner": "Official Google tool for experimenting with Gemini AI."
+  },
+  {
+    "display_name": "Boris Cherny",
+    "username": "bcherny",
+    "handle_url": "https://x.com/bcherny",
+    "avatar_url": "https://pbs.twimg.com/profile_images/1902044548936953856/J2jeik0t.jpg",
+    "bio": "Claude Code @anthropicai",
+    "followers": 289796,
+    "rating": 8,
+    "one_liner": "Claude developer who shares useful coding advice."
+  },
+  {
+    "display_name": "Nikunj",
+    "username": "nikunj",
+    "handle_url": "https://x.com/nikunj",
+    "avatar_url": "https://pbs.twimg.com/profile_images/1455548721421176841/0XHTEfkp.jpg",
+    "bio": "partner @fpvventures - investing in seed/A. previous: early hire @meter, @opendoor, @atlassian & others. love @shimoleejhaveri + 👦👧",
+    "followers": 34933,
+    "rating": 5,
+    "one_liner": "Investor who supports early-stage AI startups."
+  },
+  {
+    "display_name": "Andrew Wilkinson",
+    "username": "awilkinson",
+    "handle_url": "https://x.com/awilkinson",
+    "avatar_url": "https://pbs.twimg.com/profile_images/1850577967904395264/CU6rpC8N.jpg",
+    "bio": "Co-founder of Tiny w/ @_Sparling_. We own @Dribbble, @Serato, @Letterboxd, @AeroPress, and 35+ other wonderful companies. Author of Never Enough.",
+    "followers": 368849,
+    "rating": 5,
+    "one_liner": "Investor who buys and runs many cool internet companies."
+  },
+  {
+    "display_name": "Shrivu Shankar",
+    "username": "ShrivuShankar",
+    "handle_url": "https://x.com/ShrivuShankar",
+    "avatar_url": "https://pbs.twimg.com/profile_images/1717767986248105984/W5n62-0b.jpg",
+    "bio": "VP of AI @AbnormalAI\n\nSubstack: https://t.co/wQYPPTwG9J\nLinkedIn: https://t.co/wmer3HGnxF\nChat: https://t.co/NZLfE61qWv",
+    "followers": 552,
+    "rating": 4,
+    "one_liner": "AI leader who writes about security and AI."
+  },
+  {
+    "display_name": "McKay Wrigley",
+    "username": "mckaywrigley",
+    "handle_url": "https://x.com/mckaywrigley",
+    "avatar_url": "https://pbs.twimg.com/profile_images/1552979440547704832/WX5crG9I.jpg",
+    "bio": "I build & teach AI stuff. Founder @TakeoffAI + @AgentShare.",
+    "followers": 225998,
+    "rating": 9,
+    "one_liner": "Super active builder who teaches how to make AI apps."
+  },
+  {
+    "display_name": "Brian Lovin",
+    "username": "brian_lovin",
+    "handle_url": "https://x.com/brian_lovin",
+    "avatar_url": "https://pbs.twimg.com/profile_images/1217652661962661888/WfiUNjzP.jpg",
+    "bio": "Tinkering @notionhq",
+    "followers": 73915,
+    "rating": 6,
+    "one_liner": "Notion designer who shares small improvements and ideas."
+  },
+  {
+    "display_name": "Claude",
+    "username": "claudeai",
+    "handle_url": "https://x.com/claudeai",
+    "avatar_url": "https://pbs.twimg.com/profile_images/1950950107937185792/QOfEjFoJ.jpg",
+    "bio": "Claude is an AI assistant built by @anthropicai to be safe, accurate, and secure. Talk to Claude on https://t.co/ZhTwG8dz3D or download the app.",
+    "followers": 610235,
+    "rating": 7,
+    "one_liner": "Official account for Claude, the helpful AI assistant."
+  },
+  {
+    "display_name": "Geoffrey Huntley",
+    "username": "GeoffreyHuntley",
+    "handle_url": "https://x.com/GeoffreyHuntley",
+    "avatar_url": "https://pbs.twimg.com/profile_images/2019768278806360064/gjRZutTu.jpg",
+    "bio": "pondering the ponderoos about AI in application in unhinged ways and doing it. building @latentpatterns and the weaving loom. i created the “ralph loop”. iykyk",
+    "followers": 78155,
+    "rating": 7,
+    "one_liner": "Wild AI experimenter who builds crazy useful tools."
+  },
+  {
+    "display_name": "Kieran Klaassen",
+    "username": "kieranklaassen",
+    "handle_url": "https://x.com/kieranklaassen",
+    "avatar_url": "https://pbs.twimg.com/profile_images/1826620508789485568/AfWTPhxT.jpg",
+    "bio": "building @coracomputer | EIR @every | compound engineering | agent-ophile  | composer | maker | baker",
+    "followers": 15341,
+    "rating": 6,
+    "one_liner": "Builder who loves making AI agents and sharing his process."
+  },
+  {
+    "display_name": "Rudrank",
+    "username": "rudrank",
+    "handle_url": "https://x.com/rudrank",
+    "avatar_url": "https://pbs.twimg.com/profile_images/1965017798989459456/YCwH1TV-.jpg",
+    "bio": "iOS + AI driven coding. Sharing daily experiments, tips & failures.\n\nGoal of army of AI coworkers so I can finish my games backlog",
+    "followers": 17581,
+    "rating": 7,
+    "one_liner": "iOS developer who experiments with AI every day."
+  },
+  {
+    "display_name": "Google DeepMind",
+    "username": "GoogleDeepMind",
+    "handle_url": "https://x.com/GoogleDeepMind",
+    "avatar_url": "https://pbs.twimg.com/profile_images/1695024885070737408/-M-HSH5P.jpg",
+    "bio": "We’re a team of scientists, engineers, ethicists and more, committed to solving intelligence, to advance science and benefit humanity.",
+    "followers": 1356034,
+    "rating": 6,
+    "one_liner": "Official account of Google's top AI research lab."
+  },
+  {
+    "display_name": "Google AI Devs",
+    "username": "googleaidevs",
+    "handle_url": "https://x.com/googleaidevs",
+    "avatar_url": "https://pbs.twimg.com/profile_images/1865153179341426688/g3bdgQ0P.jpg",
+    "bio": "AI for every developer. So what will you build?",
+    "followers": 100557,
+    "rating": 6,
+    "one_liner": "Google's account that helps developers use AI."
+  }
+]

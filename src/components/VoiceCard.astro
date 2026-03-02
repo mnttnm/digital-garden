@@ -1,0 +1,122 @@
+---
+interface Props {
+  displayName: string;
+  username: string;
+  handleUrl: string;
+  avatarUrl: string;
+  oneLiner: string;
+  index?: number;
+}
+
+const { displayName, username, handleUrl, avatarUrl, oneLiner, index = 0 } = Astro.props;
+---
+
+<article class="voice-entry reveal" style={`--reveal-delay: ${Math.min(index * 42, 260)}ms;`}>
+  <a href={handleUrl} target="_blank" rel="noopener" class="voice-link">
+    <img src={avatarUrl} alt="" class="voice-avatar" loading="lazy" />
+    <div class="voice-content">
+      <div class="voice-header">
+        <span class="voice-name">{displayName}</span>
+        <span class="voice-handle">@{username}</span>
+        <span class="voice-arrow" aria-hidden="true">↗</span>
+      </div>
+      <p class="voice-description">{oneLiner}</p>
+    </div>
+  </a>
+</article>
+
+<style>
+  .voice-entry {
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity 0.58s ease, transform 0.58s ease;
+    transition-delay: var(--reveal-delay, 0ms);
+  }
+
+  .voice-entry.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .voice-link {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.9rem;
+    padding: 1rem 0;
+    text-decoration: none;
+    color: inherit;
+    border-bottom: 1px solid color-mix(in srgb, var(--border-primary) 40%, transparent);
+    transition: border-color 0.2s ease;
+  }
+
+  .voice-entry:last-child .voice-link {
+    border-bottom: none;
+  }
+
+  .voice-link:hover {
+    border-color: color-mix(in srgb, var(--accent) 30%, var(--border-primary));
+  }
+
+  .voice-avatar {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 999px;
+    flex-shrink: 0;
+    object-fit: cover;
+    border: 1px solid var(--border-primary);
+  }
+
+  .voice-content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .voice-header {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.35rem;
+  }
+
+  .voice-name {
+    font-size: clamp(1.05rem, 1.8vw, 1.2rem);
+    font-family: var(--entry-title-font);
+    font-weight: 500;
+    color: var(--text-primary);
+    letter-spacing: -0.01em;
+  }
+
+  .voice-handle {
+    font-size: 0.82rem;
+    color: var(--text-tertiary);
+  }
+
+  .voice-arrow {
+    margin-left: auto;
+    color: var(--text-tertiary);
+    font-size: 0.9rem;
+    flex-shrink: 0;
+    transition: transform 0.2s ease, color 0.2s ease;
+  }
+
+  .voice-link:hover .voice-arrow {
+    transform: translate(1px, -1px);
+    color: var(--accent);
+  }
+
+  .voice-description {
+    margin: 0;
+    font-size: 0.95rem;
+    line-height: 1.55;
+    color: var(--text-secondary);
+    max-width: 65ch;
+  }
+
+  @media (min-width: 768px) {
+    .voice-avatar {
+      width: 2.75rem;
+      height: 2.75rem;
+    }
+  }
+</style>

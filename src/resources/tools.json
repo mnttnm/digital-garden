@@ -1,0 +1,151 @@
+[
+  {
+    "name": "Claude Code",
+    "description": "AI-powered coding assistant that lives in your terminal, helping write, debug, and refactor code",
+    "url": "https://claude.ai/code",
+    "logo": "https://www.anthropic.com/favicon.ico",
+    "category": "ai",
+    "dailyDriver": true
+  },
+  {
+    "name": "Claude",
+    "description": "Conversational AI assistant for research, writing, analysis, and creative work",
+    "url": "https://claude.ai",
+    "logo": "https://www.anthropic.com/favicon.ico",
+    "category": "ai"
+  },
+  {
+    "name": "Google AI Studio",
+    "description": "Google's playground for prototyping with Gemini models, testing prompts, and building AI apps",
+    "url": "https://aistudio.google.com",
+    "logo": "https://www.gstatic.com/aistudio/ai_studio_favicon_2_64x64.png",
+    "category": "ai",
+    "dailyDriver": true
+  },
+  {
+    "name": "ChatGPT",
+    "description": "OpenAI's conversational AI for writing, brainstorming, and problem-solving",
+    "url": "https://chat.openai.com",
+    "logo": "https://chat.openai.com/favicon.ico",
+    "category": "ai",
+    "dailyDriver": true
+  },
+  {
+    "name": "Grammarly",
+    "description": "AI writing assistant that checks grammar, clarity, and tone across all your writing",
+    "url": "https://www.grammarly.com",
+    "logo": "https://denali-static.grammarly.com/files/c092f43056eaf43e3555/favicon-v2.ico",
+    "category": "writing",
+    "dailyDriver": true
+  },
+  {
+    "name": "Raycast",
+    "description": "Blazingly fast launcher for macOS that replaces Spotlight with AI-powered workflows",
+    "url": "https://www.raycast.com",
+    "logo": "https://www.raycast.com/favicon-production.png",
+    "category": "productivity",
+    "dailyDriver": true
+  },
+  {
+    "name": "Lenny's ProductPass",
+    "description": "The most value for money investment that gives you access to a curated AI toolstack with a lot to try and experiment, a vibrant community and a powerpacked newsletter",
+    "url": "https://www.lennysnewsletter.com/productpass",
+    "logo": "https://substackcdn.com/image/fetch/f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F8ed8c31c-49a3-4cf1-be68-4b2c18f0e5e6_256x256.png",
+    "category": "learning"
+  },
+  {
+    "name": "Warp",
+    "description": "Modern terminal reimagined with AI, collaboration features, and IDE-like editing",
+    "url": "https://www.warp.dev",
+    "logo": "https://www.warp.dev/favicon.svg",
+    "category": "development"
+  },
+  {
+    "name": "MagicPattern",
+    "description": "Design tool for creating beautiful backgrounds, gradients, and SVG patterns instantly",
+    "url": "https://www.magicpattern.design",
+    "logo": "https://www.magicpattern.design/favicon.ico",
+    "category": "design"
+  },
+  {
+    "name": "Obsidian",
+    "description": "Private, flexible note-taking app that stores your knowledge in local markdown files",
+    "url": "https://obsidian.md",
+    "logo": "https://obsidian.md/favicon.ico",
+    "category": "productivity"
+  },
+  {
+    "name": "VS Code",
+    "description": "Free, extensible code editor from Microsoft that works with almost any language",
+    "url": "https://code.visualstudio.com",
+    "logo": "https://code.visualstudio.com/favicon.ico",
+    "category": "development",
+    "dailyDriver": true
+  },
+  {
+    "name": "Codex",
+    "description": "OpenAI's research tool for exploring codebases and understanding complex code",
+    "url": "https://openai.com/index/introducing-codex/",
+    "logo": "https://openai.com/favicon.ico",
+    "category": "ai"
+  },
+  {
+    "name": "Manus",
+    "description": "AI agent platform for automating complex workflows with reasoning and tool use",
+    "url": "https://manus.im",
+    "logo": "https://manus.im/favicon.ico",
+    "category": "ai"
+  },
+  {
+    "name": "Slack",
+    "description": "Team communication hub with channels, threads, and integrations for async work",
+    "url": "https://slack.com",
+    "logo": "https://a.slack-edge.com/80588/marketing/img/meta/favicon-32.png",
+    "category": "communication",
+    "dailyDriver": true
+  },
+  {
+    "name": "Vercel",
+    "description": "Frontend cloud platform for deploying and scaling web applications with zero config",
+    "url": "https://vercel.com",
+    "logo": "https://vercel.com/favicon.ico",
+    "category": "development"
+  },
+  {
+    "name": "Bolt",
+    "description": "AI-powered web development tool that builds full-stack apps from natural language prompts",
+    "url": "https://bolt.new",
+    "logo": "https://bolt.new/favicon.ico",
+    "category": "ai"
+  },
+  {
+    "name": "Granola",
+    "description": "AI notepad for meetings that enhances your notes with automatic transcription and summaries",
+    "url": "https://www.granola.ai",
+    "logo": "https://www.granola.ai/nav-icon-ios-rebrand.png",
+    "category": "productivity",
+    "dailyDriver": true
+  },
+  {
+    "name": "Replit",
+    "description": "Browser-based IDE with AI assistance for building, deploying, and collaborating on code",
+    "url": "https://replit.com",
+    "logo": "https://replit.com/public/icons/favicon-196.png",
+    "category": "development"
+  },
+  {
+    "name": "Wispr Flow",
+    "description": "Voice-to-text tool that lets you dictate naturally and writes in your personal style",
+    "url": "https://www.wispr.ai",
+    "logo": "https://cdn.prod.website-files.com/682f84b3838c89f8ff7667db/683215c6f233131a07d8bafc_navbar_logo.svg",
+    "category": "productivity",
+    "dailyDriver": true
+  },
+  {
+    "name": "Cursor",
+    "description": "AI-first code editor built on VS Code with intelligent autocomplete and chat",
+    "url": "https://cursor.sh",
+    "logo": "https://cursor.sh/favicon.ico",
+    "category": "development"
+  }
+]
