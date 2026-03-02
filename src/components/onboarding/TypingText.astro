@@ -1,0 +1,248 @@
+---
+/**
+ * Animated greeting text with smooth typewriter effect.
+ * Cursor moves continuously through all text, character by character.
+ */
+
+const lines = [
+  "Hey, welcome.",
+  "Thanks for stopping by.",
+  { text: "This is my ", highlight: "learning.log", suffix: " —" },
+  "what I'm building, discovering, and figuring out.",
+  "No polished essays. Just work in progress.",
+  "The hope is simple.",
+  "Stay a little closer to what's changing faster than we can blink",
+];
+
+const signature = "— Mohit";
+const subtitle = "tinkering in public";
+---
+
+<div class="typing-container">
+  <div class="typing-content" id="typing-content">
+    {lines.map((line, lineIdx) => (
+      <p class="typing-line" data-line={lineIdx}>{typeof line === 'string' ? (
+          line.split('').map((char, i) => (
+            <span class="char" data-char={i}>{char === ' ' ? '\u00A0' : char}</span>
+          ))
+        ) : (
+          <>{line.text.split('').map((char, i) => (
+              <span class="char" data-char={i}>{char === ' ' ? '\u00A0' : char}</span>
+            ))}{line.highlight.split('').map((char, i) => (
+              <span class="char highlight" data-char={line.text.length + i}>{char}</span>
+            ))}{line.suffix.split('').map((char, i) => (
+              <span class="char" data-char={line.text.length + line.highlight.length + i}>{char === ' ' ? '\u00A0' : char}</span>
+            ))}</>
+        )}</p>
+    ))}
+    <div class="signature-block">
+      <p class="typing-line signature">{signature.split('').map((char, i) => (
+          <span class="char" data-char={i}>{char === ' ' ? '\u00A0' : char}</span>
+        ))}</p>
+      <p class="typing-line subtitle">{subtitle.split('').map((char, i) => (
+          <span class="char" data-char={i}>{char === ' ' ? '\u00A0' : char}</span>
+        ))}</p>
+    </div>
+  </div>
+  <span class="cursor" id="typing-cursor"></span>
+</div>
+
+<style>
+  .typing-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 2rem 3rem;
+    max-width: 580px;
+    position: relative;
+  }
+
+  .typing-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .typing-line {
+    font-family: var(--font-serif);
+    font-size: clamp(1.05rem, 1.8vw, 1.18rem);
+    line-height: 1.6;
+    color: var(--text-primary);
+    margin: 0;
+    white-space: pre-wrap;
+  }
+
+  /* Characters start invisible */
+  .char {
+    opacity: 0;
+  }
+
+  .char.visible {
+    opacity: 1;
+  }
+
+  .char.highlight.visible {
+    color: var(--accent);
+    font-weight: 500;
+  }
+
+  .signature-block {
+    margin-top: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .signature .char.visible {
+    color: var(--accent);
+    font-style: italic;
+  }
+
+  .subtitle {
+    font-size: 0.9rem;
+    letter-spacing: 0.03em;
+  }
+
+  .subtitle .char.visible {
+    color: var(--text-secondary);
+  }
+
+  /* Cursor - positioned absolutely, moves via JS */
+  .cursor {
+    position: absolute;
+    width: 2px;
+    height: 1.15em;
+    background: var(--accent);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.1s ease;
+  }
+
+  .cursor.visible {
+    opacity: 1;
+  }
+
+  .cursor.blink {
+    animation: cursor-blink 0.7s step-end infinite;
+  }
+
+  @keyframes cursor-blink {
+    0%,
+    50% {
+      opacity: 1;
+    }
+    51%,
+    100% {
+      opacity: 0;
+    }
+  }
+
+  /* Mobile */
+  @media (max-width: 768px) {
+    .typing-container {
+      padding: 2rem 1.5rem;
+      max-width: none;
+    }
+
+    .typing-line {
+      font-size: clamp(0.98rem, 4vw, 1.1rem);
+    }
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .char {
+      opacity: 1 !important;
+    }
+
+    .char.highlight {
+      color: var(--accent);
+    }
+
+    .signature .char {
+      color: var(--accent);
+    }
+
+    .subtitle .char {
+      color: var(--text-secondary);
+    }
+
+    .cursor {
+      display: none;
+    }
+  }
+</style>
+
+<script>
+  function initTypingEffect() {
+    const container = document.getElementById("typing-content");
+    const cursor = document.getElementById("typing-cursor");
+
+    if (!container || !cursor) return;
+    if (container.dataset.initialized === "true") return;
+    container.dataset.initialized = "true";
+
+    const reducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+
+    if (reducedMotion) {
+      container
+        .querySelectorAll(".char")
+        .forEach((c) => c.classList.add("visible"));
+      window.dispatchEvent(new CustomEvent("typing-complete"));
+      return;
+    }
+
+    const allChars = Array.from(
+      container.querySelectorAll(".char"),
+    ) as HTMLSpanElement[];
+    let currentIndex = 0;
+    const baseDelay = 18;
+    const punctuationDelay = 70;
+
+    function positionCursor(charEl: HTMLSpanElement) {
+      const rect = charEl.getBoundingClientRect();
+      const containerRect = container.parentElement!.getBoundingClientRect();
+      cursor.style.left = `${rect.right - containerRect.left}px`;
+      cursor.style.top = `${rect.top - containerRect.top}px`;
+    }
+
+    function typeNext() {
+      if (currentIndex >= allChars.length) {
+        cursor.classList.add("blink");
+        window.dispatchEvent(new CustomEvent("typing-complete"));
+        return;
+      }
+
+      const char = allChars[currentIndex];
+      char.classList.add("visible");
+      positionCursor(char);
+      currentIndex++;
+
+      const text = char.textContent || "";
+      const isPunctuation = /[.?!]$/.test(text);
+      const delay = isPunctuation ? baseDelay + punctuationDelay : baseDelay;
+
+      setTimeout(typeNext, delay);
+    }
+
+    cursor.classList.add("visible");
+    // Dispatch typing-start event immediately
+    window.dispatchEvent(new CustomEvent("typing-start"));
+
+    setTimeout(() => {
+      if (allChars[0]) {
+        const rect = allChars[0].getBoundingClientRect();
+        const containerRect = container.parentElement!.getBoundingClientRect();
+        cursor.style.left = `${rect.left - containerRect.left}px`;
+        cursor.style.top = `${rect.top - containerRect.top}px`;
+      }
+      setTimeout(typeNext, 200);
+    }, 400);
+  }
+
+  initTypingEffect();
+  document.addEventListener("astro:page-load", initTypingEffect);
+</script>

@@ -1,0 +1,317 @@
+---
+/**
+ * Full-screen onboarding overlay for first-time visitors.
+ * Two-column layout: typing text (left) + content marquee (right).
+ * Handles skip/enter actions and exit transitions.
+ */
+
+import type { LearningLogItem } from '../../lib/learning-log';
+import TypingText from './TypingText.astro';
+import ContentMarquee from './ContentMarquee.astro';
+
+interface Voice {
+  display_name: string;
+  username: string;
+  one_liner: string;
+  avatar_url: string;
+}
+
+interface Props {
+  items: LearningLogItem[];
+  voices?: Voice[];
+}
+
+const { items, voices = [] } = Astro.props;
+---
+
+<div
+  class="onboarding-overlay"
+  id="onboarding-overlay"
+  role="dialog"
+  aria-modal="true"
+  aria-label="Welcome to learning.log"
+  data-onboarding-visible="true"
+>
+  <header class="onboarding-header">
+    <span class="onboarding-logo">learning.log <span class="logo-author">by Mohit</span></span>
+  </header>
+
+  <div class="onboarding-content">
+    <div class="onboarding-left">
+      <TypingText />
+    </div>
+    <div class="onboarding-right">
+      <ContentMarquee items={items} voices={voices} />
+    </div>
+  </div>
+
+  <footer class="onboarding-footer" id="onboarding-footer">
+    <button class="enter-button" id="enter-button" data-onboarding-enter>
+      Take me to learning.log <span class="arrow" aria-hidden="true">→</span>
+    </button>
+  </footer>
+</div>
+
+<style>
+  .onboarding-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: var(--bg-primary);
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.5s ease-out, visibility 0.5s ease-out;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .onboarding-overlay[data-onboarding-visible="false"] {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  .onboarding-overlay[data-exiting="true"] {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .onboarding-header {
+    flex-shrink: 0;
+    display: flex;
+    justify-content: center;
+    padding: 1.5rem 2rem;
+    opacity: 0;
+    animation: fade-in-header 0.6s 0.3s ease forwards;
+  }
+
+  @keyframes fade-in-header {
+    to { opacity: 1; }
+  }
+
+  .onboarding-logo {
+    font-family: var(--font-serif);
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  .logo-author {
+    color: var(--text-tertiary);
+    font-weight: 400;
+  }
+
+  .onboarding-content {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 3rem;
+    max-width: 1100px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 0 2rem;
+    align-items: center;
+    min-height: 0;
+  }
+
+  .onboarding-left {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+  }
+
+  .onboarding-right {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    position: relative;
+    height: 100%;
+    max-height: 520px;
+    padding-top: 1.5rem;
+  }
+
+  /* Footer with Enter button */
+  .onboarding-footer {
+    flex-shrink: 0;
+    display: flex;
+    justify-content: center;
+    padding: 0 2rem 3.5rem;
+    opacity: 0;
+    transform: translateY(20px);
+    pointer-events: none;
+    animation: slide-up-footer 0.6s 2.5s ease forwards;
+  }
+
+  @keyframes slide-up-footer {
+    to {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+  }
+
+  /* Enter button */
+  .enter-button {
+    font-family: var(--font-sans);
+    font-size: 1.05rem;
+    font-weight: 500;
+    color: var(--bg-primary);
+    background: var(--text-primary);
+    border: none;
+    padding: 1.1rem 4rem;
+    border-radius: 0.6rem;
+    cursor: pointer;
+    position: relative;
+    transition:
+      background 0.2s ease,
+      transform 0.15s ease;
+  }
+
+  .enter-button .arrow {
+    display: inline-block;
+    margin-left: 0.5rem;
+    transition: transform 0.2s ease;
+  }
+
+  .enter-button:hover {
+    background: var(--accent);
+    transform: translateY(-1px);
+  }
+
+  .enter-button:hover .arrow {
+    transform: translateX(3px);
+  }
+
+  .enter-button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+
+  .enter-button:active {
+    transform: scale(0.98);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .onboarding-header {
+      opacity: 1;
+      animation: none;
+    }
+
+    .onboarding-footer {
+      opacity: 1;
+      transform: none;
+      pointer-events: auto;
+      animation: none;
+    }
+
+    .enter-button.glow {
+      animation: none;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .onboarding-header {
+      padding: 1.25rem 1.5rem;
+    }
+
+    .onboarding-content {
+      grid-template-columns: 1fr;
+      padding: 0 1.5rem;
+      align-items: flex-start;
+    }
+
+    .onboarding-left {
+      justify-content: center;
+    }
+
+    .onboarding-right {
+      display: none;
+    }
+
+    .onboarding-footer {
+      padding: 1.5rem 1.5rem 2rem;
+    }
+
+    .enter-button {
+      width: 100%;
+      max-width: 320px;
+      text-align: center;
+    }
+  }
+</style>
+
+<script is:inline>
+  (function() {
+    const STORAGE_KEY = 'learning-log-onboarding-seen';
+
+    function hasSeenOnboarding() {
+      try {
+        return localStorage.getItem(STORAGE_KEY) === 'true';
+      } catch {
+        return true;
+      }
+    }
+
+    function markOnboardingSeen() {
+      try {
+        localStorage.setItem(STORAGE_KEY, 'true');
+      } catch {}
+    }
+
+    function exitOnboarding() {
+      var overlay = document.getElementById('onboarding-overlay');
+      if (!overlay) return;
+
+      markOnboardingSeen();
+      overlay.dataset.exiting = 'true';
+
+      setTimeout(function() {
+        overlay.dataset.onboardingVisible = 'false';
+      }, 500);
+    }
+
+    function initOnboarding() {
+      var overlay = document.getElementById('onboarding-overlay');
+      if (!overlay) return;
+
+      // Hide immediately if returning visitor
+      if (hasSeenOnboarding()) {
+        overlay.style.display = 'none';
+        overlay.dataset.onboardingVisible = 'false';
+        return;
+      }
+
+      var enterButton = document.getElementById('enter-button');
+      var skipButtons = document.querySelectorAll('[data-onboarding-skip]');
+
+      // Set up handlers
+      skipButtons.forEach(function(btn) {
+        btn.addEventListener('click', exitOnboarding);
+      });
+
+      if (enterButton) {
+        enterButton.addEventListener('click', exitOnboarding);
+      }
+
+      // Escape key to skip
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && overlay.dataset.onboardingVisible === 'true') {
+          exitOnboarding();
+        }
+      });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initOnboarding);
+    } else {
+      initOnboarding();
+    }
+
+    document.addEventListener('astro:page-load', function() {
+      if (window.location.pathname === '/') {
+        initOnboarding();
+      }
+    });
+  })();
+</script>
