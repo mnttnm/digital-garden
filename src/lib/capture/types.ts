@@ -139,6 +139,8 @@ export interface TilFrontmatter {
   title: string;
   date: string;
   tags: string[];
+  image?: string;
+  imageAlt?: string;
   draft: boolean;
 }
 
@@ -150,6 +152,8 @@ export interface NoteFrontmatter {
   link?: string;
   linkTitle?: string;
   takeaway?: string;
+  image?: string;
+  imageAlt?: string;
   featured: boolean;
   draft: boolean;
 }

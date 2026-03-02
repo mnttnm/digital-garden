@@ -375,22 +375,22 @@ export async function publishCapture(
   const contentResult = result as TransformResult;
   const path = getContentPath(contentResult);
 
-  // Save image if present (for notes, add inline markdown)
-  let body = contentResult.body;
+  // Save image if present and add to frontmatter
+  let fullContent = contentResult.fullContent;
   if (capture.images?.[0]?.data) {
     const imageUrl = await saveImage(config, capture.images[0].data, capture.id);
-    body = `![Captured image](${imageUrl})\n\n${body}`;
+    const imageAlt = contentResult.frontmatter.title;
+    // Insert image and imageAlt into frontmatter (before draft: false)
+    fullContent = fullContent.replace(
+      /^(---\n[\s\S]*?)(draft: false)/m,
+      `$1image: "${imageUrl}"\nimageAlt: "${imageAlt}"\n$2`
+    );
   }
 
   // Generate commit message
   const collection = contentResult.collection === 'til' ? 'TIL' : 'note';
   const title = contentResult.frontmatter.title;
   const message = `content: add ${collection} "${title}"`;
-
-  // Rebuild full content with image if added
-  const fullContent = body !== contentResult.body
-    ? contentResult.fullContent.replace(contentResult.body, body)
-    : contentResult.fullContent;
 
   // Commit to GitHub
   const response = await createFile(config, path, fullContent, message);
@@ -573,14 +573,15 @@ export async function batchPublishCaptures(
   }
   const filesToCommit = Array.from(uniqueFiles.values());
 
-  // Handle images for regular captures
+  // Handle images for regular captures (TILs and notes use frontmatter)
   for (const file of filesToCommit) {
     if (!file.isProjectUpdate && file.imageData) {
       const imageUrl = await saveImage(config, file.imageData, file.id);
-      // Insert image at start of body
+      const imageAlt = file.title;
+      // Insert image and imageAlt into frontmatter (before draft: false)
       file.content = file.content.replace(
-        /^(---[\s\S]*?---\n\n)/,
-        `$1![Captured image](${imageUrl})\n\n`
+        /^(---\n[\s\S]*?)(draft: false)/m,
+        `$1image: "${imageUrl}"\nimageAlt: "${imageAlt}"\n$2`
       );
     }
   }
