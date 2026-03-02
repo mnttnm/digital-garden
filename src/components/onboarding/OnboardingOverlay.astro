@@ -5,9 +5,9 @@
  * Handles skip/enter actions and exit transitions.
  */
 
-import type { LearningLogItem } from '../../lib/learning-log';
-import TypingText from './TypingText.astro';
-import ContentMarquee from './ContentMarquee.astro';
+import type { LearningLogItem } from "../../lib/learning-log";
+import TypingText from "./TypingText.astro";
+import ContentMarquee from "./ContentMarquee.astro";
 
 interface Voice {
   display_name: string;
@@ -33,7 +33,9 @@ const { items, voices = [] } = Astro.props;
   data-onboarding-visible="true"
 >
   <header class="onboarding-header">
-    <span class="onboarding-logo">learning.log <span class="logo-author">by Mohit</span></span>
+    <span class="onboarding-logo"
+      >learning.log <span class="logo-author">by Mohit</span></span
+    >
   </header>
 
   <div class="onboarding-content">
@@ -47,7 +49,7 @@ const { items, voices = [] } = Astro.props;
 
   <footer class="onboarding-footer" id="onboarding-footer">
     <button class="enter-button" id="enter-button" data-onboarding-enter>
-      Take me to learning.log <span class="arrow" aria-hidden="true">→</span>
+      Start reading <span class="arrow" aria-hidden="true">→</span>
     </button>
   </footer>
 </div>
@@ -60,7 +62,9 @@ const { items, voices = [] } = Astro.props;
     background: var(--bg-primary);
     opacity: 1;
     visibility: visible;
-    transition: opacity 0.5s ease-out, visibility 0.5s ease-out;
+    transition:
+      opacity 0.5s ease-out,
+      visibility 0.5s ease-out;
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -87,7 +91,9 @@ const { items, voices = [] } = Astro.props;
   }
 
   @keyframes fade-in-header {
-    to { opacity: 1; }
+    to {
+      opacity: 1;
+    }
   }
 
   .onboarding-logo {
@@ -242,12 +248,12 @@ const { items, voices = [] } = Astro.props;
 </style>
 
 <script is:inline>
-  (function() {
-    const STORAGE_KEY = 'learning-log-onboarding-seen';
+  (function () {
+    const STORAGE_KEY = "learning-log-onboarding-seen";
 
     function hasSeenOnboarding() {
       try {
-        return localStorage.getItem(STORAGE_KEY) === 'true';
+        return localStorage.getItem(STORAGE_KEY) === "true";
       } catch {
         return true;
       }
@@ -255,61 +261,64 @@ const { items, voices = [] } = Astro.props;
 
     function markOnboardingSeen() {
       try {
-        localStorage.setItem(STORAGE_KEY, 'true');
+        localStorage.setItem(STORAGE_KEY, "true");
       } catch {}
     }
 
     function exitOnboarding() {
-      var overlay = document.getElementById('onboarding-overlay');
+      var overlay = document.getElementById("onboarding-overlay");
       if (!overlay) return;
 
       markOnboardingSeen();
-      overlay.dataset.exiting = 'true';
+      overlay.dataset.exiting = "true";
 
-      setTimeout(function() {
-        overlay.dataset.onboardingVisible = 'false';
+      setTimeout(function () {
+        overlay.dataset.onboardingVisible = "false";
       }, 500);
     }
 
     function initOnboarding() {
-      var overlay = document.getElementById('onboarding-overlay');
+      var overlay = document.getElementById("onboarding-overlay");
       if (!overlay) return;
 
       // Hide immediately if returning visitor
       if (hasSeenOnboarding()) {
-        overlay.style.display = 'none';
-        overlay.dataset.onboardingVisible = 'false';
+        overlay.style.display = "none";
+        overlay.dataset.onboardingVisible = "false";
         return;
       }
 
-      var enterButton = document.getElementById('enter-button');
-      var skipButtons = document.querySelectorAll('[data-onboarding-skip]');
+      var enterButton = document.getElementById("enter-button");
+      var skipButtons = document.querySelectorAll("[data-onboarding-skip]");
 
       // Set up handlers
-      skipButtons.forEach(function(btn) {
-        btn.addEventListener('click', exitOnboarding);
+      skipButtons.forEach(function (btn) {
+        btn.addEventListener("click", exitOnboarding);
       });
 
       if (enterButton) {
-        enterButton.addEventListener('click', exitOnboarding);
+        enterButton.addEventListener("click", exitOnboarding);
       }
 
       // Escape key to skip
-      document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && overlay.dataset.onboardingVisible === 'true') {
+      document.addEventListener("keydown", function (e) {
+        if (
+          e.key === "Escape" &&
+          overlay.dataset.onboardingVisible === "true"
+        ) {
           exitOnboarding();
         }
       });
     }
 
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', initOnboarding);
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", initOnboarding);
     } else {
       initOnboarding();
     }
 
-    document.addEventListener('astro:page-load', function() {
-      if (window.location.pathname === '/') {
+    document.addEventListener("astro:page-load", function () {
+      if (window.location.pathname === "/") {
         initOnboarding();
       }
     });

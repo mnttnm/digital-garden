@@ -282,6 +282,9 @@ export async function getLearningLogItems(): Promise<LearningLogItem[]> {
     })
   );
 
+  // Build a map of project slugs to titles for TIL lookups
+  const projectMap = new Map(projects.map((p) => [p.slug, p.data.title]));
+
   const tilItems: LearningLogItem[] = tils.map((til) => {
     const crux = firstSentenceOrExcerpt(til.body) || til.data.title;
     const bodyImagePreviews = getImagePreviews(til.body);
@@ -294,6 +297,10 @@ export async function getLearningLogItems(): Promise<LearningLogItem[]> {
       ? [frontmatterImage, ...bodyImagePreviews]
       : bodyImagePreviews;
 
+    // Look up linked project if specified
+    const projectSlug = til.data.project;
+    const projectTitle = projectSlug ? projectMap.get(projectSlug) : undefined;
+
     return {
       id: `til-${til.slug}`,
       bucket: 'what-i-discovered',
@@ -302,6 +309,8 @@ export async function getLearningLogItems(): Promise<LearningLogItem[]> {
       title: til.data.title,
       crux,
       href: `/til/${til.slug}/`,
+      projectSlug,
+      projectTitle,
       tags: til.data.tags ?? [],
       sourceType: 'til',
       isExternal: false,
