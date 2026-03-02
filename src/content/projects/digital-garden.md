@@ -77,6 +77,21 @@ activity:
       - "Auto-classifies each suggestion as TIL, essay, or project update based on what fits"
       - "Writes everything with draft: true — nothing publishes until I review it"
       - "Bonus: built the whole skill using the skill-creator skill — init_skill.py scaffolds the structure, you just fill in the logic"
+
+  - date: 2026-03-02
+    title: "Built a first-time visitor welcome experience"
+    summary: "New visitors now see a calm, immersive welcome before diving into the feed. A personal greeting types out character by character while a preview of actual content scrolls alongside — learnings, resources, and voices I follow. Click to enter, and it gets out of the way forever."
+    tags: ["ux", "onboarding", "design"]
+    type: "update"
+    highlights:
+      - "Typed-out greeting to make the welcome feel personal, not static"
+      - "Preview generated from real posts so the first impression reflects the actual feed"
+      - "Carefully tuned animation and timing to make the whole experience flow naturally"
+    videos:
+      - src: "/images/projects/digital-garden/changelog/onboarding-welcome.mp4"
+        poster: "/images/projects/digital-garden/changelog/onboarding-welcome-poster.png"
+        title: "Onboarding welcome experience"
+        caption: "A calm introduction before the feed."
 draft: false
 ---
 

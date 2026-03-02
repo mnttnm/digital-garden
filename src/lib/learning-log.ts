@@ -25,6 +25,13 @@ export interface LearningLogImagePreview {
   caption?: string;
 }
 
+export interface LearningLogVideoPreview {
+  src: string;
+  poster?: string;
+  title?: string;
+  caption?: string;
+}
+
 export interface LearningLogActionLink {
   label: string;
   href: string;
@@ -48,6 +55,7 @@ export interface LearningLogItem {
   codePreview?: LearningLogCodePreview;
   imagePreview?: LearningLogImagePreview;
   imagePreviews?: LearningLogImagePreview[];
+  videoPreview?: LearningLogVideoPreview;
   actionLink?: LearningLogActionLink;
 }
 
@@ -184,6 +192,18 @@ function getProjectEventImagePreviews(event: ProjectActivity): LearningLogImageP
   return videoPosterPreviews;
 }
 
+function getProjectEventVideoPreview(event: ProjectActivity): LearningLogVideoPreview | undefined {
+  const video = event.videos.find((v) => Boolean(v.src));
+  if (!video) return undefined;
+
+  return {
+    src: video.src,
+    poster: video.poster,
+    title: video.title || event.title,
+    caption: video.caption,
+  };
+}
+
 export async function getLearningLogItems(): Promise<LearningLogItem[]> {
   const [notes, projects, tils] = await Promise.all([
     getCollection('notes', ({ data }) => !data.draft),
@@ -241,7 +261,8 @@ export async function getLearningLogItems(): Promise<LearningLogItem[]> {
       const actionHref = event.actionUrl;
       const actionIsExternal = actionHref ? /^https?:\/\//i.test(actionHref) : false;
       const imagePreviews = getProjectEventImagePreviews(event);
-      const hasVisualMedia = imagePreviews.length > 0;
+      const videoPreview = getProjectEventVideoPreview(event);
+      const hasVisualMedia = imagePreviews.length > 0 || videoPreview;
 
       return {
         id: `project-${project.slug}-${anchor}`,
@@ -271,6 +292,7 @@ export async function getLearningLogItems(): Promise<LearningLogItem[]> {
           : undefined,
         imagePreview: imagePreviews[0],
         imagePreviews: imagePreviews.length > 0 ? imagePreviews : undefined,
+        videoPreview,
         actionLink: actionHref && event.actionLabel
           ? {
               label: event.actionLabel,

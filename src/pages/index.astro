@@ -139,7 +139,24 @@ function getImagePreviews(item: LearningLogItem) {
                       </a>
                     </h2>
 
-                    {previews.length > 0 && (
+                    {item.videoPreview && (
+                      <div class="entry-video">
+                        <video
+                          controls
+                          preload="metadata"
+                          playsinline
+                          poster={item.videoPreview.poster}
+                          aria-label={item.videoPreview.title}
+                        >
+                          <source src={item.videoPreview.src} />
+                        </video>
+                        {item.videoPreview.caption && (
+                          <p class="entry-video-caption">{item.videoPreview.caption}</p>
+                        )}
+                      </div>
+                    )}
+
+                    {!item.videoPreview && previews.length > 0 && (
                       <div class="entry-thumbnails" data-lightbox-gallery>
                         {previews.slice(0, 3).map((preview, i) => {
                           const isLast = i === 2;
@@ -659,6 +676,27 @@ function getImagePreviews(item: LearningLogItem) {
 
   .tag-dot {
     color: var(--text-tertiary);
+  }
+
+  .entry-video {
+    margin-bottom: 1rem;
+  }
+
+  .entry-video video {
+    width: 100%;
+    max-width: 480px;
+    aspect-ratio: 16 / 9;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.5rem;
+    background: #000;
+    display: block;
+  }
+
+  .entry-video-caption {
+    margin: 0.4rem 0 0 0;
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+    font-style: italic;
   }
 
   .entry-thumbnails {
