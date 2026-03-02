@@ -1,10 +1,10 @@
 ---
-import Base from '../../layouts/Base.astro';
-import type { CollectionEntry } from 'astro:content';
-import { getCollection } from 'astro:content';
-import { getProjectEventAnchor } from '../../lib/learning-log';
+import Base from "../../layouts/Base.astro";
+import type { CollectionEntry } from "astro:content";
+import { getCollection } from "astro:content";
+import { getProjectEventAnchor } from "../../lib/learning-log";
 
-type ProjectActivity = CollectionEntry<'projects'>['data']['activity'][number];
+type ProjectActivity = CollectionEntry<"projects">["data"]["activity"][number];
 type ActivityImage = {
   src: string;
   alt: string;
@@ -20,8 +20,8 @@ type ActivityVideo = {
 export const prerender = true;
 
 export async function getStaticPaths() {
-  const projects = await getCollection('projects', ({ data }) => !data.draft);
-  return projects.map(project => ({
+  const projects = await getCollection("projects", ({ data }) => !data.draft);
+  return projects.map((project) => ({
     params: { slug: project.slug },
     props: { project },
   }));
@@ -31,15 +31,22 @@ const { project } = Astro.props;
 const { Content } = await project.render();
 
 function formatDate(date: Date) {
-  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
 }
 
 function formatEntryDate(date: Date) {
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
 function formatTime(date: Date) {
-  return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  return date.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }
 
 function formatRelativeDate(date: Date) {
@@ -47,34 +54,43 @@ function formatRelativeDate(date: Date) {
   const differenceInDays = Math.round((Date.now() - date.getTime()) / msInDay);
   const absoluteDifference = Math.abs(differenceInDays);
 
-  if (absoluteDifference === 0) return 'today';
-  if (absoluteDifference === 1) return differenceInDays > 0 ? '1 day ago' : 'in 1 day';
-  if (absoluteDifference < 30) return differenceInDays > 0 ? `${absoluteDifference} days ago` : `in ${absoluteDifference} days`;
+  if (absoluteDifference === 0) return "today";
+  if (absoluteDifference === 1)
+    return differenceInDays > 0 ? "1 day ago" : "in 1 day";
+  if (absoluteDifference < 30)
+    return differenceInDays > 0
+      ? `${absoluteDifference} days ago`
+      : `in ${absoluteDifference} days`;
 
   const differenceInMonths = Math.round(absoluteDifference / 30);
-  if (differenceInMonths < 12) return differenceInDays > 0 ? `${differenceInMonths} months ago` : `in ${differenceInMonths} months`;
+  if (differenceInMonths < 12)
+    return differenceInDays > 0
+      ? `${differenceInMonths} months ago`
+      : `in ${differenceInMonths} months`;
 
   const differenceInYears = Math.round(absoluteDifference / 365);
-  return differenceInDays > 0 ? `${differenceInYears} years ago` : `in ${differenceInYears} years`;
+  return differenceInDays > 0
+    ? `${differenceInYears} years ago`
+    : `in ${differenceInYears} years`;
 }
 
-const activityTypeLabels: Record<ProjectActivity['type'], string> = {
-  update: 'Update',
-  learning: 'Learning',
-  discovery: 'Discovery',
-  milestone: 'Milestone',
-  experiment: 'Experiment',
-  fix: 'Fix',
+const activityTypeLabels: Record<ProjectActivity["type"], string> = {
+  update: "Update",
+  learning: "Learning",
+  discovery: "Discovery",
+  milestone: "Milestone",
+  experiment: "Experiment",
+  fix: "Fix",
 };
 
-function getEventDotClass(type: ProjectActivity['type']) {
-  const dots: Record<ProjectActivity['type'], string> = {
-    update: 'dot-project',
-    learning: 'dot-learning',
-    discovery: 'dot-resource',
-    milestone: 'dot-project',
-    experiment: 'dot-thought',
-    fix: 'dot-project',
+function getEventDotClass(type: ProjectActivity["type"]) {
+  const dots: Record<ProjectActivity["type"], string> = {
+    update: "dot-project",
+    learning: "dot-learning",
+    discovery: "dot-resource",
+    milestone: "dot-project",
+    experiment: "dot-thought",
+    fix: "dot-project",
   };
   return dots[type];
 }
@@ -92,11 +108,13 @@ function getNormalizedImages(event: ProjectActivity): ActivityImage[] {
 
   if (!event.image) return [];
 
-  return [{
-    src: event.image,
-    alt: event.imageAlt || event.title,
-    caption: event.imageCaption,
-  }];
+  return [
+    {
+      src: event.image,
+      alt: event.imageAlt || event.title,
+      caption: event.imageCaption,
+    },
+  ];
 }
 
 function getNormalizedVideos(event: ProjectActivity): ActivityVideo[] {
@@ -110,18 +128,21 @@ function getNormalizedVideos(event: ProjectActivity): ActivityVideo[] {
     }));
 }
 
-function getImageCaption(event: ProjectActivity, images: ActivityImage[]): string | undefined {
+function getImageCaption(
+  event: ProjectActivity,
+  images: ActivityImage[],
+): string | undefined {
   if (event.imageCaption) return event.imageCaption;
   if (images.length === 1) return images[0].caption;
   return undefined;
 }
 
 function getMediaGridClass(count: number): string {
-  if (count <= 1) return 'count-1';
-  if (count === 2) return 'count-2';
-  if (count === 3) return 'count-3';
-  if (count === 4) return 'count-4';
-  return 'count-many';
+  if (count <= 1) return "count-1";
+  if (count === 2) return "count-2";
+  if (count === 3) return "count-3";
+  if (count === 4) return "count-4";
+  return "count-many";
 }
 
 const activity = [...project.data.activity]
@@ -138,11 +159,11 @@ const activity = [...project.data.activity]
 const base = import.meta.env.BASE_URL;
 
 // Tab logic
-const rawTab = Astro.url.searchParams.get('tab') || 'feed';
-const activeTab = ['feed', 'key'].includes(rawTab) ? rawTab : 'feed';
+const rawTab = Astro.url.searchParams.get("tab") || "feed";
+const activeTab = ["feed", "key"].includes(rawTab) ? rawTab : "feed";
 
-const keyUpdateTypes = ['milestone', 'learning', 'discovery'];
-const keyUpdates = activity.filter(e => keyUpdateTypes.includes(e.type));
+const keyUpdateTypes = ["milestone", "learning", "discovery"];
+const keyUpdates = activity.filter((e) => keyUpdateTypes.includes(e.type));
 ---
 
 <Base title={project.data.title} description={project.data.description}>
@@ -160,209 +181,312 @@ const keyUpdates = activity.filter(e => keyUpdateTypes.includes(e.type));
       <div class="header-row">
         <h1 class="project-title">{project.data.title}</h1>
         <div class="project-actions">
-          {project.data.github && (
-            <a href={project.data.github} class="action-btn" target="_blank" rel="noopener">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-              </svg>
-              Code
-            </a>
-          )}
-          {project.data.live && (
-            <a href={project.data.live} class="action-btn primary" target="_blank" rel="noopener">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
-                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-                <polyline points="15 3 21 3 21 9"></polyline>
-                <line x1="10" y1="14" x2="21" y2="3"></line>
-              </svg>
-              Live
-            </a>
-          )}
+          {
+            project.data.github && (
+              <a
+                href={project.data.github}
+                class="action-btn"
+                target="_blank"
+                rel="noopener"
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  aria-hidden="true"
+                >
+                  <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
+                </svg>
+                Code
+              </a>
+            )
+          }
+          {
+            project.data.live && (
+              <a
+                href={project.data.live}
+                class="action-btn primary"
+                target="_blank"
+                rel="noopener"
+              >
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  aria-hidden="true"
+                >
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                  <polyline points="15 3 21 3 21 9" />
+                  <line x1="10" y1="14" x2="21" y2="3" />
+                </svg>
+                Live
+              </a>
+            )
+          }
         </div>
       </div>
       <p class="project-tagline">{project.data.description}</p>
-      {project.data.stack && project.data.stack.length > 0 && (
-        <div class="project-stack-inline">
-          {project.data.stack.map(tech => (
-            <span class="chip">{tech}</span>
-          ))}
-        </div>
-      )}
+      {
+        project.data.stack && project.data.stack.length > 0 && (
+          <div class="project-stack-inline">
+            {project.data.stack.map((tech) => (
+              <span class="chip">{tech}</span>
+            ))}
+          </div>
+        )
+      }
     </header>
 
     <nav class="project-tabs" role="tablist">
       <a
         href="?tab=feed"
         role="tab"
-        aria-selected={activeTab === 'feed'}
-        class:list={['tab', { active: activeTab === 'feed' }]}
+        aria-selected={activeTab === "feed"}
+        class:list={["tab", { active: activeTab === "feed" }]}
       >
         Feed <span class="tab-count">{activity.length}</span>
       </a>
       <a
         href="?tab=key"
         role="tab"
-        aria-selected={activeTab === 'key'}
-        class:list={['tab', { active: activeTab === 'key' }]}
+        aria-selected={activeTab === "key"}
+        class:list={["tab", { active: activeTab === "key" }]}
       >
         Key Updates <span class="tab-count">{keyUpdates.length}</span>
       </a>
     </nav>
 
-    {activeTab === 'feed' && (
-      <section class="tab-panel" aria-label="Project activity feed">
-        {activity.length === 0 ? (
-          <p class="feed-empty">No events logged yet.</p>
-        ) : (
-          <ul class="feed-list">
-            {activity.map(event => (
-              <li
-                class="feed-item reveal"
-                id={getProjectEventAnchor(project.slug, event.date, event.title)}
-              >
-                <article class="feed-grid">
-                  <aside class="feed-margin">
+    {
+      activeTab === "feed" && (
+        <section class="tab-panel" aria-label="Project activity feed">
+          {activity.length === 0 ? (
+            <p class="feed-empty">No events logged yet.</p>
+          ) : (
+            <ul class="feed-list">
+              {activity.map((event) => (
+                <li
+                  class="feed-item reveal"
+                  id={getProjectEventAnchor(
+                    project.slug,
+                    event.date,
+                    event.title,
+                  )}
+                >
+                  <article class="feed-grid">
+                    <aside class="feed-margin">
+                      <time datetime={event.date.toISOString()}>
+                        {formatEntryDate(event.date)}
+                      </time>
+                      <span class:list={["type-badge", `type-${event.type}`]}>
+                        {activityTypeLabels[event.type]}
+                      </span>
+                    </aside>
+                    <div class="feed-content">
+                      <h3 class="feed-title">{event.title}</h3>
+                      <p class="feed-summary">{event.summary}</p>
+                      {event.highlights.length > 0 && (
+                        <ul class="feed-highlights">
+                          {event.highlights.slice(0, 3).map((highlight) => (
+                            <li>{highlight}</li>
+                          ))}
+                          {event.highlights.length > 3 && (
+                            <li class="more-highlights">
+                              +{event.highlights.length - 3} more
+                            </li>
+                          )}
+                        </ul>
+                      )}
+                      {event.mediaImages.length > 0 && (
+                        <figure class="feed-media-showcase">
+                          <div
+                            class:list={[
+                              "feed-media-grid",
+                              "feed-media-images",
+                              getMediaGridClass(event.mediaImages.length),
+                            ]}
+                            data-lightbox-gallery
+                          >
+                            {event.mediaImages.map((image) => (
+                              <div class="feed-media-item">
+                                <img
+                                  src={image.src}
+                                  alt={image.alt}
+                                  loading="lazy"
+                                  data-lightbox
+                                  data-lightbox-caption={image.caption || ""}
+                                />
+                              </div>
+                            ))}
+                          </div>
+                          {event.mediaCaption && (
+                            <figcaption>{event.mediaCaption}</figcaption>
+                          )}
+                        </figure>
+                      )}
+                      {event.mediaVideos.length > 0 && (
+                        <div class="feed-video-showcase">
+                          <div
+                            class:list={[
+                              "feed-media-grid",
+                              "feed-media-videos",
+                              getMediaGridClass(event.mediaVideos.length),
+                            ]}
+                          >
+                            {event.mediaVideos.map((video, index) => (
+                              <figure class="feed-video-item">
+                                <video
+                                  controls
+                                  preload="metadata"
+                                  playsinline
+                                  poster={video.poster}
+                                  aria-label={
+                                    video.title || `Video ${index + 1}`
+                                  }
+                                >
+                                  <source src={video.src} />
+                                  Your browser does not support the video tag.
+                                </video>
+                                {video.caption && (
+                                  <figcaption>{video.caption}</figcaption>
+                                )}
+                              </figure>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {event.code && (
+                        <div class="code-block">
+                          <div class="code-block-header">
+                            <span>
+                              {(event.codeLanguage || "text").toLowerCase()}
+                            </span>
+                            <span>code</span>
+                          </div>
+                          <pre>
+                            <code>{event.code}</code>
+                          </pre>
+                        </div>
+                      )}
+                      {event.links.length > 0 && (
+                        <ul class="feed-link-list">
+                          {event.links.map((link) => (
+                            <li>
+                              <a
+                                class="link-preview"
+                                href={link.url}
+                                target="_blank"
+                                rel="noopener"
+                              >
+                                <div class="link-preview-main">
+                                  <span class="link-icon" aria-hidden="true">
+                                    ◌
+                                  </span>
+                                  <div class="link-copy">
+                                    <p class="link-title">{link.label}</p>
+                                    <p class="link-domain">
+                                      {new URL(link.url).hostname.replace(
+                                        /^www\./,
+                                        "",
+                                      )}
+                                    </p>
+                                  </div>
+                                </div>
+                                <span class="link-arrow" aria-hidden="true">
+                                  ↗
+                                </span>
+                              </a>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                      {event.actionLabel && event.actionUrl && (
+                        <p class="feed-action">
+                          <a
+                            href={event.actionUrl}
+                            target={
+                              event.actionUrl.startsWith("http")
+                                ? "_blank"
+                                : undefined
+                            }
+                            rel={
+                              event.actionUrl.startsWith("http")
+                                ? "noopener"
+                                : undefined
+                            }
+                          >
+                            {event.actionLabel} →
+                          </a>
+                        </p>
+                      )}
+                    </div>
+                  </article>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )
+    }
+
+    {
+      activeTab === "key" && (
+        <section class="tab-panel" aria-label="Key project updates">
+          {keyUpdates.length === 0 ? (
+            <p class="empty-state">
+              No key updates yet. Milestones, learnings, and discoveries will
+              appear here.
+            </p>
+          ) : (
+            <div class="key-updates">
+              {keyUpdates.map((event) => (
+                <article
+                  class="key-card"
+                  id={getProjectEventAnchor(
+                    project.slug,
+                    event.date,
+                    event.title,
+                  )}
+                >
+                  <header class="key-card-header">
+                    <span class:list={["type-badge", `type-${event.type}`]}>
+                      {activityTypeLabels[event.type]}
+                    </span>
                     <time datetime={event.date.toISOString()}>
                       {formatEntryDate(event.date)}
                     </time>
-                    <span class:list={['type-badge', `type-${event.type}`]}>
-                      {activityTypeLabels[event.type]}
-                    </span>
-                  </aside>
-                  <div class="feed-content">
-                    <h3 class="feed-title">{event.title}</h3>
-                    <p class="feed-summary">{event.summary}</p>
-                    {event.highlights.length > 0 && (
-                      <ul class="feed-highlights">
-                        {event.highlights.slice(0, 3).map(highlight => (
-                          <li>{highlight}</li>
-                        ))}
-                        {event.highlights.length > 3 && (
-                          <li class="more-highlights">+{event.highlights.length - 3} more</li>
-                        )}
-                      </ul>
-                    )}
-                    {event.mediaImages.length > 0 && (
-                      <figure class="feed-media-showcase">
-                        <div class:list={['feed-media-grid', 'feed-media-images', getMediaGridClass(event.mediaImages.length)]} data-lightbox-gallery>
-                          {event.mediaImages.map((image) => (
-                            <div class="feed-media-item">
-                              <img
-                                src={image.src}
-                                alt={image.alt}
-                                loading="lazy"
-                                data-lightbox
-                                data-lightbox-caption={image.caption || ''}
-                              />
-                            </div>
-                          ))}
-                        </div>
-                        {event.mediaCaption && <figcaption>{event.mediaCaption}</figcaption>}
-                      </figure>
-                    )}
-                    {event.mediaVideos.length > 0 && (
-                      <div class="feed-video-showcase">
-                        <div class:list={['feed-media-grid', 'feed-media-videos', getMediaGridClass(event.mediaVideos.length)]}>
-                          {event.mediaVideos.map((video, index) => (
-                            <figure class="feed-video-item">
-                              <video
-                                controls
-                                preload="metadata"
-                                playsinline
-                                poster={video.poster}
-                                aria-label={video.title || `Video ${index + 1}`}
-                              >
-                                <source src={video.src} />
-                                Your browser does not support the video tag.
-                              </video>
-                              {video.caption && <figcaption>{video.caption}</figcaption>}
-                            </figure>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {event.code && (
-                      <div class="code-block">
-                        <div class="code-block-header">
-                          <span>{(event.codeLanguage || 'text').toLowerCase()}</span>
-                          <span>code</span>
-                        </div>
-                        <pre><code>{event.code}</code></pre>
-                      </div>
-                    )}
-                    {event.links.length > 0 && (
-                      <ul class="feed-link-list">
-                        {event.links.map(link => (
-                          <li>
-                            <a class="link-preview" href={link.url} target="_blank" rel="noopener">
-                              <div class="link-preview-main">
-                                <span class="link-icon" aria-hidden="true">◌</span>
-                                <div class="link-copy">
-                                  <p class="link-title">{link.label}</p>
-                                  <p class="link-domain">{new URL(link.url).hostname.replace(/^www\./, '')}</p>
-                                </div>
-                              </div>
-                              <span class="link-arrow" aria-hidden="true">↗</span>
-                            </a>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                    {event.actionLabel && event.actionUrl && (
-                      <p class="feed-action">
-                        <a href={event.actionUrl} target={event.actionUrl.startsWith('http') ? '_blank' : undefined} rel={event.actionUrl.startsWith('http') ? 'noopener' : undefined}>
-                          {event.actionLabel} →
-                        </a>
-                      </p>
-                    )}
-                  </div>
+                  </header>
+                  <h3 class="key-card-title">{event.title}</h3>
+                  <p class="key-card-summary">{event.summary}</p>
+                  {event.highlights.length > 0 && (
+                    <p class="key-takeaway">
+                      <strong>Key insight:</strong> {event.highlights[0]}
+                    </p>
+                  )}
                 </article>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-    )}
+              ))}
+            </div>
+          )}
+        </section>
+      )
+    }
 
-    {activeTab === 'key' && (
-      <section class="tab-panel" aria-label="Key project updates">
-        {keyUpdates.length === 0 ? (
-          <p class="empty-state">No key updates yet. Milestones, learnings, and discoveries will appear here.</p>
-        ) : (
-          <div class="key-updates">
-            {keyUpdates.map(event => (
-              <article class="key-card" id={getProjectEventAnchor(project.slug, event.date, event.title)}>
-                <header class="key-card-header">
-                  <span class:list={['type-badge', `type-${event.type}`]}>
-                    {activityTypeLabels[event.type]}
-                  </span>
-                  <time datetime={event.date.toISOString()}>
-                    {formatEntryDate(event.date)}
-                  </time>
-                </header>
-                <h3 class="key-card-title">{event.title}</h3>
-                <p class="key-card-summary">{event.summary}</p>
-                {event.highlights.length > 0 && (
-                  <p class="key-takeaway">
-                    <strong>Key insight:</strong> {event.highlights[0]}
-                  </p>
-                )}
-              </article>
+    {
+      project.data.tags && project.data.tags.length > 0 && (
+        <footer class="article-footer">
+          <div class="tags">
+            {project.data.tags.map((tag) => (
+              <a href={`${base}?tag=${encodeURIComponent(tag)}`} class="tag">
+                {tag}
+              </a>
             ))}
           </div>
-        )}
-      </section>
-    )}
-
-    {project.data.tags && project.data.tags.length > 0 && (
-      <footer class="article-footer">
-        <div class="tags">
-          {project.data.tags.map(tag => (
-            <a href={`${base}?tag=${encodeURIComponent(tag)}`} class="tag">{tag}</a>
-          ))}
-        </div>
-      </footer>
-    )}
+        </footer>
+      )
+    }
   </article>
 
   <nav class="back-link">
@@ -371,26 +495,29 @@ const keyUpdates = activity.filter(e => keyUpdateTypes.includes(e.type));
 
   <script>
     function initRevealAnimations() {
-      const entries = document.querySelectorAll('.reveal:not(.visible)');
-      if (!('IntersectionObserver' in window) || entries.length === 0) {
-        entries.forEach(entry => entry.classList.add('visible'));
+      const entries = document.querySelectorAll(".reveal:not(.visible)");
+      if (!("IntersectionObserver" in window) || entries.length === 0) {
+        entries.forEach((entry) => entry.classList.add("visible"));
         return;
       }
 
-      const observer = new IntersectionObserver((entryList) => {
-        entryList.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('visible');
-            observer.unobserve(entry.target);
-          }
-        });
-      }, { threshold: 0.15 });
+      const observer = new IntersectionObserver(
+        (entryList) => {
+          entryList.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add("visible");
+              observer.unobserve(entry.target);
+            }
+          });
+        },
+        { threshold: 0.15 },
+      );
 
-      entries.forEach(entry => observer.observe(entry));
+      entries.forEach((entry) => observer.observe(entry));
     }
 
     initRevealAnimations();
-    document.addEventListener('astro:page-load', initRevealAnimations);
+    document.addEventListener("astro:page-load", initRevealAnimations);
   </script>
 </Base>
 
@@ -545,7 +672,7 @@ const keyUpdates = activity.filter(e => keyUpdateTypes.includes(e.type));
   }
 
   .tab::after {
-    content: '';
+    content: "";
     position: absolute;
     left: 0;
     right: 0;
@@ -597,7 +724,9 @@ const keyUpdates = activity.filter(e => keyUpdateTypes.includes(e.type));
   .feed-item {
     opacity: 0;
     transform: translateY(6px);
-    transition: opacity 0.5s ease, transform 0.5s ease;
+    transition:
+      opacity 0.5s ease,
+      transform 0.5s ease;
   }
 
   .feed-item.visible {
@@ -610,7 +739,8 @@ const keyUpdates = activity.filter(e => keyUpdateTypes.includes(e.type));
   }
 
   @keyframes highlight-fade {
-    0%, 15% {
+    0%,
+    15% {
       background: color-mix(in srgb, var(--accent) 12%, transparent);
     }
     100% {
@@ -623,7 +753,8 @@ const keyUpdates = activity.filter(e => keyUpdateTypes.includes(e.type));
     grid-template-columns: 1fr;
     gap: 0.5rem;
     padding: 1rem 0;
-    border-bottom: 1px solid color-mix(in srgb, var(--border-primary) 30%, transparent);
+    border-bottom: 1px solid
+      color-mix(in srgb, var(--border-primary) 30%, transparent);
   }
 
   .feed-item:last-child .feed-grid {
@@ -696,30 +827,32 @@ const keyUpdates = activity.filter(e => keyUpdateTypes.includes(e.type));
 
   .feed-title {
     margin: 0 0 0.4rem 0;
-    font-size: 1.05rem;
+    font-size: 1.2rem;
     line-height: 1.3;
     font-family: var(--entry-title-font);
-    font-weight: 500;
+    font-weight: 600;
+    max-width: 70ch;
   }
 
   .feed-summary {
-    margin: 0 0 0.6rem 0;
-    font-size: 0.88rem;
-    line-height: 1.55;
+    margin: 0.1rem 0 0.6rem 0;
+    font-size: 1rem;
+    line-height: 1.75;
     color: var(--text-secondary);
-    max-width: 58ch;
+    max-width: 70ch;
   }
 
   .feed-highlights {
     margin: 0 0 0.6rem 0;
-    padding-left: 1rem;
-    max-width: 58ch;
+    padding-left: 1.1rem;
+    padding-top: 0.6rem;
+    max-width: 70ch;
   }
 
   .feed-highlights li {
     margin-bottom: 0.2rem;
     color: var(--text-secondary);
-    font-size: 0.82rem;
+    font-size: 0.9rem;
   }
 
   .more-highlights {
@@ -777,7 +910,10 @@ const keyUpdates = activity.filter(e => keyUpdateTypes.includes(e.type));
     background: var(--bg-card);
     overflow: hidden;
     cursor: zoom-in;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+    transition:
+      border-color 0.2s ease,
+      box-shadow 0.2s ease,
+      transform 0.2s ease;
   }
 
   .feed-media-item:hover {
@@ -902,7 +1038,9 @@ const keyUpdates = activity.filter(e => keyUpdateTypes.includes(e.type));
     padding: 0.6rem 0.8rem;
     color: var(--text-primary);
     text-decoration: none;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    transition:
+      border-color 0.2s ease,
+      box-shadow 0.2s ease;
   }
 
   .link-preview:hover {
@@ -1039,7 +1177,9 @@ const keyUpdates = activity.filter(e => keyUpdateTypes.includes(e.type));
     padding: 0.15rem 0.5rem;
     border-radius: 4px;
     text-decoration: none;
-    transition: background-color 0.15s ease, color 0.15s ease;
+    transition:
+      background-color 0.15s ease,
+      color 0.15s ease;
   }
 
   .tag:hover {
