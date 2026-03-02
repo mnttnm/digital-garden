@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { Resend } from 'resend';
 import { generateNewsletterBundle } from '../src/lib/newsletter/generate.mjs';
+import { buildUnsubscribeUrl } from '../src/lib/newsletter/unsubscribe.js';
 
 function parseArgs(argv) {
   const parsed = {};
@@ -25,7 +26,9 @@ function normalizeFrequency(value) {
 }
 
 function normalizePreference(value) {
-  return value === 'projects' ? 'projects' : 'all';
+  if (value === 'projects') return 'projects';
+  if (value === 'insights') return 'insights';
+  return 'all';
 }
 
 async function listAllContacts(resend, audienceId) {
@@ -87,9 +90,20 @@ async function main() {
   const audienceId = process.env.RESEND_AUDIENCE_ID;
   const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
   const siteUrl = process.env.SITE_URL || '';
+  const unsubscribeSecret = process.env.UNSUBSCRIBE_SECRET;
 
   if (!apiKey || !audienceId) {
     console.error('Missing required env vars: RESEND_API_KEY and RESEND_AUDIENCE_ID');
+    process.exit(1);
+  }
+
+  if (!unsubscribeSecret) {
+    console.error('Missing required env var: UNSUBSCRIBE_SECRET (for unsubscribe links)');
+    process.exit(1);
+  }
+
+  if (!siteUrl) {
+    console.error('Missing required env var: SITE_URL (for unsubscribe links)');
     process.exit(1);
   }
 
@@ -110,13 +124,26 @@ async function main() {
   let failed = 0;
 
   for (const recipient of recipients) {
-    const variant = recipient.preference === 'projects' ? bundle.variants.projects : bundle.variants.all;
+    // Select variant based on preference
+    const variant = recipient.preference === 'projects'
+      ? bundle.variants.projects
+      : recipient.preference === 'insights'
+      ? bundle.variants.insights
+      : bundle.variants.all;
+
+    // Generate per-recipient unsubscribe URL
+    const unsubscribeUrl = buildUnsubscribeUrl(recipient.email, siteUrl, unsubscribeSecret);
+
+    // Inject unsubscribe URL into HTML and text
+    const html = variant.html.replace(/\{\{UNSUBSCRIBE_URL\}\}/g, unsubscribeUrl);
+    const text = variant.text + `\n\n---\nUnsubscribe: ${unsubscribeUrl}`;
+
     const response = await resend.emails.send({
       from: fromEmail,
       to: recipient.email,
       subject: bundle.subject,
-      html: variant.html,
-      text: variant.text,
+      html,
+      text,
     });
 
     if (response.error) {

@@ -36,6 +36,8 @@ const outputs = [
   { name: `${baseName}.all.txt`, content: bundle.variants.all.text },
   { name: `${baseName}.projects.html`, content: bundle.variants.projects.html },
   { name: `${baseName}.projects.txt`, content: bundle.variants.projects.text },
+  { name: `${baseName}.insights.html`, content: bundle.variants.insights.html },
+  { name: `${baseName}.insights.txt`, content: bundle.variants.insights.text },
   { name: `${baseName}.summary.json`, content: JSON.stringify(bundle, null, 2) },
 ];
 
@@ -48,6 +50,7 @@ console.log(`Subject: ${bundle.subject}`);
 console.log(`Window: ${bundle.window.dateLabel} (UTC)`);
 console.log(`All variant items: ${bundle.variants.all.count}`);
 console.log(`Projects variant items: ${bundle.variants.projects.count}`);
+console.log(`Insights variant items: ${bundle.variants.insights.count}`);
 console.log('Files:');
 for (const output of outputs) {
   console.log(`- ${path.join(outputDir, output.name)}`);

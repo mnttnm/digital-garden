@@ -251,7 +251,11 @@ function renderItemHtml(item, isFirst) {
 }
 
 function renderHtml({ subject, window, items, variant }) {
-  const subtitle = variant === 'projects' ? 'Projects only' : 'All updates';
+  const subtitle = variant === 'projects'
+    ? 'Projects only'
+    : variant === 'insights'
+    ? 'Insights only'
+    : 'All updates';
   const itemCount = items.length;
 
   const contentHtml = items.length === 0
@@ -292,9 +296,7 @@ function renderHtml({ subject, window, items, variant }) {
         You're receiving this because you subscribed to my newsletter.
       </p>
       <p style="margin: 0; font-size: 13px;">
-        <a href="{{{unsubscribe_url}}}" style="color: #9ca3af; text-decoration: underline;">Unsubscribe</a>
-        <span style="color: #d1d5db; margin: 0 8px;">·</span>
-        <a href="{{{manage_preferences_url}}}" style="color: #9ca3af; text-decoration: underline;">Manage preferences</a>
+        <a href="{{UNSUBSCRIBE_URL}}" style="color: #9ca3af; text-decoration: underline;">Unsubscribe</a>
       </p>
     </div>
 
@@ -304,7 +306,11 @@ function renderHtml({ subject, window, items, variant }) {
 }
 
 function renderText({ subject, window, items, variant }) {
-  const subtitle = variant === 'projects' ? 'Projects-only updates' : 'All updates';
+  const subtitle = variant === 'projects'
+    ? 'Projects-only updates'
+    : variant === 'insights'
+    ? 'Insights-only updates'
+    : 'All updates';
   const header = `${subject}\n${subtitle}\nWindow: ${formatHumanDate(window.startInclusive)} to ${formatHumanDate(new Date(window.endExclusive.getTime() - 1))} (UTC)\n`;
   if (items.length === 0) {
     return `${header}\nNo new updates in this window.`;
@@ -467,6 +473,8 @@ export function generateNewsletterBundle({ type, dateInput, siteUrl }) {
 
   const projectsVariant = buildVariant(subject, window, 'projects', projects);
   const allVariant = buildVariant(subject, window, 'all', all);
+  const insightsItems = [...notes, ...tils]; // notes + TILs, excluding projects
+  const insightsVariant = buildVariant(subject, window, 'insights', insightsItems);
 
   return {
     type: window.type,
@@ -480,6 +488,7 @@ export function generateNewsletterBundle({ type, dateInput, siteUrl }) {
     variants: {
       all: toAbsolute(allVariant),
       projects: toAbsolute(projectsVariant),
+      insights: toAbsolute(insightsVariant),
     },
   };
 }

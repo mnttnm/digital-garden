@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { Resend } from 'resend';
+import { getClientIp, checkRateLimit, incrementRateLimit } from '../../lib/newsletter/rate-limit';
 
 export const prerender = false;
 
@@ -148,6 +149,29 @@ P.S. If this landed in spam or promotions, dragging it to your inbox helps make 
 export const POST: APIRoute = async ({ request }) => {
   try {
     const data = await request.json();
+
+    // Honeypot check - bots fill hidden fields, humans don't
+    const honeypot = data?.website;
+    if (honeypot) {
+      // Silently accept to fool bots, but don't actually subscribe
+      return jsonResponse(200, {
+        success: true,
+        code: 'subscribed',
+        message: `You're in! Check your inbox for a welcome note.`,
+      });
+    }
+
+    // Rate limit check
+    const clientIp = getClientIp(request);
+    const rateCheck = await checkRateLimit(clientIp);
+    if (!rateCheck.allowed) {
+      return jsonResponse(429, {
+        success: false,
+        code: 'rate_limited',
+        message: 'Too many subscription attempts. Please try again later.',
+      });
+    }
+
     const email = typeof data?.email === 'string' ? data.email.trim().toLowerCase() : '';
     const frequency = normalizeFrequency(data?.frequency);
     const preference = normalizePreference(data?.preference);
@@ -227,6 +251,9 @@ export const POST: APIRoute = async ({ request }) => {
     if (sendResult.error) {
       throw new Error(sendResult.error.message);
     }
+
+    // Track rate limit after successful subscription
+    await incrementRateLimit(clientIp);
 
     return jsonResponse(200, {
       success: true,
