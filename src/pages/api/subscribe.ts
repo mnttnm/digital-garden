@@ -220,9 +220,10 @@ export const POST: APIRoute = async ({ request }) => {
     });
 
     if (createResult.error) {
+      // Only treat "already exists" as already subscribed
+      // Don't conflate other validation errors (like missing properties)
       const isAlreadySubscribed =
-        createResult.error.message.includes('already exists') ||
-        createResult.error.name === 'validation_error';
+        createResult.error.message.toLowerCase().includes('already exists');
 
       if (isAlreadySubscribed) {
         // Already subscribed - return success without re-sending welcome email
@@ -233,6 +234,7 @@ export const POST: APIRoute = async ({ request }) => {
         });
       }
 
+      console.error('Resend contact create error:', createResult.error);
       throw new Error(createResult.error.message);
     }
 

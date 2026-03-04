@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { Resend } from 'resend';
 import { generateNewsletterBundle } from '../src/lib/newsletter/generate.mjs';
-import { buildUnsubscribeUrl } from '../src/lib/newsletter/unsubscribe.js';
+import { buildUnsubscribeUrl } from '../src/lib/newsletter/unsubscribe.mjs';
 
 function parseArgs(argv) {
   const parsed = {};
