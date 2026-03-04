@@ -115,6 +115,19 @@ function getImagePreviews(item: LearningLogItem) {
                         aria-hidden="true"
                       />
                     </p>
+                    <button
+                      class="share-button"
+                      type="button"
+                      aria-label="Share this entry"
+                      data-share-url={resolveHref(item.href, item.isExternal)}
+                      data-share-title={item.title}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
+                        <polyline points="16 6 12 2 8 6"></polyline>
+                        <line x1="12" y1="2" x2="12" y2="15"></line>
+                      </svg>
+                    </button>
                   </aside>
 
                   <div class="entry-main">
@@ -396,14 +409,53 @@ function getImagePreviews(item: LearningLogItem) {
       });
     }
 
+    function initShareButtons() {
+      document.querySelectorAll<HTMLButtonElement>('.share-button').forEach(btn => {
+        if (btn.dataset.initialized === 'true') return;
+        btn.dataset.initialized = 'true';
+
+        btn.addEventListener('click', async (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+
+          const url = btn.dataset.shareUrl || window.location.href;
+          const title = btn.dataset.shareTitle || document.title;
+          const fullUrl = url.startsWith('http') ? url : `${window.location.origin}${url}`;
+
+          // Try native share first (mobile)
+          if (navigator.share) {
+            try {
+              await navigator.share({ title, url: fullUrl });
+              return;
+            } catch (err) {
+              // User cancelled or share failed, fall through to copy
+              if ((err as Error).name === 'AbortError') return;
+            }
+          }
+
+          // Fallback: copy to clipboard
+          try {
+            await navigator.clipboard.writeText(fullUrl);
+            btn.classList.add('copied');
+            setTimeout(() => btn.classList.remove('copied'), 1500);
+          } catch {
+            // Last resort: prompt
+            prompt('Copy this link:', fullUrl);
+          }
+        });
+      });
+    }
+
     // Run on initial load
     initRevealAnimations();
     initLoadMore();
+    initShareButtons();
 
     // Re-run after View Transitions navigation
     document.addEventListener("astro:page-load", () => {
       initRevealAnimations();
       initLoadMore();
+      initShareButtons();
     });
   </script>
 </Base>
@@ -508,6 +560,57 @@ function getImagePreviews(item: LearningLogItem) {
   }
   .dot-thought {
     background: #c084fc;
+  }
+
+  /* Share button */
+  .share-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    margin-left: auto;
+    padding: 0;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.15s ease, color 0.15s ease, background-color 0.15s ease;
+  }
+
+  .entry-item:hover .share-button,
+  .entry-item:focus-within .share-button {
+    opacity: 1;
+  }
+
+  .share-button:hover {
+    color: var(--text-secondary);
+    background: var(--color-code-bg);
+  }
+
+  .share-button:active {
+    transform: scale(0.95);
+  }
+
+  .share-button.copied {
+    color: #10b981;
+  }
+
+  .share-button.copied::after {
+    content: '✓';
+    position: absolute;
+    font-size: 0.6rem;
+    top: -0.5rem;
+    right: -0.25rem;
+  }
+
+  /* Always show on touch devices */
+  @media (hover: none) {
+    .share-button {
+      opacity: 0.7;
+    }
   }
 
   .entry-main {
