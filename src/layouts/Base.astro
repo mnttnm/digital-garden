@@ -3,6 +3,7 @@ import "../styles/global.css";
 import { getLearningLogItems } from "../lib/learning-log";
 import ImageLightbox from "../components/ImageLightbox.astro";
 import SubscribeForm from "../components/SubscribeForm.astro";
+import SubscribeToast from "../components/SubscribeToast.astro";
 import { ViewTransitions } from "astro:transitions";
 
 interface Props {
@@ -431,5 +432,106 @@ const lastUpdatedRelativeLabel = latestLogItem
     </script>
 
     <ImageLightbox />
+    <SubscribeToast />
+
+    <!-- Back to Top Button -->
+    <button
+      id="back-to-top"
+      class="back-to-top"
+      type="button"
+      aria-label="Back to top"
+      hidden
+    >
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="18 15 12 9 6 15"></polyline>
+      </svg>
+    </button>
+
+    <script>
+      function setupBackToTop() {
+        const btn = document.getElementById('back-to-top') as HTMLButtonElement | null;
+        if (!btn) return;
+
+        const button = btn; // TypeScript narrowing
+        let ticking = false;
+        const SCROLL_THRESHOLD = 400;
+
+        function updateVisibility() {
+          const shouldShow = window.scrollY > SCROLL_THRESHOLD;
+          if (shouldShow && button.hidden) {
+            button.hidden = false;
+            requestAnimationFrame(() => button.classList.add('visible'));
+          } else if (!shouldShow && !button.hidden) {
+            button.classList.remove('visible');
+            setTimeout(() => { button.hidden = true; }, 200);
+          }
+          ticking = false;
+        }
+
+        window.addEventListener('scroll', () => {
+          if (!ticking) {
+            requestAnimationFrame(updateVisibility);
+            ticking = true;
+          }
+        }, { passive: true });
+
+        button.addEventListener('click', () => {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+
+        // Initial check
+        updateVisibility();
+      }
+
+      setupBackToTop();
+      document.addEventListener('astro:page-load', setupBackToTop);
+    </script>
+
+    <style>
+      .back-to-top {
+        position: fixed;
+        bottom: 1.5rem;
+        right: 1.5rem;
+        z-index: 100;
+        width: 2.75rem;
+        height: 2.75rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--color-border);
+        border-radius: 50%;
+        background: var(--color-bg);
+        color: var(--color-text-muted);
+        cursor: pointer;
+        opacity: 0;
+        transform: translateY(1rem);
+        transition: opacity 0.2s ease, transform 0.2s ease, background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+        box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.1);
+      }
+
+      .back-to-top.visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .back-to-top:hover {
+        background: var(--color-bg-offset);
+        color: var(--color-text);
+        border-color: var(--color-text-muted);
+      }
+
+      .back-to-top:active {
+        transform: scale(0.95);
+      }
+
+      @media (max-width: 640px) {
+        .back-to-top {
+          bottom: 1rem;
+          right: 1rem;
+          width: 2.5rem;
+          height: 2.5rem;
+        }
+      }
+    </style>
   </body>
 </html>

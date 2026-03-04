@@ -1,0 +1,721 @@
+---
+/**
+ * Smart subscribe toast that appears based on visitor engagement.
+ * - Triggers after 30s on page AND scrolled past first section
+ * - Shows different copy for first-time, returning, and frequent visitors
+ * - 7-day cooldown after dismiss
+ * - Never shows for subscribed users
+ */
+
+const base = import.meta.env.BASE_URL;
+---
+
+<div
+  class="subscribe-toast"
+  id="subscribe-toast"
+  role="dialog"
+  aria-modal="false"
+  aria-label="Subscribe to updates"
+  data-toast-visible="false"
+>
+  <button
+    class="toast-close"
+    type="button"
+    aria-label="Close"
+    data-toast-dismiss
+  >
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+      <path d="M18 6L6 18M6 6l12 12" />
+    </svg>
+  </button>
+
+  <div class="toast-content">
+    <h3 class="toast-heading" id="toast-heading">Hey, glad you stopped by.</h3>
+    <p class="toast-body" id="toast-body">
+      I send occasional updates when I ship something or learn something worth sharing. No schedule, no spam.
+    </p>
+
+    <form class="toast-form" id="toast-form" data-base={base}>
+      <fieldset class="toast-preferences">
+        <legend class="toast-legend">What interests you?</legend>
+        <div class="toast-pills">
+          <label class="toast-pill">
+            <input type="radio" name="toast-preference" value="all" checked />
+            <span class="pill-text">Everything</span>
+          </label>
+          <label class="toast-pill">
+            <input type="radio" name="toast-preference" value="projects" />
+            <span class="pill-text">Projects</span>
+          </label>
+          <label class="toast-pill">
+            <input type="radio" name="toast-preference" value="insights" />
+            <span class="pill-text">Insights</span>
+          </label>
+        </div>
+      </fieldset>
+
+      <div class="toast-email-row">
+        <input
+          type="email"
+          name="email"
+          placeholder="you@example.com"
+          required
+          autocomplete="email"
+          aria-label="Email address"
+          class="toast-email"
+        />
+        <button type="submit" class="toast-submit" id="toast-submit">
+          <span class="btn-text">Subscribe</span>
+          <span class="btn-loading" aria-hidden="true">
+            <svg class="spinner" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2.5" opacity="0.25"></circle>
+              <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"></path>
+            </svg>
+          </span>
+        </button>
+      </div>
+
+      <input type="hidden" name="frequency" value="weekly" />
+      <!-- Honeypot -->
+      <div class="hp-field" aria-hidden="true">
+        <input type="text" name="website" autocomplete="off" tabindex="-1" />
+      </div>
+
+      <p class="toast-message" aria-live="polite" id="toast-message"></p>
+    </form>
+  </div>
+
+  <button class="toast-dismiss-link" type="button" data-toast-dismiss id="toast-dismiss-link">
+    Maybe later
+  </button>
+</div>
+
+<style>
+  .subscribe-toast {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    z-index: 900;
+    width: 360px;
+    max-width: calc(100vw - 3rem);
+    padding: 1.25rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border-primary);
+    border-radius: 0.85rem;
+    box-shadow:
+      0 4px 6px -1px rgba(0, 0, 0, 0.1),
+      0 10px 15px -3px rgba(0, 0, 0, 0.1);
+
+    /* Hidden by default */
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(20px);
+    pointer-events: none;
+
+    transition:
+      opacity 0.4s ease-out,
+      transform 0.4s ease-out,
+      visibility 0.4s ease-out;
+  }
+
+  .subscribe-toast[data-toast-visible="true"] {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  .subscribe-toast[data-toast-exiting="true"] {
+    opacity: 0;
+    transform: translateY(10px);
+    pointer-events: none;
+  }
+
+  .toast-close {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    padding: 0.35rem;
+    background: none;
+    border: none;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    border-radius: 0.25rem;
+    transition: color 0.15s ease, background 0.15s ease;
+  }
+
+  .toast-close:hover {
+    color: var(--text-primary);
+    background: var(--bg-subtle);
+  }
+
+  .toast-content {
+    padding-right: 1.5rem; /* Space for close button */
+  }
+
+  .toast-heading {
+    margin: 0 0 0.5rem 0;
+    font-size: 1rem;
+    font-weight: 500;
+    font-family: var(--font-serif);
+    color: var(--text-primary);
+    line-height: 1.4;
+  }
+
+  .toast-body {
+    margin: 0 0 1rem 0;
+    font-size: 0.88rem;
+    line-height: 1.55;
+    color: var(--text-secondary);
+  }
+
+  .toast-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .toast-preferences {
+    border: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .toast-legend {
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    color: var(--text-tertiary);
+    margin-bottom: 0.45rem;
+    text-transform: uppercase;
+  }
+
+  .toast-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+
+  .toast-pill {
+    position: relative;
+    cursor: pointer;
+  }
+
+  .toast-pill input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .pill-text {
+    display: inline-block;
+    padding: 0.32rem 0.7rem;
+    font-size: 0.78rem;
+    font-weight: 450;
+    color: var(--text-secondary);
+    background: var(--bg-subtle);
+    border: 1px solid var(--border-primary);
+    border-radius: 999px;
+    transition: all 0.18s ease;
+  }
+
+  .toast-pill input:checked + .pill-text {
+    background: var(--bg-card);
+    border-color: var(--accent);
+    color: var(--text-primary);
+    box-shadow: 0 0 0 1px var(--accent);
+  }
+
+  .toast-pill:hover .pill-text {
+    border-color: color-mix(in srgb, var(--accent) 50%, var(--border-primary));
+  }
+
+  .toast-pill input:focus-visible + .pill-text {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .toast-email-row {
+    display: flex;
+    gap: 0.4rem;
+  }
+
+  .toast-email {
+    flex: 1;
+    min-width: 0;
+    padding: 0.6rem 0.8rem;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.4rem;
+    font-size: 0.9rem;
+    font-family: inherit;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .toast-email::placeholder {
+    color: var(--text-tertiary);
+  }
+
+  .toast-email:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent);
+  }
+
+  .toast-submit {
+    position: relative;
+    padding: 0.6rem 1rem;
+    background: var(--text-primary);
+    color: var(--bg-primary);
+    border: none;
+    border-radius: 0.4rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    transition: opacity 0.15s ease, transform 0.1s ease;
+    flex-shrink: 0;
+  }
+
+  .toast-submit:hover:not(:disabled) {
+    opacity: 0.88;
+  }
+
+  .toast-submit:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+
+  .toast-submit:disabled {
+    cursor: not-allowed;
+  }
+
+  .toast-submit .btn-loading {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+  }
+
+  .toast-submit.loading .btn-text {
+    opacity: 0;
+  }
+
+  .toast-submit.loading .btn-loading {
+    opacity: 1;
+  }
+
+  .spinner {
+    width: 16px;
+    height: 16px;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .hp-field {
+    position: absolute;
+    left: -9999px;
+    height: 0;
+    width: 0;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .toast-message {
+    margin: 0;
+    font-size: 0.82rem;
+    min-height: 1.2em;
+  }
+
+  .toast-message:empty {
+    display: none;
+  }
+
+  .toast-message.success {
+    color: #16a34a;
+  }
+
+  .toast-message.error {
+    color: #dc2626;
+  }
+
+  :global(html[data-appearance="dark"]) .toast-message.success {
+    color: #4ade80;
+  }
+
+  :global(html[data-appearance="dark"]) .toast-message.error {
+    color: #f87171;
+  }
+
+  .toast-dismiss-link {
+    display: block;
+    width: 100%;
+    margin-top: 0.75rem;
+    padding: 0.4rem;
+    background: none;
+    border: none;
+    font-size: 0.82rem;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    text-align: center;
+    transition: color 0.15s ease;
+  }
+
+  .toast-dismiss-link:hover {
+    color: var(--text-secondary);
+  }
+
+  /* Mobile: Full-width bottom drawer */
+  @media (max-width: 768px) {
+    .subscribe-toast {
+      bottom: 0;
+      right: 0;
+      left: 0;
+      width: 100%;
+      max-width: 100%;
+      border-radius: 1rem 1rem 0 0;
+      padding: 1.25rem 1.25rem calc(1.25rem + env(safe-area-inset-bottom));
+      transform: translateY(100%);
+    }
+
+    .subscribe-toast[data-toast-visible="true"] {
+      transform: translateY(0);
+    }
+
+    .subscribe-toast[data-toast-exiting="true"] {
+      transform: translateY(100%);
+    }
+
+    .toast-close {
+      top: 1rem;
+      right: 1rem;
+      padding: 0.5rem;
+    }
+
+    .toast-close svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .toast-email-row {
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .toast-submit {
+      width: 100%;
+      padding: 0.75rem;
+    }
+
+    .toast-pills {
+      gap: 0.4rem;
+    }
+
+    .pill-text {
+      padding: 0.38rem 0.75rem;
+      font-size: 0.82rem;
+    }
+  }
+
+  /* Small mobile */
+  @media (max-width: 375px) {
+    .subscribe-toast {
+      padding: 1rem 1rem calc(1rem + env(safe-area-inset-bottom));
+    }
+
+    .toast-heading {
+      font-size: 0.95rem;
+    }
+
+    .toast-body {
+      font-size: 0.85rem;
+    }
+  }
+
+  /* Respect reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .subscribe-toast {
+      transition: opacity 0.15s ease, visibility 0.15s ease;
+      transform: none !important;
+    }
+
+    .subscribe-toast[data-toast-visible="true"] {
+      transform: none !important;
+    }
+  }
+</style>
+
+<script is:inline>
+  (function () {
+    // Storage keys
+    var KEYS = {
+      visitCount: "learning-log-visit-count",
+      lastVisit: "learning-log-last-visit",
+      dismissed: "learning-log-subscribe-dismissed",
+      subscribed: "learning-log-subscribed",
+    };
+
+    var COOLDOWN_DAYS = 7;
+    var SESSION_MS = 30 * 60 * 1000; // 30 min
+    var TRIGGER_TIME_MS = 30 * 1000; // 30 seconds
+    var SCROLL_THRESHOLD = 0.25; // 25% of page
+
+    function safeGet(key) {
+      try {
+        return localStorage.getItem(key);
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function safeSet(key, value) {
+      try {
+        localStorage.setItem(key, value);
+      } catch (e) {}
+    }
+
+    function getVisitorType() {
+      var count = parseInt(safeGet(KEYS.visitCount) || "0", 10);
+      if (count <= 1) return "first-time";
+      if (count <= 3) return "returning";
+      return "frequent";
+    }
+
+    function canShowToast() {
+      // Already subscribed?
+      if (safeGet(KEYS.subscribed) === "true") return false;
+
+      // Dismissed recently?
+      var dismissedAt = safeGet(KEYS.dismissed);
+      if (dismissedAt) {
+        var days = (Date.now() - new Date(dismissedAt).getTime()) / (1000 * 60 * 60 * 24);
+        if (days < COOLDOWN_DAYS) return false;
+      }
+
+      return true;
+    }
+
+    function trackVisit() {
+      var lastVisit = safeGet(KEYS.lastVisit);
+      var now = Date.now();
+
+      if (!lastVisit || now - parseInt(lastVisit, 10) > SESSION_MS) {
+        var count = parseInt(safeGet(KEYS.visitCount) || "0", 10);
+        safeSet(KEYS.visitCount, String(count + 1));
+      }
+      safeSet(KEYS.lastVisit, String(now));
+    }
+
+    function getCopy(type) {
+      var copy = {
+        "first-time": {
+          heading: "Hey, glad you stopped by.",
+          body: "I send occasional updates when I ship something or learn something worth sharing. No schedule, no spam.",
+          button: "Subscribe",
+          dismiss: "Maybe later",
+        },
+        returning: {
+          heading: "You're back \u2014 that means something to me.",
+          body: "Want updates when I post? I'll keep it short and real.",
+          button: "Subscribe",
+          dismiss: "Not yet",
+        },
+        frequent: {
+          heading: "I've noticed you drop by often.",
+          body: "If you want, I can send you updates directly \u2014 no need to keep checking back.",
+          button: "Stay in the loop",
+          dismiss: "I prefer visiting",
+        },
+      };
+      return copy[type] || copy["first-time"];
+    }
+
+    function showToast() {
+      var toast = document.getElementById("subscribe-toast");
+      if (!toast) return;
+
+      var visitorType = getVisitorType();
+      var copy = getCopy(visitorType);
+
+      // Update copy
+      var heading = document.getElementById("toast-heading");
+      var body = document.getElementById("toast-body");
+      var submitBtn = document.getElementById("toast-submit");
+      var dismissLink = document.getElementById("toast-dismiss-link");
+
+      if (heading) heading.textContent = copy.heading;
+      if (body) body.textContent = copy.body;
+      if (submitBtn) submitBtn.querySelector(".btn-text").textContent = copy.button;
+      if (dismissLink) dismissLink.textContent = copy.dismiss;
+
+      toast.dataset.toastVisible = "true";
+    }
+
+    function hideToast(markAsDismissed) {
+      var toast = document.getElementById("subscribe-toast");
+      if (!toast) return;
+
+      toast.dataset.toastExiting = "true";
+
+      if (markAsDismissed) {
+        safeSet(KEYS.dismissed, new Date().toISOString());
+      }
+
+      setTimeout(function () {
+        toast.dataset.toastVisible = "false";
+        toast.dataset.toastExiting = "false";
+      }, 400);
+    }
+
+    function initToast() {
+      var toast = document.getElementById("subscribe-toast");
+      if (!toast) return;
+
+      // Reset state for SPA navigation
+      toast.dataset.toastVisible = "false";
+      toast.dataset.toastExiting = "false";
+
+      trackVisit();
+
+      if (!canShowToast()) return;
+
+      var triggered = false;
+      var timeReached = false;
+      var scrollReached = false;
+
+      function checkTrigger() {
+        if (triggered) return;
+        if (timeReached && scrollReached) {
+          triggered = true;
+          showToast();
+        }
+      }
+
+      // Time trigger
+      setTimeout(function () {
+        timeReached = true;
+        checkTrigger();
+      }, TRIGGER_TIME_MS);
+
+      // Scroll trigger
+      function onScroll() {
+        if (scrollReached) return;
+        var scrollPercent =
+          window.scrollY /
+          (document.documentElement.scrollHeight - window.innerHeight);
+        if (scrollPercent >= SCROLL_THRESHOLD) {
+          scrollReached = true;
+          window.removeEventListener("scroll", onScroll);
+          checkTrigger();
+        }
+      }
+      window.addEventListener("scroll", onScroll, { passive: true });
+
+      // Dismiss handlers
+      var dismissButtons = toast.querySelectorAll("[data-toast-dismiss]");
+      dismissButtons.forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          hideToast(true);
+        });
+      });
+
+      // Escape key
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape" && toast.dataset.toastVisible === "true") {
+          hideToast(true);
+        }
+      });
+
+      // Form submission
+      var form = document.getElementById("toast-form");
+      if (form) {
+        form.addEventListener("submit", function (e) {
+          e.preventDefault();
+
+          var formData = new FormData(form);
+          var email = formData.get("email");
+          var preference = formData.get("toast-preference");
+          var website = formData.get("website");
+
+          var submitBtn = document.getElementById("toast-submit");
+          var message = document.getElementById("toast-message");
+
+          if (submitBtn) {
+            submitBtn.classList.add("loading");
+            submitBtn.disabled = true;
+          }
+          if (message) {
+            message.textContent = "";
+            message.className = "toast-message";
+          }
+
+          var base = form.dataset.base || "/";
+          fetch(base + "api/subscribe", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: email,
+              frequency: "weekly",
+              preference: preference,
+              website: website,
+            }),
+          })
+            .then(function (response) {
+              return response.json().then(function (data) {
+                return { ok: response.ok, data: data };
+              });
+            })
+            .then(function (result) {
+              if (result.ok) {
+                if (message) {
+                  message.textContent = result.data.message || "You're in!";
+                  message.className = "toast-message success";
+                }
+                safeSet(KEYS.subscribed, "true");
+                form.reset();
+                // Hide after success
+                setTimeout(function () {
+                  hideToast(false);
+                }, 2000);
+              } else {
+                if (message) {
+                  message.textContent = result.data.message || "Something went wrong";
+                  message.className = "toast-message error";
+                }
+              }
+            })
+            .catch(function () {
+              if (message) {
+                message.textContent = "Network error. Please try again.";
+                message.className = "toast-message error";
+              }
+            })
+            .finally(function () {
+              if (submitBtn) {
+                submitBtn.classList.remove("loading");
+                submitBtn.disabled = false;
+              }
+            });
+        });
+      }
+    }
+
+    // Initialize on load
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", initToast);
+    } else {
+      initToast();
+    }
+
+    // Re-init on Astro navigation
+    document.addEventListener("astro:page-load", initToast);
+  })();
+</script>
