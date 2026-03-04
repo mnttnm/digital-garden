@@ -478,11 +478,22 @@
   /* Mobile adjustments */
   @media (max-width: 640px) {
     .lightbox-content {
-      padding: 1.5rem;
+      padding: 1rem;
+      padding-top: 3.5rem;
+      padding-bottom: 3rem;
+    }
+
+    .lightbox-figure {
+      width: 100%;
+      height: 100%;
+      justify-content: center;
     }
 
     .lightbox-image {
-      max-height: calc(100vh - 5rem);
+      max-width: calc(100vw - 2rem);
+      max-height: calc(100vh - 7rem);
+      width: auto;
+      height: auto;
     }
 
     .lightbox-nav {
@@ -501,8 +512,41 @@
     .lightbox-close {
       top: 0.75rem;
       right: 0.75rem;
+      width: 2.5rem;
+      height: 2.5rem;
+    }
+
+    .lightbox-caption {
+      margin-top: 0.75rem;
+      font-size: 0.8rem;
+      padding: 0.4rem 0.75rem;
+    }
+  }
+
+  /* Very small screens */
+  @media (max-width: 400px) {
+    .lightbox-content {
+      padding: 0.75rem;
+      padding-top: 3rem;
+      padding-bottom: 2.5rem;
+    }
+
+    .lightbox-image {
+      max-width: calc(100vw - 1.5rem);
+      max-height: calc(100vh - 6rem);
+    }
+
+    .lightbox-nav {
       width: 2.25rem;
       height: 2.25rem;
+    }
+
+    .lightbox-prev {
+      left: 0.25rem;
+    }
+
+    .lightbox-next {
+      right: 0.25rem;
     }
   }
 </style>

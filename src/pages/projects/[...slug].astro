@@ -1025,6 +1025,8 @@ const keyUpdates = activity.filter((e) => keyUpdateTypes.includes(e.type));
     font-size: 0.78rem;
     line-height: 1.6;
     color: #d4d4d4;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .link-preview {
@@ -1254,6 +1256,47 @@ const keyUpdates = activity.filter((e) => keyUpdateTypes.includes(e.type));
     .feed-media-grid.count-3,
     .feed-media-grid.count-many {
       grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  /* Very small screens - single column for images */
+  @media (max-width: 400px) {
+    .feed-media-grid.count-2,
+    .feed-media-grid.count-3,
+    .feed-media-grid.count-4,
+    .feed-media-grid.count-many {
+      grid-template-columns: 1fr;
+    }
+
+    .feed-media-images.count-2 .feed-media-item,
+    .feed-media-images.count-3 .feed-media-item,
+    .feed-media-images.count-4 .feed-media-item,
+    .feed-media-images.count-many .feed-media-item {
+      aspect-ratio: 16 / 9;
+    }
+
+    .breadcrumb {
+      font-size: 0.72rem;
+    }
+
+    .project-title {
+      font-size: clamp(1.2rem, 6vw, 1.5rem);
+    }
+
+    .project-tagline {
+      font-size: 0.85rem;
+    }
+
+    .key-card {
+      padding: 0.85rem 1rem;
+    }
+
+    .key-card-title {
+      font-size: 0.92rem;
+    }
+
+    .key-card-summary {
+      font-size: 0.8rem;
     }
   }
 </style>

@@ -436,6 +436,8 @@ function getImagePreviews(item: LearningLogItem) {
     font-size: 0.82rem;
     color: var(--text-tertiary);
     letter-spacing: 0.012em;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
   }
 
   .entries {
@@ -551,7 +553,9 @@ function getImagePreviews(item: LearningLogItem) {
     font-size: 1.02rem;
     line-height: 1.65;
     color: var(--text-secondary);
-    max-width: 78ch;
+    max-width: min(78ch, 100%);
+    word-wrap: break-word;
+    overflow-wrap: break-word;
   }
 
   .link-preview {
@@ -664,6 +668,8 @@ function getImagePreviews(item: LearningLogItem) {
     font-size: 0.84rem;
     line-height: 1.7;
     color: #d4d4d4;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .entry-tags {
@@ -704,6 +710,25 @@ function getImagePreviews(item: LearningLogItem) {
     flex-direction: row;
     gap: 0.5rem;
     margin-bottom: 1rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-primary) transparent;
+    padding-bottom: 0.25rem;
+    max-width: 100%;
+  }
+
+  .entry-thumbnails::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  .entry-thumbnails::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .entry-thumbnails::-webkit-scrollbar-thumb {
+    background: var(--border-primary);
+    border-radius: 2px;
   }
 
   .entry-thumbnail {
@@ -723,7 +748,7 @@ function getImagePreviews(item: LearningLogItem) {
 
   .entry-thumbnail img {
     width: auto;
-    max-width: 300px;
+    max-width: min(300px, 70vw);
     height: auto;
     max-height: 200px;
     object-fit: contain;
@@ -893,6 +918,49 @@ function getImagePreviews(item: LearningLogItem) {
 
   .subscribe-section :global(.subscribe-widget.inline) {
     margin: 0;
+  }
+
+  /* Mobile adjustments */
+  @media (max-width: 480px) {
+    .entry-body {
+      font-size: 0.95rem;
+    }
+
+    .entry-title {
+      font-size: clamp(1.05rem, 5vw, 1.3rem);
+    }
+
+    .entry-thumbnail img {
+      max-width: min(240px, 65vw);
+      max-height: 160px;
+    }
+
+    .page-title {
+      font-size: clamp(1.2rem, 6vw, 1.5rem);
+    }
+  }
+
+  /* Very small mobile (375px and below) */
+  @media (max-width: 400px) {
+    .journal-page {
+      padding-top: 0;
+    }
+
+    .page-header {
+      margin-bottom: 1rem;
+    }
+
+    .entry-margin {
+      gap: 0.5rem;
+    }
+
+    .entry-category {
+      font-size: 0.62rem;
+    }
+
+    .entry-tags {
+      font-size: 0.62rem;
+    }
   }
 
   @media (min-width: 768px) {
