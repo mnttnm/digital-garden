@@ -869,14 +869,11 @@ function getImagePreviews(item: FeedItem) {
     position: relative;
     display: block;
     flex-shrink: 0;
-    border: 1px solid var(--border-primary);
     border-radius: 0.5rem;
     background: var(--bg-card);
     overflow: hidden;
-    transition:
-      border-color 0.2s ease,
-      box-shadow 0.2s ease,
-      transform 0.2s ease;
+    box-shadow: inset 0 0 0 1px var(--border-primary);
+    transition: box-shadow 0.2s ease;
     cursor: zoom-in;
   }
 
@@ -890,9 +887,9 @@ function getImagePreviews(item: FeedItem) {
   }
 
   .entry-thumbnail:hover {
-    border-color: color-mix(in srgb, var(--accent) 50%, var(--border-primary));
-    box-shadow: 0 8px 20px -6px rgba(0, 0, 0, 0.3);
-    transform: translateY(-1px);
+    box-shadow:
+      inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 60%, var(--border-primary)),
+      0 8px 20px -8px rgba(0, 0, 0, 0.25);
   }
 
   .entry-thumbnail.has-more::after {
