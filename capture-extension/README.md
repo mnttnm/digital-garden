@@ -39,15 +39,22 @@ The extension sends JSON like:
 {
   "source": "raycast",
   "url": "https://example.com",
-  "text": "optional plain text",
-  "comment": "optional note",
+  "note": "your commentary or learning",
   "tags": ["ai", "productivity"],
   "project": "optional-project-slug",
-  "imageBase64": "optional data:image/...;base64,..."
+  "activityType": "update",
+  "images": [{ "data": "base64...", "alt": "description" }]
 }
 ```
 
-At least one of `url`, `text`, or `imageBase64` must be present.
+At least one of `url`, `note`, or `images` must be present.
+
+**Fields:**
+
+- `note`: Your commentary (renamed from `text`)
+- `project`: Links to a project, turns this into a project activity
+- `activityType`: For project updates: `update`, `milestone`, `fix`, `learning`, `discovery`, `experiment`
+- Content is classified as `kind: 'learning' | 'resource'` (inferred from URL presence)
 
 ## Recommended Hotkeys
 

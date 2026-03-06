@@ -9,7 +9,7 @@ The site is intentionally minimal and centered on one primary page:
 - **About (`/about/`)** — Bio and contact
 
 Supporting detail routes:
-- **Notes detail** — `/notes/[slug]/`
+- **Discoveries detail** — `/discoveries/[slug]/`
 - **Project detail** — `/projects/[slug]/` (includes per-project activity feed)
 
 ---
@@ -28,21 +28,25 @@ npm run build
 
 All content lives in `src/content/` with two collections.
 
-### Notes (`src/content/notes/`)
+### Discoveries (`src/content/discoveries/`)
 
 ```markdown
 ---
-title: "Note Title"
+title: "Discovery Title"
 date: 2026-02-08
+kind: "learning"  # learning | resource
 tags: ["topic"]
-featured: false
-type: "essay"  # essay | link | snippet | thought
-link: "https://..."  # optional, used for type=link
-takeaway: "One-sentence key insight"
+url: "https://..."  # optional, for resources
+linkTitle: "Actual page title"  # optional, extracted from URL
+images: []
+videos: []
+code: ""  # optional code snippet
+codeLanguage: "typescript"
+prompts: []
 draft: false
 ---
 
-Content here...
+Your commentary or insight here...
 ```
 
 ### Projects (`src/content/projects/`)
@@ -62,12 +66,11 @@ activity:
   - date: 2026-02-08
     title: "What changed"
     summary: "Short update summary"
-    type: "update"  # update | learning | discovery | milestone | experiment | fix
-    highlights:
-      - "Concrete highlight"
-    links:
-      - label: "PR"
-        url: "https://github.com/..."
+    activityType: "update"  # update | milestone | fix | learning | discovery | experiment
+    tags: ["feature"]
+    images: []
+    videos: []
+    prompts: []
 draft: false
 ---
 
@@ -79,8 +82,10 @@ Detailed description...
 ## How learning.log is built
 
 `src/lib/learning-log.ts` normalizes both collections into one stream model:
-- bucket: `project-updates` or `what-i-discovered`
-- date, title, crux, href, metadata
+
+- bucket: `project-updates` or `discoveries`
+- kind: `learning` or `resource` (for discoveries)
+- date, title, crux, href, images, video, code, tags
 - deterministic anchors for project activity events
 
 Used by:
@@ -96,17 +101,19 @@ Used by:
 |-------|-------------|
 | `/` | `learning.log` stream with filters + pagination |
 | `/about/` | Bio and contact |
-| `/notes/[slug]/` | Note detail |
+| `/discoveries/[slug]/` | Discovery detail (learning or resource) |
 | `/projects/[slug]/` | Project detail + activity feed |
 | `/rss.xml` | Unified RSS feed |
 | `/api/subscribe` | Newsletter subscription endpoint |
+| `/api/capture/*` | Capture ingest and review APIs |
+| `/admin/review` | Capture review dashboard |
 
 ---
 
 ## Build / Runtime
 
 - Astro output mode is **server** (`astro.config.mjs`) to support query-based pagination/filtering on `/`.
-- Dynamic detail routes are prerendered (`export const prerender = true`) for notes/projects pages.
+- Dynamic detail routes are prerendered (`export const prerender = true`) for discoveries/projects pages.
 
 ---
 
@@ -114,8 +121,9 @@ Used by:
 
 - `src/pages/index.astro` — feed UI
 - `src/lib/learning-log.ts` — stream normalization + anchor generation
+- `src/lib/capture/` — capture pipeline (store, refine, transform, publish)
 - `src/pages/projects/[...slug].astro` — project page + activity anchors
-- `src/pages/notes/[...slug].astro` — note detail
+- `src/pages/discoveries/[...slug].astro` — discovery detail
 - `src/layouts/Base.astro` — global layout + nav
 - `src/pages/rss.xml.ts` — RSS
 

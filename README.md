@@ -1,6 +1,6 @@
 # Digital Garden
 
-An Astro-based personal site with one unified learning stream (`learning.log`), plus a capture-and-review pipeline for publishing notes, TILs, and project updates.
+An Astro-based personal site with one unified learning stream (`learning.log`), plus a capture-and-review pipeline for publishing discoveries and project updates.
 
 ## Quick Start
 
@@ -29,7 +29,7 @@ flowchart LR
   F --> G["GitHub API\ncommit content + images"]
   G --> H["Repository Content\nsrc/content + public/captures"]
   H --> I["Vercel Deploy"]
-  I --> J["Live Site\n/ /notes /til /projects"]
+  I --> J["Live Site\n/ /discoveries /projects"]
 
   K["Newsletter Scripts"] --> L["Read src/content"]
   L --> M["Generate daily/weekly variants"]
@@ -41,7 +41,7 @@ For deeper diagrams and flow details, see [`docs/architecture.md`](docs/architec
 ## Repository Map
 
 - `src/pages/`: site pages + API routes
-- `src/content/`: source content (`notes`, `til`, `projects`)
+- `src/content/`: source content (`discoveries`, `projects`)
 - `src/lib/learning-log.ts`: unified stream normalization
 - `src/lib/capture/`: capture pipeline (store, refine, transform, publish)
 - `src/lib/newsletter/`: newsletter generation logic
@@ -53,7 +53,7 @@ For deeper diagrams and flow details, see [`docs/architecture.md`](docs/architec
 
 - `/`: unified `learning.log` feed
 - `/about/`: about page
-- `/notes/[slug]/`, `/til/[slug]/`, `/projects/[slug]/`: content detail pages
+- `/discoveries/[slug]/`, `/projects/[slug]/`: content detail pages
 - `/admin/`: admin login
 - `/admin/review`: capture review dashboard
 - `/rss.xml`: unified RSS feed
@@ -62,13 +62,12 @@ For deeper diagrams and flow details, see [`docs/architecture.md`](docs/architec
 
 ## Content Model
 
-Content lives in `src/content/` with three collections:
+Content lives in `src/content/` with two collections:
 
-- `notes`: essays, links, snippets, thoughts
-- `til`: short learnings
-- `projects`: project metadata + `activity` timeline
+- `discoveries`: learnings and resources with `kind: 'learning' | 'resource'`
+- `projects`: project metadata + `activity` timeline (with `activityType`)
 
-The home feed combines all collections via `src/lib/learning-log.ts`.
+The home feed combines both collections via `src/lib/learning-log.ts`.
 
 ## Newsletter Workflow
 
