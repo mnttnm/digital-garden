@@ -1,12 +1,13 @@
 ---
-title: "A study highlighting LLM models’ behaviour shift and biases..."
-url: "https://amplifying.ai/research/claude-code-picks"
-type: "blog"
-description: "A study highlighting LLM models’ behaviour shift and biases for tools and frameworks across versions"
+title: A study highlighting LLM models’ behaviour shift and biases...
+date: 2026-03-06
+url: https://amplifying.ai/research/claude-code-picks
+type: blog
+description: A study highlighting LLM models’ behaviour shift and biases for tools and frameworks across versions
 featured: false
 tags:
-  - "ai"
-  - "insights"
+  - ai
+  - insights
 draft: false
 ---
 
