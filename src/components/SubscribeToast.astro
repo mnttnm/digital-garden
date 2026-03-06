@@ -61,6 +61,10 @@ const base = import.meta.env.BASE_URL;
           placeholder="you@example.com"
           required
           autocomplete="email"
+          autocapitalize="off"
+          autocorrect="off"
+          inputmode="email"
+          enterkeyhint="send"
           aria-label="Email address"
           class="toast-email"
         />
@@ -141,6 +145,8 @@ const base = import.meta.env.BASE_URL;
     color: var(--text-tertiary);
     cursor: pointer;
     border-radius: 0.25rem;
+    min-width: 44px;
+    min-height: 44px;
     transition: color 0.15s ease, background 0.15s ease;
   }
 
@@ -208,8 +214,10 @@ const base = import.meta.env.BASE_URL;
   }
 
   .pill-text {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
     padding: 0.32rem 0.7rem;
+    min-height: 44px;
     font-size: 0.78rem;
     font-weight: 450;
     color: var(--text-secondary);
@@ -244,6 +252,7 @@ const base = import.meta.env.BASE_URL;
     flex: 1;
     min-width: 0;
     padding: 0.6rem 0.8rem;
+    min-height: 46px;
     border: 1px solid var(--border-primary);
     border-radius: 0.4rem;
     font-size: 0.9rem;
@@ -266,6 +275,7 @@ const base = import.meta.env.BASE_URL;
   .toast-submit {
     position: relative;
     padding: 0.6rem 1rem;
+    min-height: 46px;
     background: var(--text-primary);
     color: var(--bg-primary);
     border: none;
@@ -360,6 +370,7 @@ const base = import.meta.env.BASE_URL;
     width: 100%;
     margin-top: 0.75rem;
     padding: 0.4rem;
+    min-height: 44px;
     background: none;
     border: none;
     font-size: 0.82rem;
@@ -376,14 +387,14 @@ const base = import.meta.env.BASE_URL;
   /* Mobile: Full-width bottom drawer */
   @media (max-width: 768px) {
     .subscribe-toast {
-      bottom: 0;
+      bottom: env(safe-area-inset-bottom, 0);
       right: 0;
       left: 0;
       width: 100%;
       max-width: 100%;
       border-radius: 1rem 1rem 0 0;
-      padding: 1.25rem 1.25rem calc(1.25rem + env(safe-area-inset-bottom));
-      transform: translateY(100%);
+      padding: 1.25rem;
+      transform: translateY(calc(100% + env(safe-area-inset-bottom, 0)));
     }
 
     .subscribe-toast[data-toast-visible="true"] {
@@ -467,6 +478,17 @@ const base = import.meta.env.BASE_URL;
     var SESSION_MS = 30 * 60 * 1000; // 30 min
     var TRIGGER_TIME_MS = 30 * 1000; // 30 seconds
     var SCROLL_THRESHOLD = 0.25; // 25% of page
+
+    function getToastErrorMessage(response, data) {
+      if (data && data.message) return data.message;
+      if (response.status === 429) {
+        return "Too many attempts. Please wait a minute and try again.";
+      }
+      if (response.status >= 500) {
+        return "The signup service is having trouble. Please try again shortly.";
+      }
+      return "Something went wrong. Please check your email and try again.";
+    }
 
     function safeGet(key) {
       try {
@@ -578,6 +600,8 @@ const base = import.meta.env.BASE_URL;
     function initToast() {
       var toast = document.getElementById("subscribe-toast");
       if (!toast) return;
+      if (toast.dataset.initialized === "true") return;
+      toast.dataset.initialized = "true";
 
       // Reset state for SPA navigation
       toast.dataset.toastVisible = "false";
@@ -669,9 +693,14 @@ const base = import.meta.env.BASE_URL;
             }),
           })
             .then(function (response) {
-              return response.json().then(function (data) {
-                return { ok: response.ok, data: data };
-              });
+              return response
+                .json()
+                .catch(function () {
+                  return null;
+                })
+                .then(function (data) {
+                  return { ok: response.ok, response: response, data: data };
+                });
             })
             .then(function (result) {
               if (result.ok) {
@@ -687,14 +716,18 @@ const base = import.meta.env.BASE_URL;
                 }, 2000);
               } else {
                 if (message) {
-                  message.textContent = result.data.message || "Something went wrong";
+                  message.textContent = getToastErrorMessage(
+                    result.response,
+                    result.data,
+                  );
                   message.className = "toast-message error";
                 }
               }
             })
             .catch(function () {
               if (message) {
-                message.textContent = "Network error. Please try again.";
+                message.textContent =
+                  "Network error. Check your connection and try again.";
                 message.className = "toast-message error";
               }
             })

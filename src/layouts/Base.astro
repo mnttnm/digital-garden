@@ -186,11 +186,13 @@ const lastUpdatedRelativeLabel = latestLogItem
               type="button"
               aria-label="Open theme settings"
               aria-expanded="false"
+              aria-controls="theme-panel"
               data-theme-toggle
             >
               theme
             </button>
             <section
+              id="theme-panel"
               class="theme-panel"
               hidden
               data-theme-panel
@@ -207,16 +209,22 @@ const lastUpdatedRelativeLabel = latestLogItem
                     class="theme-swatch warmth-cool"
                     type="button"
                     data-warmth="cool"
+                    role="radio"
+                    aria-checked="false"
                     aria-label="Cool"></button>
                   <button
                     class="theme-swatch warmth-warm"
                     type="button"
                     data-warmth="warm"
+                    role="radio"
+                    aria-checked="true"
                     aria-label="Warm"></button>
                   <button
                     class="theme-swatch warmth-warmer"
                     type="button"
                     data-warmth="warmer"
+                    role="radio"
+                    aria-checked="false"
                     aria-label="Warmer"></button>
                 </div>
               </div>
@@ -227,8 +235,18 @@ const lastUpdatedRelativeLabel = latestLogItem
                   role="radiogroup"
                   aria-label="Entry title font"
                 >
-                  <button type="button" data-font="serif">Serif</button>
-                  <button type="button" data-font="sans">Sans</button>
+                  <button
+                    type="button"
+                    data-font="serif"
+                    role="radio"
+                    aria-checked="true">Serif</button
+                  >
+                  <button
+                    type="button"
+                    data-font="sans"
+                    role="radio"
+                    aria-checked="false">Sans</button
+                  >
                 </div>
               </div>
               <div class="theme-row">
@@ -238,9 +256,24 @@ const lastUpdatedRelativeLabel = latestLogItem
                   role="radiogroup"
                   aria-label="Appearance mode"
                 >
-                  <button type="button" data-appearance="light">Light</button>
-                  <button type="button" data-appearance="dark">Dark</button>
-                  <button type="button" data-appearance="auto">Auto</button>
+                  <button
+                    type="button"
+                    data-appearance="light"
+                    role="radio"
+                    aria-checked="false">Light</button
+                  >
+                  <button
+                    type="button"
+                    data-appearance="dark"
+                    role="radio"
+                    aria-checked="false">Dark</button
+                  >
+                  <button
+                    type="button"
+                    data-appearance="auto"
+                    role="radio"
+                    aria-checked="true">Auto</button
+                  >
                 </div>
               </div>
             </section>
@@ -286,23 +319,52 @@ const lastUpdatedRelativeLabel = latestLogItem
           font: "learning-log-font",
           appearance: "learning-log-appearance",
         };
-        const systemDarkQuery = window.matchMedia(
-          "(prefers-color-scheme: dark)",
-        );
+        function safeGetStorage(key, fallback) {
+          try {
+            return localStorage.getItem(key) || fallback;
+          } catch {
+            return fallback;
+          }
+        }
 
-        // Shared state (persists across navigations)
-        const state = {
-          warmth: localStorage.getItem(STORAGE_KEYS.warmth) || "warm",
-          font: localStorage.getItem(STORAGE_KEYS.font) || "serif",
-          appearanceMode:
-            localStorage.getItem(STORAGE_KEYS.appearance) || "auto",
-        };
+        function safeSetStorage(key, value) {
+          try {
+            localStorage.setItem(key, value);
+          } catch {}
+        }
+        const RUNTIME_KEY = "__learningLogThemeRuntime";
+        const runtime =
+          window[RUNTIME_KEY] ||
+          (window[RUNTIME_KEY] = {
+            globalListenersBound: false,
+            state: {
+              warmth: safeGetStorage(STORAGE_KEYS.warmth, "warm"),
+              font: safeGetStorage(STORAGE_KEYS.font, "serif"),
+              appearanceMode: safeGetStorage(
+                STORAGE_KEYS.appearance,
+                "auto",
+              ),
+            },
+            systemDarkQuery: window.matchMedia(
+              "(prefers-color-scheme: dark)",
+            ),
+          });
+        const state = runtime.state;
+        const systemDarkQuery = runtime.systemDarkQuery;
 
         function getResolvedAppearance() {
           if (state.appearanceMode === "auto") {
             return systemDarkQuery.matches ? "dark" : "light";
           }
           return state.appearanceMode;
+        }
+
+        function syncRadioButtons(selector, currentValue, attributeName) {
+          document.querySelectorAll(selector).forEach((btn) => {
+            const isActive = btn.getAttribute(attributeName) === currentValue;
+            btn.classList.toggle("active", isActive);
+            btn.setAttribute("aria-checked", String(isActive));
+          });
         }
 
         function applyState() {
@@ -312,67 +374,101 @@ const lastUpdatedRelativeLabel = latestLogItem
           root.dataset.appearance = resolvedAppearance;
           root.dataset.appearanceMode = state.appearanceMode;
 
-          // Update button states
-          document.querySelectorAll("[data-warmth]").forEach((btn) => {
-            btn.classList.toggle(
-              "active",
-              btn.getAttribute("data-warmth") === state.warmth,
-            );
-          });
-          document.querySelectorAll("[data-font]").forEach((btn) => {
-            btn.classList.toggle(
-              "active",
-              btn.getAttribute("data-font") === state.font,
-            );
-          });
-          document
-            .querySelectorAll("button[data-appearance]")
-            .forEach((btn) => {
-              btn.classList.toggle(
-                "active",
-                btn.getAttribute("data-appearance") === state.appearanceMode,
-              );
-            });
+          syncRadioButtons("[data-warmth]", state.warmth, "data-warmth");
+          syncRadioButtons("[data-font]", state.font, "data-font");
+          syncRadioButtons(
+            "button[data-appearance]",
+            state.appearanceMode,
+            "data-appearance",
+          );
         }
 
         function persistState() {
-          localStorage.setItem(STORAGE_KEYS.warmth, state.warmth);
-          localStorage.setItem(STORAGE_KEYS.font, state.font);
-          localStorage.setItem(STORAGE_KEYS.appearance, state.appearanceMode);
+          safeSetStorage(STORAGE_KEYS.warmth, state.warmth);
+          safeSetStorage(STORAGE_KEYS.font, state.font);
+          safeSetStorage(STORAGE_KEYS.appearance, state.appearanceMode);
         }
 
-        // Global listeners (only added once)
-        systemDarkQuery.addEventListener("change", () => {
-          if (state.appearanceMode === "auto") {
-            applyState();
-          }
-        });
-
-        document.addEventListener("click", (event) => {
+        function setPanelOpen(open) {
           const panel = document.querySelector("[data-theme-panel]");
-          const controls = document.querySelector("[data-theme-controls]");
           const toggle = document.querySelector("[data-theme-toggle]");
-          if (!panel || panel.hidden || !controls) return;
-          const target = event.target;
-          if (!(target instanceof Node)) return;
-          if (!controls.contains(target)) {
+          if (!panel || !toggle) return;
+
+          if (open) {
+            panel.hidden = false;
+            requestAnimationFrame(() => panel.classList.add("open"));
+          } else {
             panel.hidden = true;
             panel.classList.remove("open");
-            toggle?.setAttribute("aria-expanded", "false");
           }
-        });
+          toggle.setAttribute("aria-expanded", String(open));
+        }
 
-        document.addEventListener("keydown", (event) => {
-          if (event.key === "Escape") {
+        if (!runtime.globalListenersBound) {
+          systemDarkQuery.addEventListener("change", () => {
+            if (state.appearanceMode === "auto") {
+              applyState();
+            }
+          });
+
+          document.addEventListener("click", (event) => {
+            const panel = document.querySelector("[data-theme-panel]");
+            const controls = document.querySelector("[data-theme-controls]");
+            const target = event.target;
+            if (!(target instanceof Element) || !controls || !panel) return;
+
+            const toggleTrigger = target.closest("[data-theme-toggle]");
+            if (toggleTrigger) {
+              event.preventDefault();
+              setPanelOpen(
+                panel.hidden || !panel.classList.contains("open"),
+              );
+              return;
+            }
+
+            const warmthButton = target.closest("[data-warmth]");
+            if (warmthButton) {
+              state.warmth =
+                warmthButton.getAttribute("data-warmth") || "warm";
+              applyState();
+              persistState();
+              return;
+            }
+
+            const fontButton = target.closest("[data-font]");
+            if (fontButton) {
+              state.font = fontButton.getAttribute("data-font") || "serif";
+              applyState();
+              persistState();
+              return;
+            }
+
+            const appearanceButton = target.closest("button[data-appearance]");
+            if (appearanceButton) {
+              state.appearanceMode =
+                appearanceButton.getAttribute("data-appearance") || "auto";
+              applyState();
+              persistState();
+              return;
+            }
+
+            if (!panel.hidden && !controls.contains(target)) {
+              setPanelOpen(false);
+            }
+          });
+
+          document.addEventListener("keydown", (event) => {
+            if (event.key !== "Escape") return;
             const panel = document.querySelector("[data-theme-panel]");
             const toggle = document.querySelector("[data-theme-toggle]");
             if (panel && !panel.hidden) {
-              panel.hidden = true;
-              panel.classList.remove("open");
-              toggle?.setAttribute("aria-expanded", "false");
+              setPanelOpen(false);
+              toggle?.focus();
             }
-          }
-        });
+          });
+
+          runtime.globalListenersBound = true;
+        }
 
         // Setup element listeners (called on each page load)
         function setupControls() {
@@ -381,46 +477,8 @@ const lastUpdatedRelativeLabel = latestLogItem
 
           if (!toggle || !panel) return;
 
-          toggle.addEventListener("click", () => {
-            if (panel.hidden) {
-              panel.hidden = false;
-              requestAnimationFrame(() => panel.classList.add("open"));
-              toggle.setAttribute("aria-expanded", "true");
-            } else {
-              panel.hidden = true;
-              panel.classList.remove("open");
-              toggle.setAttribute("aria-expanded", "false");
-            }
-          });
-
-          document.querySelectorAll("[data-warmth]").forEach((button) => {
-            button.addEventListener("click", () => {
-              state.warmth = button.getAttribute("data-warmth") || "warm";
-              applyState();
-              persistState();
-            });
-          });
-
-          document.querySelectorAll("[data-font]").forEach((button) => {
-            button.addEventListener("click", () => {
-              state.font = button.getAttribute("data-font") || "serif";
-              applyState();
-              persistState();
-            });
-          });
-
-          document
-            .querySelectorAll("button[data-appearance]")
-            .forEach((button) => {
-              button.addEventListener("click", () => {
-                state.appearanceMode =
-                  button.getAttribute("data-appearance") || "auto";
-                applyState();
-                persistState();
-              });
-            });
-
           applyState();
+          setPanelOpen(false);
         }
 
         // Initial setup
@@ -467,6 +525,13 @@ const lastUpdatedRelativeLabel = latestLogItem
           }
           ticking = false;
         }
+
+        if (button.dataset.initialized === 'true') {
+          updateVisibility();
+          return;
+        }
+
+        button.dataset.initialized = 'true';
 
         window.addEventListener('scroll', () => {
           if (!ticking) {
@@ -526,10 +591,10 @@ const lastUpdatedRelativeLabel = latestLogItem
 
       @media (max-width: 640px) {
         .back-to-top {
-          bottom: 1rem;
-          right: 1rem;
-          width: 2.5rem;
-          height: 2.5rem;
+          bottom: calc(1rem + env(safe-area-inset-bottom, 0));
+          right: calc(1rem + env(safe-area-inset-right, 0));
+          width: 2.75rem;
+          height: 2.75rem;
         }
       }
     </style>
