@@ -43,6 +43,7 @@ const { displayName, username, handleUrl, avatarUrl, oneLiner, index = 0 } = Ast
     align-items: flex-start;
     gap: 0.9rem;
     padding: 1rem 0;
+    min-height: 56px;
     text-decoration: none;
     color: inherit;
     border-bottom: 1px solid color-mix(in srgb, var(--border-primary) 40%, transparent);
@@ -111,6 +112,7 @@ const { displayName, username, handleUrl, avatarUrl, oneLiner, index = 0 } = Ast
     line-height: 1.55;
     color: var(--text-secondary);
     max-width: 65ch;
+    overflow-wrap: anywhere;
   }
 
   @media (min-width: 768px) {

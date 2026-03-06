@@ -60,6 +60,10 @@ const showIntro = variant !== "minimal";
           placeholder="you@example.com"
           required
           autocomplete="email"
+          autocapitalize="off"
+          autocorrect="off"
+          inputmode="email"
+          enterkeyhint="send"
           aria-label="Email address"
         />
       </div>
@@ -98,6 +102,17 @@ const showIntro = variant !== "minimal";
 </div>
 
 <script>
+  function getSubscribeErrorMessage(response, data) {
+    if (data?.message) return data.message;
+    if (response.status === 429) {
+      return "Too many attempts. Please wait a minute and try again.";
+    }
+    if (response.status >= 500) {
+      return "The signup service is having trouble. Please try again shortly.";
+    }
+    return "Something went wrong. Please check your email and try again.";
+  }
+
   function initSubscribeForms() {
     document
       .querySelectorAll<HTMLFormElement>(".subscribe-form")
@@ -134,7 +149,12 @@ const showIntro = variant !== "minimal";
               body: JSON.stringify({ email, frequency, preference, website }),
             });
 
-            const data = await response.json();
+            let data = null;
+            try {
+              data = await response.json();
+            } catch {
+              data = null;
+            }
 
             if (response.ok) {
               if (message) {
@@ -148,13 +168,14 @@ const showIntro = variant !== "minimal";
               if (allOption) allOption.checked = true;
             } else {
               if (message) {
-                message.textContent = data?.message || "Something went wrong";
+                message.textContent = getSubscribeErrorMessage(response, data);
                 message.className = "form-message error";
               }
             }
           } catch (error) {
             if (message) {
-              message.textContent = "Network error. Please try again.";
+              message.textContent =
+                "Network error. Check your connection and try again.";
               message.className = "form-message error";
             }
           } finally {
@@ -235,6 +256,7 @@ const showIntro = variant !== "minimal";
   .email-input-wrap input {
     width: 100%;
     padding: 0.72rem 0.95rem;
+    min-height: 46px;
     border: 1px solid var(--border-primary);
     border-radius: 0.5rem;
     font-size: 1rem;
@@ -259,6 +281,7 @@ const showIntro = variant !== "minimal";
   .submit-btn {
     position: relative;
     padding: 0.72rem 1.4rem;
+    min-height: 46px;
     background: var(--text-primary);
     color: var(--bg-primary);
     border: none;
@@ -347,8 +370,10 @@ const showIntro = variant !== "minimal";
   }
 
   .pill-label {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
     padding: 0.4rem 0.85rem;
+    min-height: 44px;
     font-size: 0.85rem;
     font-weight: 450;
     color: var(--text-secondary);

@@ -139,7 +139,15 @@ const otherTools = tools.filter((t) => !t.dailyDriver);
   <script>
     function initRevealAnimations() {
       const entries = document.querySelectorAll(".reveal:not(.visible)");
-      if (!("IntersectionObserver" in window) || entries.length === 0) {
+      const reducedMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)",
+      ).matches;
+
+      if (
+        reducedMotion ||
+        !("IntersectionObserver" in window) ||
+        entries.length === 0
+      ) {
         entries.forEach((entry) => entry.classList.add("visible"));
         return;
       }
@@ -224,9 +232,10 @@ const otherTools = tools.filter((t) => !t.dailyDriver);
 
   .page-subtitle {
     margin: 0;
-    font-size: 0.82rem;
+    font-size: 0.88rem;
     color: var(--text-tertiary);
     letter-spacing: 0.012em;
+    max-width: 34rem;
   }
 
   .quick-nav {
@@ -240,9 +249,12 @@ const otherTools = tools.filter((t) => !t.dailyDriver);
   }
 
   .quick-nav-link {
-    font-size: 0.82rem;
+    font-size: 0.86rem;
     color: var(--text-secondary);
     text-decoration: none;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
     transition: color 0.2s ease;
   }
 
@@ -311,7 +323,10 @@ const otherTools = tools.filter((t) => !t.dailyDriver);
     color: var(--text-tertiary);
     background: none;
     border: none;
-    padding: 0;
+    padding: 0.35rem 0;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
     cursor: pointer;
   }
 
@@ -403,6 +418,13 @@ const otherTools = tools.filter((t) => !t.dailyDriver);
   .tool-sep {
     color: var(--text-tertiary);
     opacity: 0.6;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .load-more-btn .btn-text {
+      animation: none;
+      background-position: 0% 0;
+    }
   }
 
   @media (min-width: 768px) {

@@ -116,9 +116,10 @@ import Base from "../layouts/Base.astro";
 
   .page-subtitle {
     margin: 0;
-    font-size: 0.82rem;
+    font-size: 0.88rem;
     color: var(--text-tertiary);
     letter-spacing: 0.012em;
+    max-width: 28rem;
   }
 
   .about-sections {
@@ -184,10 +185,13 @@ import Base from "../layouts/Base.astro";
   }
 
   .contact-links a {
-    font-size: 0.84rem;
+    font-size: 0.86rem;
     color: var(--accent);
     text-decoration: none;
     border-bottom: 1px solid transparent;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
     padding-bottom: 0.05rem;
   }
 
@@ -213,6 +217,12 @@ import Base from "../layouts/Base.astro";
       align-items: flex-end;
       text-align: right;
       padding-top: 0.3rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .section-separator {
+      width: 100%;
     }
   }
 </style>

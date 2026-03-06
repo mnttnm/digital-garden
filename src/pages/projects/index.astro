@@ -126,7 +126,15 @@ function formatRelativeDate(date: Date) {
   <script>
     function initRevealAnimations() {
       const entries = document.querySelectorAll('.reveal:not(.visible)');
-      if (!('IntersectionObserver' in window) || entries.length === 0) {
+      const reducedMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)",
+      ).matches;
+
+      if (
+        reducedMotion ||
+        !('IntersectionObserver' in window) ||
+        entries.length === 0
+      ) {
         entries.forEach(entry => entry.classList.add('visible'));
         return;
       }
@@ -173,9 +181,10 @@ function formatRelativeDate(date: Date) {
 
   .page-subtitle {
     margin: 0;
-    font-size: 0.82rem;
+    font-size: 0.88rem;
     color: var(--text-tertiary);
     letter-spacing: 0.012em;
+    max-width: 32rem;
   }
 
   .empty-state {
@@ -298,6 +307,19 @@ function formatRelativeDate(date: Date) {
     margin-top: clamp(2.2rem, 4.5vw, 3rem);
     width: 66%;
     border-top: 1px solid color-mix(in srgb, var(--border-primary) 40%, transparent);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .project-item {
+      transition: none;
+      transform: none;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .project-separator {
+      width: 100%;
+    }
   }
 
   .project-item:last-child .project-separator {
