@@ -69,26 +69,34 @@ const counts = { pending, approved, published, rejected };
       <a
         href={`/admin/review?password=${queryPassword}&status=pending`}
         class:list={['tab', { active: status === 'pending' }]}
+        data-tab="pending"
+        data-count={counts.pending}
       >
-        Pending ({counts.pending})
+        Pending (<span class="tab-count">{counts.pending}</span>)
       </a>
       <a
         href={`/admin/review?password=${queryPassword}&status=approved`}
         class:list={['tab', 'tab-queued', { active: status === 'approved' }]}
+        data-tab="approved"
+        data-count={counts.approved}
       >
-        Queued ({counts.approved})
+        Queued (<span class="tab-count">{counts.approved}</span>)
       </a>
       <a
         href={`/admin/review?password=${queryPassword}&status=published`}
         class:list={['tab', { active: status === 'published' }]}
+        data-tab="published"
+        data-count={counts.published}
       >
-        Published ({counts.published})
+        Published (<span class="tab-count">{counts.published}</span>)
       </a>
       <a
         href={`/admin/review?password=${queryPassword}&status=rejected`}
         class:list={['tab', { active: status === 'rejected' }]}
+        data-tab="rejected"
+        data-count={counts.rejected}
       >
-        Rejected ({counts.rejected})
+        Rejected (<span class="tab-count">{counts.rejected}</span>)
       </a>
     </nav>
 
@@ -167,6 +175,53 @@ const counts = { pending, approved, published, rejected };
 
   <script define:vars={{ adminPassword, status }}>
     // ==========================================
+    // Tab Count Management
+    // ==========================================
+    const tabCounts = {
+      pending: parseInt(document.querySelector('[data-tab="pending"]')?.dataset.count || '0'),
+      approved: parseInt(document.querySelector('[data-tab="approved"]')?.dataset.count || '0'),
+      published: parseInt(document.querySelector('[data-tab="published"]')?.dataset.count || '0'),
+      rejected: parseInt(document.querySelector('[data-tab="rejected"]')?.dataset.count || '0'),
+    };
+
+    function updateTabCount(tabName, delta) {
+      tabCounts[tabName] = Math.max(0, tabCounts[tabName] + delta);
+      const tab = document.querySelector(`[data-tab="${tabName}"]`);
+      if (tab) {
+        const countEl = tab.querySelector('.tab-count');
+        if (countEl) countEl.textContent = tabCounts[tabName];
+        tab.dataset.count = tabCounts[tabName];
+      }
+
+      // Update header badges
+      if (tabName === 'pending') {
+        const badge = document.querySelector('.admin-badge:not(.queued)');
+        if (badge) badge.textContent = `${tabCounts.pending} to review`;
+      }
+      if (tabName === 'approved') {
+        const badge = document.querySelector('.admin-badge.queued');
+        const publishBtn = document.getElementById('publishAllBtn');
+        if (badge) {
+          if (tabCounts.approved > 0) {
+            badge.textContent = `${tabCounts.approved} queued`;
+            badge.style.display = '';
+          } else {
+            badge.style.display = 'none';
+          }
+        }
+        if (publishBtn) {
+          if (tabCounts.approved > 0) {
+            publishBtn.textContent = `Publish All (${tabCounts.approved})`;
+            publishBtn.dataset.count = tabCounts.approved;
+            publishBtn.style.display = '';
+          } else {
+            publishBtn.style.display = 'none';
+          }
+        }
+      }
+    }
+
+    // ==========================================
     // Selection State Management
     // ==========================================
     const selectedIds = new Set();
@@ -229,7 +284,9 @@ const counts = { pending, approved, published, rejected };
       return {
         title: card.querySelector('[data-field="title"]')?.value || '',
         body: card.querySelector('[data-field="body"]')?.value || '',
+        url: card.querySelector('[data-field="url"]')?.value || '',
         tags: getTagsFromCard(card),
+        images: getImagesFromCard(card),
         collection: card.querySelector('[data-field="collection"]')?.value || '',
         noteType: card.querySelector('[data-field="noteType"]')?.value || '',
       };
@@ -241,6 +298,23 @@ const counts = { pending, approved, published, rejected };
 
       return Array.from(tagsEditor.querySelectorAll('.editable-tag'))
         .map(el => el.dataset.tag);
+    }
+
+    function getImagesFromCard(card) {
+      const imagesEditor = card.querySelector('.images-editor');
+      if (!imagesEditor) return [];
+
+      return Array.from(imagesEditor.querySelectorAll('.editable-image'))
+        .map(el => {
+          const img = el.querySelector('.image-preview');
+          const src = img?.src || '';
+          // Check if it's a base64 data URL
+          if (src.startsWith('data:')) {
+            return { url: '', data: src };
+          }
+          return { url: src };
+        })
+        .filter(img => img.url || img.data);
     }
 
     // ==========================================
@@ -290,6 +364,142 @@ const counts = { pending, approved, published, rejected };
     }
 
     // ==========================================
+    // Images Editor
+    // ==========================================
+    function setupImagesEditor(card) {
+      const imagesEditor = card.querySelector('.images-editor');
+      if (!imagesEditor) return;
+
+      const imagesList = imagesEditor.querySelector('.images-list');
+      const imageInput = imagesEditor.querySelector('.image-url-input');
+      const addBtn = imagesEditor.querySelector('.image-add-btn');
+      const dropZone = imagesEditor.querySelector('.image-drop-zone');
+      const fileInput = imagesEditor.querySelector('.image-file-input');
+
+      // Add image URL on button click
+      addBtn?.addEventListener('click', () => {
+        const url = imageInput.value.trim();
+        if (url) {
+          addImageFromUrl(imagesList, url, card);
+          imageInput.value = '';
+        }
+      });
+
+      // Add image URL on Enter
+      imageInput?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const url = imageInput.value.trim();
+          if (url) {
+            addImageFromUrl(imagesList, url, card);
+            imageInput.value = '';
+          }
+        }
+      });
+
+      // File input change (upload)
+      fileInput?.addEventListener('change', async (e) => {
+        const files = e.target.files;
+        if (files) {
+          for (const file of files) {
+            if (file.type.startsWith('image/')) {
+              await addImageFromFile(imagesList, file, card);
+            }
+          }
+          fileInput.value = ''; // Reset for next upload
+        }
+      });
+
+      // Drag and drop
+      dropZone?.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('dragover');
+      });
+
+      dropZone?.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+      });
+
+      dropZone?.addEventListener('drop', async (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        const files = e.dataTransfer?.files;
+        if (files) {
+          for (const file of files) {
+            if (file.type.startsWith('image/')) {
+              await addImageFromFile(imagesList, file, card);
+            }
+          }
+        }
+      });
+
+      // Paste support (on the drop zone)
+      dropZone?.addEventListener('paste', async (e) => {
+        const items = e.clipboardData?.items;
+        if (items) {
+          for (const item of items) {
+            if (item.type.startsWith('image/')) {
+              e.preventDefault();
+              const file = item.getAsFile();
+              if (file) {
+                await addImageFromFile(imagesList, file, card);
+              }
+            }
+          }
+        }
+      });
+
+      // Remove image handlers
+      imagesList?.addEventListener('click', (e) => {
+        if (e.target.classList.contains('image-remove')) {
+          e.target.closest('.editable-image').remove();
+          markCardDirty(card, true);
+        }
+      });
+    }
+
+    function addImageFromUrl(imagesList, imageUrl, card) {
+      // Basic URL validation
+      if (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://') &&
+          !imageUrl.startsWith('data:')) {
+        return;
+      }
+
+      const imageEl = document.createElement('div');
+      imageEl.className = 'editable-image';
+      imageEl.innerHTML = `
+        <img src="${imageUrl}" alt="Added image" class="image-preview" />
+        <button type="button" class="image-remove" aria-label="Remove image">×</button>
+      `;
+
+      imagesList.appendChild(imageEl);
+      markCardDirty(card, true);
+    }
+
+    async function addImageFromFile(imagesList, file, card) {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const base64 = e.target?.result;
+          if (base64) {
+            const imageEl = document.createElement('div');
+            imageEl.className = 'editable-image';
+            imageEl.dataset.isBase64 = 'true';
+            imageEl.innerHTML = `
+              <img src="${base64}" alt="Uploaded image" class="image-preview" />
+              <button type="button" class="image-remove" aria-label="Remove image">×</button>
+            `;
+            imagesList.appendChild(imageEl);
+            markCardDirty(card, true);
+          }
+          resolve();
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    // ==========================================
     // API Actions
     // ==========================================
     async function performAction(captureId, action, body = null) {
@@ -321,10 +531,15 @@ const counts = { pending, approved, published, rejected };
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          title: values.title || undefined,
           text: values.body,
+          url: values.url || undefined,
+          images: values.images.length > 0 ? values.images : undefined,
           tags: values.tags,
           inferredCollection: values.collection,
           inferredNoteType: values.noteType || null,
+          // Manual edits override AI refinement during publish
+          publishUseRefined: false,
         }),
       });
 
@@ -447,6 +662,31 @@ const counts = { pending, approved, published, rejected };
       if (!displayMode) return;
 
       const values = getCardFieldValues(card);
+
+      // Update URL display
+      const captureContent = card.querySelector('.capture-content');
+      let urlEl = captureContent?.querySelector('.capture-url');
+      if (values.url) {
+        const domain = (() => {
+          try { return new URL(values.url).hostname.replace(/^www\./, ''); }
+          catch { return values.url; }
+        })();
+        if (urlEl) {
+          urlEl.href = values.url;
+          urlEl.querySelector('.url-domain').textContent = domain;
+        } else {
+          // Create URL element if it doesn't exist
+          const newUrl = document.createElement('a');
+          newUrl.className = 'capture-url';
+          newUrl.href = values.url;
+          newUrl.target = '_blank';
+          newUrl.rel = 'noopener';
+          newUrl.innerHTML = `<span class="url-icon">🔗</span><span class="url-domain">${domain}</span><span class="url-arrow">↗</span>`;
+          captureContent.insertBefore(newUrl, captureContent.firstChild);
+        }
+      } else if (urlEl) {
+        urlEl.remove();
+      }
 
       // Update title
       let titleEl = displayMode.querySelector('.display-title');
@@ -642,6 +882,8 @@ const counts = { pending, approved, published, rejected };
           const result = await performBulkAction(action, ids);
 
           if (result.success || result.processed > 0) {
+            const successCount = result.processed || ids.length - (result.failed?.length || 0);
+
             // Remove processed cards
             ids.forEach(id => {
               const card = document.querySelector(`[data-capture-id="${id}"]`);
@@ -650,6 +892,16 @@ const counts = { pending, approved, published, rejected };
                 removeCardWithAnimation(card);
               }
             });
+
+            // Update tab counts based on action and current status
+            if (status === 'pending') {
+              updateTabCount('pending', -successCount);
+              if (action === 'approve') updateTabCount('approved', successCount);
+              if (action === 'reject') updateTabCount('rejected', successCount);
+            } else if (status === 'rejected') {
+              updateTabCount('rejected', -successCount);
+              if (action === 'restore') updateTabCount('pending', successCount);
+            }
 
             if (result.failed?.length > 0) {
               alert(`Processed ${result.processed} of ${ids.length}. ${result.failed.length} failed.`);
@@ -673,6 +925,9 @@ const counts = { pending, approved, published, rejected };
 
       // Setup tags editor
       setupTagsEditor(card);
+
+      // Setup images editor
+      setupImagesEditor(card);
 
       // Checkbox selection
       const checkbox = card.querySelector('.capture-checkbox');
@@ -819,6 +1074,19 @@ const counts = { pending, approved, published, rejected };
               } else if (action === 'approve' || action === 'reject' || action === 'restore' || action === 'delete') {
                 selectedIds.delete(captureId);
                 removeCardWithAnimation(card);
+
+                // Update tab counts based on action and current status
+                if (status === 'pending') {
+                  updateTabCount('pending', -1);
+                  if (action === 'approve') updateTabCount('approved', 1);
+                  if (action === 'reject') updateTabCount('rejected', 1);
+                } else if (status === 'approved') {
+                  updateTabCount('approved', -1);
+                  if (action === 'reject') updateTabCount('rejected', 1);
+                } else if (status === 'rejected') {
+                  updateTabCount('rejected', -1);
+                  if (action === 'restore') updateTabCount('pending', 1);
+                }
               }
             } else {
               alert(`Error: ${data.error || 'Unknown error'}`);

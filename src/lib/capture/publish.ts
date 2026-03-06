@@ -248,7 +248,9 @@ async function saveImage(
 ): Promise<string> {
   const date = new Date().toISOString().split('T')[0];
   const idPrefix = captureId.slice(0, 8);
-  const filename = `${date}-${idPrefix}.png`;
+  // Add random suffix to avoid conflicts when same capture has multiple images
+  const random = Math.random().toString(36).substring(2, 6);
+  const filename = `${date}-${idPrefix}-${random}.png`;
   const path = `public/captures/${filename}`;
 
   // Clean base64 data:
@@ -260,6 +262,33 @@ async function saveImage(
 
   const url = `https://api.github.com/repos/${config.repo}/contents/${path}`;
 
+  // Check if file already exists (to get SHA for update)
+  let existingSha: string | undefined;
+  try {
+    const checkResponse = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${config.token}`,
+        Accept: 'application/vnd.github.v3+json',
+      },
+    });
+    if (checkResponse.ok) {
+      const existing = await checkResponse.json();
+      existingSha = existing.sha;
+    }
+  } catch {
+    // File doesn't exist, that's fine
+  }
+
+  const body: Record<string, string> = {
+    message: `content: add captured image ${filename}`,
+    content: base64Data,
+    branch: config.branch || 'main',
+  };
+
+  if (existingSha) {
+    body.sha = existingSha;
+  }
+
   const response = await fetch(url, {
     method: 'PUT',
     headers: {
@@ -267,11 +296,7 @@ async function saveImage(
       Accept: 'application/vnd.github.v3+json',
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      message: `content: add captured image ${filename}`,
-      content: base64Data,
-      branch: config.branch || 'main',
-    }),
+    body: JSON.stringify(body),
   });
 
   if (!response.ok) {

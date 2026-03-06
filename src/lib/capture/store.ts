@@ -117,9 +117,12 @@ export async function updateCapture(
 
   const updated: Capture = {
     ...capture,
+    title: updates.title ?? capture.title,
     text: updates.text ?? capture.text,
     comment: updates.comment ?? capture.comment,
     tags: updates.tags ?? capture.tags,
+    url: updates.url ?? capture.url,
+    images: updates.images ?? capture.images,
     inferredCollection: updates.inferredCollection ?? capture.inferredCollection,
     inferredNoteType: updates.inferredNoteType ?? capture.inferredNoteType,
     publishUseRefined: updates.publishUseRefined ?? capture.publishUseRefined,
