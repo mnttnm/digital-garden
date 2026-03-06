@@ -37,3 +37,6 @@ pnpm-debug.log*
 # Local archives and screenshots
 archived/
 resources-page*.png
+
+# Archived docs
+docs/archived/
