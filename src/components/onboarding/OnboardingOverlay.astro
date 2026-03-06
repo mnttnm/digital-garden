@@ -31,11 +31,15 @@ const { items, voices = [] } = Astro.props;
   aria-modal="true"
   aria-label="Welcome to learning.log"
   data-onboarding-visible="true"
+  tabindex="-1"
 >
   <header class="onboarding-header">
     <span class="onboarding-logo"
       >learning.log <span class="logo-author">by Mohit</span></span
     >
+    <button class="onboarding-skip" type="button" data-onboarding-skip>
+      Skip <span aria-hidden="true">→</span>
+    </button>
   </header>
 
   <div class="onboarding-content">
@@ -61,7 +65,9 @@ const { items, voices = [] } = Astro.props;
       visibility 0.5s ease-out;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
 
   .onboarding-overlay[data-onboarding-visible="false"] {
@@ -78,10 +84,12 @@ const { items, voices = [] } = Astro.props;
   .onboarding-header {
     flex-shrink: 0;
     display: flex;
-    justify-content: center;
+    align-items: center;
+    justify-content: space-between;
     padding: 1.5rem 2rem;
     opacity: 0;
     animation: fade-in-header 0.6s 0.3s ease forwards;
+    gap: 1rem;
   }
 
   @keyframes fade-in-header {
@@ -102,6 +110,32 @@ const { items, voices = [] } = Astro.props;
     font-weight: 400;
   }
 
+  .onboarding-skip {
+    border: 0;
+    background: none;
+    color: var(--text-secondary);
+    font-family: var(--font-sans);
+    font-size: 0.9rem;
+    min-height: 44px;
+    padding: 0.5rem 0.75rem;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    cursor: pointer;
+    transition: color 0.2s ease, background-color 0.2s ease;
+  }
+
+  .onboarding-skip:hover {
+    color: var(--text-primary);
+    background: color-mix(in srgb, var(--bg-subtle) 92%, transparent);
+  }
+
+  .onboarding-skip:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--accent) 80%, transparent);
+    outline-offset: 2px;
+  }
+
   .onboarding-content {
     flex: 1;
     display: grid;
@@ -119,6 +153,7 @@ const { items, voices = [] } = Astro.props;
     display: flex;
     align-items: center;
     justify-content: flex-end;
+    min-width: 0;
   }
 
   .onboarding-right {
@@ -152,18 +187,26 @@ const { items, voices = [] } = Astro.props;
     }
 
     .onboarding-content {
-      grid-template-columns: 1fr;
+      display: flex;
+      flex-direction: column;
       padding: 0 1.5rem;
-      align-items: flex-start;
-      gap: 2rem;
+      gap: 1rem;
+      align-items: stretch;
+      padding-bottom: 1.5rem;
     }
 
     .onboarding-left {
-      justify-content: center;
+      flex: 1;
+      width: 100%;
     }
 
     .onboarding-right {
-      display: none;
+      flex-shrink: 0;
+      width: calc(100% + 3rem);
+      margin: 0 -1.5rem;
+      padding: 0 1.5rem 1.5rem;
+      height: auto;
+      max-height: none;
     }
   }
 
@@ -175,10 +218,22 @@ const { items, voices = [] } = Astro.props;
 
     .onboarding-content {
       padding: 0 1rem;
+      padding-bottom: 1rem;
+    }
+
+    .onboarding-right {
+      width: calc(100% + 2rem);
+      margin: 0 -1rem;
+      padding: 0 1rem 1rem;
     }
 
     .onboarding-logo {
       font-size: 0.92rem;
+    }
+
+    .onboarding-skip {
+      font-size: 0.84rem;
+      padding-inline: 0.6rem;
     }
   }
 </style>
@@ -186,6 +241,8 @@ const { items, voices = [] } = Astro.props;
 <script is:inline>
   (function () {
     const STORAGE_KEY = "learning-log-onboarding-seen";
+    const FOCUSABLE_SELECTOR =
+      'a[href], button:not([disabled]), textarea:not([disabled]), input:not([type="hidden"]):not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
     function hasSeenOnboarding() {
       try {
@@ -201,31 +258,84 @@ const { items, voices = [] } = Astro.props;
       } catch {}
     }
 
+    function getFocusableElements(overlay) {
+      return Array.prototype.slice
+        .call(overlay.querySelectorAll(FOCUSABLE_SELECTOR))
+        .filter(function (element) {
+          return (
+            element instanceof HTMLElement &&
+            !element.hasAttribute("disabled") &&
+            !element.hasAttribute("hidden") &&
+            element.getAttribute("aria-hidden") !== "true" &&
+            element.offsetParent !== null
+          );
+        });
+    }
+
+    function setPageState(overlay, isLocked) {
+      const targets = [
+        document.querySelector(".site-header"),
+        overlay.nextElementSibling,
+        document.querySelector(".site-footer"),
+        document.getElementById("back-to-top"),
+        document.getElementById("subscribe-toast"),
+      ].filter(Boolean);
+
+      targets.forEach(function (target) {
+        if ("inert" in target) {
+          target.inert = isLocked;
+        }
+        if (isLocked) {
+          target.setAttribute("aria-hidden", "true");
+        } else {
+          target.removeAttribute("aria-hidden");
+        }
+      });
+
+      document.body.style.overflow = isLocked ? "hidden" : "";
+    }
+
     function exitOnboarding() {
       var overlay = document.getElementById("onboarding-overlay");
       if (!overlay) return;
 
       markOnboardingSeen();
       overlay.dataset.exiting = "true";
+      setPageState(overlay, false);
 
       setTimeout(function () {
         overlay.dataset.onboardingVisible = "false";
+        overlay.setAttribute("aria-hidden", "true");
+
+        var nextTarget = document.querySelector(
+          ".journal-page .entry-title a, .journal-page .load-more-btn, .site-nav .nav-link",
+        );
+        if (nextTarget instanceof HTMLElement) {
+          nextTarget.focus();
+        }
       }, 500);
     }
 
     function initOnboarding() {
       var overlay = document.getElementById("onboarding-overlay");
       if (!overlay) return;
+      if (overlay.dataset.initialized === "true") return;
+      overlay.dataset.initialized = "true";
 
       // Hide immediately if returning visitor
       if (hasSeenOnboarding()) {
         overlay.style.display = "none";
         overlay.dataset.onboardingVisible = "false";
+        overlay.setAttribute("aria-hidden", "true");
         return;
       }
 
       var enterButton = document.getElementById("enter-button");
       var skipButtons = document.querySelectorAll("[data-onboarding-skip]");
+      var firstSkipButton = skipButtons[0];
+
+      setPageState(overlay, true);
+      overlay.setAttribute("aria-hidden", "false");
 
       // Set up handlers
       skipButtons.forEach(function (btn) {
@@ -236,13 +346,47 @@ const { items, voices = [] } = Astro.props;
         enterButton.addEventListener("click", exitOnboarding);
       }
 
-      // Escape key to skip
+      if (firstSkipButton instanceof HTMLElement) {
+        firstSkipButton.focus();
+      } else {
+        overlay.focus();
+      }
+
+      // Keep keyboard focus inside the onboarding until it is dismissed.
       document.addEventListener("keydown", function (e) {
-        if (
-          e.key === "Escape" &&
-          overlay.dataset.onboardingVisible === "true"
-        ) {
+        if (overlay.dataset.onboardingVisible !== "true") return;
+
+        if (e.key === "Escape") {
+          e.preventDefault();
           exitOnboarding();
+          return;
+        }
+
+        if (e.key !== "Tab") return;
+
+        var focusableElements = getFocusableElements(overlay);
+        if (focusableElements.length === 0) {
+          e.preventDefault();
+          overlay.focus();
+          return;
+        }
+
+        var first = focusableElements[0];
+        var last = focusableElements[focusableElements.length - 1];
+        var activeElement = document.activeElement;
+
+        if (!overlay.contains(activeElement)) {
+          e.preventDefault();
+          first.focus();
+          return;
+        }
+
+        if (e.shiftKey && activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && activeElement === last) {
+          e.preventDefault();
+          first.focus();
         }
       });
     }

@@ -2,6 +2,7 @@
 /**
  * Animated greeting text with smooth typewriter effect.
  * Cursor moves continuously through all text, character by character.
+ * Words are grouped to prevent mid-word line breaks.
  */
 
 const lines = [
@@ -16,32 +17,81 @@ const lines = [
 
 const signature = "— Mohit";
 const subtitle = "tinkering in public";
+
+// Helper to render text as words (each word wrapped to prevent mid-word breaks)
+function textToWords(text: string, startIndex: number = 0, highlightClass: string = '') {
+  const result: { type: 'word' | 'space', chars: { char: string, index: number, highlight: string }[] }[] = [];
+  let currentWord: { char: string, index: number, highlight: string }[] = [];
+  let globalIndex = startIndex;
+
+  for (const char of text) {
+    if (char === ' ') {
+      if (currentWord.length > 0) {
+        result.push({ type: 'word', chars: currentWord });
+        currentWord = [];
+      }
+      result.push({ type: 'space', chars: [{ char: ' ', index: globalIndex, highlight: highlightClass }] });
+    } else {
+      currentWord.push({ char, index: globalIndex, highlight: highlightClass });
+    }
+    globalIndex++;
+  }
+  if (currentWord.length > 0) {
+    result.push({ type: 'word', chars: currentWord });
+  }
+  return { words: result, endIndex: globalIndex };
+}
 ---
 
 <div class="typing-container">
   <div class="typing-content" id="typing-content">
     {lines.map((line, lineIdx) => (
       <p class="typing-line" data-line={lineIdx}>{typeof line === 'string' ? (
-          line.split('').map((char, i) => (
-            <span class="char" data-char={i}>{char === ' ' ? '\u00A0' : char}</span>
-          ))
+          textToWords(line).words.map((segment) =>
+            segment.type === 'space' ? (
+              <span class="char" data-char={segment.chars[0].index}>{'\u00A0'}</span>
+            ) : (
+              <span class="word">{segment.chars.map((c) => (
+                <span class={`char ${c.highlight}`} data-char={c.index}>{c.char}</span>
+              ))}</span>
+            )
+          )
         ) : (
-          <>{line.text.split('').map((char, i) => (
-              <span class="char" data-char={i}>{char === ' ' ? '\u00A0' : char}</span>
-            ))}{line.highlight.split('').map((char, i) => (
-              <span class="char highlight" data-char={line.text.length + i}>{char}</span>
-            ))}{line.suffix.split('').map((char, i) => (
-              <span class="char" data-char={line.text.length + line.highlight.length + i}>{char === ' ' ? '\u00A0' : char}</span>
-            ))}</>
+          (() => {
+            const part1 = textToWords(line.text, 0);
+            const part2 = textToWords(line.highlight, part1.endIndex, 'highlight');
+            const part3 = textToWords(line.suffix, part2.endIndex);
+            return [...part1.words, ...part2.words, ...part3.words].map((segment) =>
+              segment.type === 'space' ? (
+                <span class="char" data-char={segment.chars[0].index}>{'\u00A0'}</span>
+              ) : (
+                <span class="word">{segment.chars.map((c) => (
+                  <span class={`char ${c.highlight}`} data-char={c.index}>{c.char}</span>
+                ))}</span>
+              )
+            );
+          })()
         )}</p>
     ))}
     <div class="signature-block">
-      <p class="typing-line signature">{signature.split('').map((char, i) => (
-          <span class="char" data-char={i}>{char === ' ' ? '\u00A0' : char}</span>
-        ))}</p>
-      <p class="typing-line subtitle">{subtitle.split('').map((char, i) => (
-          <span class="char" data-char={i}>{char === ' ' ? '\u00A0' : char}</span>
-        ))}</p>
+      <p class="typing-line signature">{textToWords(signature).words.map((segment) =>
+        segment.type === 'space' ? (
+          <span class="char" data-char={segment.chars[0].index}>{'\u00A0'}</span>
+        ) : (
+          <span class="word">{segment.chars.map((c) => (
+            <span class="char" data-char={c.index}>{c.char}</span>
+          ))}</span>
+        )
+      )}</p>
+      <p class="typing-line subtitle">{textToWords(subtitle).words.map((segment) =>
+        segment.type === 'space' ? (
+          <span class="char" data-char={segment.chars[0].index}>{'\u00A0'}</span>
+        ) : (
+          <span class="word">{segment.chars.map((c) => (
+            <span class="char" data-char={c.index}>{c.char}</span>
+          ))}</span>
+        )
+      )}</p>
     </div>
     <button class="start-reading-btn" id="enter-button" data-onboarding-enter>
       Start reading <span class="arrow" aria-hidden="true">→</span>
@@ -57,7 +107,9 @@ const subtitle = "tinkering in public";
     justify-content: center;
     align-items: flex-start;
     padding: 2rem 3rem;
-    max-width: 580px;
+    width: min(100%, 580px);
+    max-width: 100%;
+    min-width: 0;
     position: relative;
   }
 
@@ -65,6 +117,8 @@ const subtitle = "tinkering in public";
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    width: 100%;
+    max-width: 100%;
   }
 
   .typing-line {
@@ -73,7 +127,10 @@ const subtitle = "tinkering in public";
     line-height: 1.6;
     color: var(--text-primary);
     margin: 0;
-    white-space: pre-wrap;
+    white-space: normal;
+    max-width: 100%;
+    overflow-wrap: break-word;
+    word-break: normal;
   }
 
   /* Characters start invisible */
@@ -88,6 +145,12 @@ const subtitle = "tinkering in public";
   .char.highlight.visible {
     color: var(--accent);
     font-weight: 500;
+  }
+
+  /* Word wrapper prevents mid-word line breaks */
+  .word {
+    display: inline;
+    white-space: nowrap;
   }
 
   .signature-block {
@@ -108,6 +171,10 @@ const subtitle = "tinkering in public";
     border: none;
     border-radius: 0.5rem;
     padding: 0.75rem 1.4rem;
+    min-height: 44px;
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
     cursor: pointer;
     opacity: 0;
     transform: translateY(8px);
@@ -183,8 +250,9 @@ const subtitle = "tinkering in public";
   /* Mobile */
   @media (max-width: 768px) {
     .typing-container {
-      padding: 1.5rem 1.25rem;
-      max-width: none;
+      padding: 0;
+      max-width: 100%;
+      width: 100%;
     }
 
     .typing-line {
@@ -194,16 +262,12 @@ const subtitle = "tinkering in public";
 
   /* Small mobile (375px and below) */
   @media (max-width: 400px) {
-    .typing-container {
-      padding: 1.25rem 1rem;
-    }
-
     .typing-line {
       font-size: clamp(0.88rem, 4.2vw, 1rem);
     }
 
     .start-reading-btn {
-      padding: 0.65rem 1.2rem;
+      padding: 0.7rem 1.2rem;
       font-size: 0.85rem;
     }
 
@@ -264,8 +328,8 @@ const subtitle = "tinkering in public";
       container.querySelectorAll(".char"),
     ) as HTMLSpanElement[];
     let currentIndex = 0;
-    const baseDelay = 18;
-    const punctuationDelay = 70;
+    const baseDelay = 32;
+    const punctuationDelay = 100;
 
     function positionCursor(charEl: HTMLSpanElement) {
       const rect = charEl.getBoundingClientRect();
