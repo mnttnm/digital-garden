@@ -26,6 +26,8 @@ const til = defineCollection({
     date: z.coerce.date(),
     tags: z.array(z.string()).default([]),
     project: z.string().optional(), // Links to a project by slug
+    link: z.string().url().optional(), // External link for link-style TILs
+    linkTitle: z.string().optional(), // Title for the link preview
     image: z.string().optional(),
     imageAlt: z.string().optional(),
     draft: z.boolean().default(false),
@@ -37,11 +39,14 @@ const resources = defineCollection({
   type: 'content',
   schema: z.object({
     title: z.string(),
+    date: z.coerce.date(),
     url: z.string().url(),
     type: z.enum(['blog', 'newsletter', 'twitter', 'youtube', 'community', 'podcast', 'tool']),
     description: z.string(),
     featured: z.boolean().default(false),
     tags: z.array(z.string()).default([]),
+    image: z.string().optional(),
+    imageAlt: z.string().optional(),
     draft: z.boolean().default(false),
   }),
 });

@@ -46,6 +46,7 @@ export interface Capture {
   type: CaptureType;
 
   // Content fields
+  title?: string;
   url?: string;
   text?: string;
   comment?: string;
@@ -124,9 +125,12 @@ export interface CaptureIngestResponse {
  * Parameters for updating a capture
  */
 export interface CaptureUpdatePayload {
+  title?: string;
   text?: string;
   comment?: string;
   tags?: string[];
+  url?: string;
+  images?: CaptureImage[];
   inferredCollection?: InferredCollection;
   inferredNoteType?: InferredNoteType;
   publishUseRefined?: boolean;
@@ -160,11 +164,14 @@ export interface NoteFrontmatter {
 
 export interface ResourceFrontmatter {
   title: string;
+  date: string;
   url: string;
   type: ResourceType;
   description: string;
   featured: boolean;
   tags: string[];
+  image?: string;
+  imageAlt?: string;
   draft: boolean;
 }
 

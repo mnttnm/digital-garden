@@ -205,10 +205,11 @@ function getProjectEventVideoPreview(event: ProjectActivity): LearningLogVideoPr
 }
 
 export async function getLearningLogItems(): Promise<LearningLogItem[]> {
-  const [notes, projects, tils] = await Promise.all([
+  const [notes, projects, tils, resources] = await Promise.all([
     getCollection('notes', ({ data }) => !data.draft),
     getCollection('projects', ({ data }) => !data.draft),
     getCollection('til', ({ data }) => !data.draft),
+    getCollection('resources', ({ data }) => !data.draft),
   ]);
 
   const noteItems: LearningLogItem[] = notes.map((note) => {
@@ -323,6 +324,16 @@ export async function getLearningLogItems(): Promise<LearningLogItem[]> {
     const projectSlug = til.data.project;
     const projectTitle = projectSlug ? projectMap.get(projectSlug) : undefined;
 
+    // Create link preview if TIL has a link
+    const linkPreview = til.data.link
+      ? {
+          title: til.data.linkTitle || til.data.title,
+          url: til.data.link,
+          domain: getDomain(til.data.link),
+          tweetAuthor: getTweetAuthor(til.data.link),
+        }
+      : undefined;
+
     return {
       id: `til-${til.slug}`,
       bucket: 'what-i-discovered',
@@ -336,10 +347,40 @@ export async function getLearningLogItems(): Promise<LearningLogItem[]> {
       tags: til.data.tags ?? [],
       sourceType: 'til',
       isExternal: false,
+      linkPreview,
       imagePreview: imagePreviews[0],
       imagePreviews: imagePreviews.length > 0 ? imagePreviews : undefined,
     };
   });
 
-  return [...projectItems, ...noteItems, ...tilItems].sort((a, b) => b.date.valueOf() - a.date.valueOf());
+  const resourceItems: LearningLogItem[] = resources.map((resource) => {
+    const linkPreview = {
+      title: resource.data.title,
+      url: resource.data.url,
+      domain: getDomain(resource.data.url),
+      tweetAuthor: getTweetAuthor(resource.data.url),
+    };
+
+    const imagePreviews = resource.data.image
+      ? [{ src: resource.data.image, alt: resource.data.imageAlt || resource.data.title }]
+      : [];
+
+    return {
+      id: `resource-${resource.slug}`,
+      bucket: 'what-i-discovered' as const,
+      category: 'resources' as const,
+      date: resource.data.date,
+      title: resource.data.title,
+      crux: resource.data.description,
+      href: resource.data.url,
+      tags: resource.data.tags ?? [],
+      sourceType: 'link' as const,
+      isExternal: true,
+      linkPreview,
+      imagePreview: imagePreviews[0],
+      imagePreviews: imagePreviews.length > 0 ? imagePreviews : undefined,
+    };
+  });
+
+  return [...projectItems, ...noteItems, ...tilItems, ...resourceItems].sort((a, b) => b.date.valueOf() - a.date.valueOf());
 }

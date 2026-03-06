@@ -41,6 +41,25 @@ function formatDate(date: Date | string): string {
 }
 
 /**
+ * Check if a string value needs YAML quoting
+ */
+function needsQuoting(value: string): boolean {
+  // Empty strings need quotes
+  if (value.length === 0) return true;
+
+  // Check for characters that require quoting
+  if (/[:\[\]{}#&*!|>'"%@`\n\r]/.test(value)) return true;
+
+  // Values starting with special chars need quoting
+  if (/^[-?]/.test(value)) return true;
+
+  // Values that look like numbers, booleans, or null need quoting
+  if (/^(true|false|null|yes|no|on|off|\d+\.?\d*|\.inf|\.nan)$/i.test(value)) return true;
+
+  return false;
+}
+
+/**
  * Serialize frontmatter to YAML
  */
 function serializeFrontmatter(fm: Record<string, unknown>): string {
@@ -54,16 +73,22 @@ function serializeFrontmatter(fm: Record<string, unknown>): string {
         lines.push(`${key}: []`);
       } else {
         lines.push(`${key}:`);
-        value.forEach((item) => lines.push(`  - "${item}"`));
+        value.forEach((item) => {
+          const str = String(item);
+          if (needsQuoting(str)) {
+            lines.push(`  - "${str.replace(/"/g, '\\"')}"`);
+          } else {
+            lines.push(`  - ${str}`);
+          }
+        });
       }
     } else if (typeof value === 'boolean') {
       lines.push(`${key}: ${value}`);
     } else if (typeof value === 'string') {
-      // Quote strings that might have special characters
-      if (value.includes(':') || value.includes('"') || value.includes('\n')) {
+      if (needsQuoting(value)) {
         lines.push(`${key}: "${value.replace(/"/g, '\\"')}"`);
       } else {
-        lines.push(`${key}: "${value}"`);
+        lines.push(`${key}: ${value}`);
       }
     } else {
       lines.push(`${key}: ${value}`);
@@ -74,11 +99,15 @@ function serializeFrontmatter(fm: Record<string, unknown>): string {
 }
 
 /**
- * Get the title from refined content or generate a fallback
+ * Get the title from refined content, saved title, or generate a fallback
  */
 function getTitle(capture: Capture, useRefined: boolean): string {
   if (useRefined && capture.refined?.title) {
     return capture.refined.title;
+  }
+  // Use manually saved title if available
+  if (capture.title) {
+    return capture.title;
   }
   return generateFallbackTitle(capture);
 }
@@ -253,6 +282,7 @@ function getDescription(capture: Capture, useRefined: boolean): string {
  * Transform a capture to Resource format
  */
 function transformToResource(capture: Capture, useRefined: boolean): TransformResult {
+  const date = formatDate(capture.createdAt);
   const title = getTitle(capture, useRefined);
   const tags = getTags(capture, useRefined);
   const resourceType = getResourceType(capture, useRefined);
@@ -265,6 +295,7 @@ function transformToResource(capture: Capture, useRefined: boolean): TransformRe
 
   const frontmatter: ResourceFrontmatter = {
     title,
+    date,
     url: capture.url,
     type: resourceType,
     description,
@@ -272,6 +303,12 @@ function transformToResource(capture: Capture, useRefined: boolean): TransformRe
     tags,
     draft: false,
   };
+
+  // Add image fields if present
+  if (capture.images?.[0]?.url) {
+    frontmatter.image = capture.images[0].url;
+    frontmatter.imageAlt = title;
+  }
 
   const filename = `${slugify(title)}.md`;
   const fullContent = `---\n${serializeFrontmatter(frontmatter as unknown as Record<string, unknown>)}\n---\n\n${body}\n`;
