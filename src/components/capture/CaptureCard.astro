@@ -8,7 +8,7 @@
  * - Refine/Reset to Raw/Save/Approve buttons
  */
 
-import type { Capture, InferredCollection, InferredNoteType } from '../../lib/capture/types';
+import type { Capture, DiscoveryKind, ActivityType } from '../../lib/capture/types';
 
 interface Props {
   capture: Capture;
@@ -22,19 +22,15 @@ function getPublishedUrl(capture: Capture): string | null {
   if (capture.status !== 'published') return null;
 
   const slug = capture.publishedSlug;
-  const collection = capture.publishedCollection;
-
   if (!slug) return null;
 
-  // Use collection to determine route
-  if (collection === 'til') {
-    return `/til/${slug}/`;
+  // Project updates link to the project page with anchor
+  if (capture.projectSlug) {
+    return `/projects/${capture.projectSlug}/#${slug}`;
   }
-  if (collection === 'project-update' && capture.project) {
-    // Project updates link to the project page with anchor
-    return `/projects/${capture.project}/#${slug}`;
-  }
-  return `/notes/${slug}/`;
+
+  // All other content goes to discoveries
+  return `/discoveries/${slug}/`;
 }
 
 function formatDate(dateStr: string) {
@@ -54,11 +50,10 @@ function formatDate(dateStr: string) {
   });
 }
 
-function getTypeLabel(capture: Capture): string {
-  if (capture.type === 'url') return 'URL';
-  if (capture.type === 'image') return 'Image';
-  if (capture.type === 'mixed') return 'Mixed';
-  return 'Text';
+function getKindLabel(capture: Capture): string {
+  if (capture.projectSlug) return 'Project';
+  if (capture.kind === 'resource') return 'Resource';
+  return 'Learning';
 }
 
 function getDomain(url: string): string {
@@ -73,9 +68,9 @@ function getDomain(url: string): string {
  * Get the proper image source URL
  * Handles both URLs and base64 data (with or without data URI prefix)
  */
-function getImageSrc(img: { url: string; data?: string }): string {
-  // If there's a URL, use it
-  if (img.url) return img.url;
+function getImageSrc(img: { src: string; data?: string }): string {
+  // If there's a src URL, use it
+  if (img.src) return img.src;
 
   // If there's base64 data
   if (img.data) {
@@ -101,24 +96,22 @@ function getImageSrc(img: { url: string; data?: string }): string {
 }
 
 // Get initial values for editable fields
-// If publishUseRefined is explicitly false (user made manual edits), use raw text
+// If publishUseRefined is explicitly false (user made manual edits), use raw note
 // Otherwise if refined exists, use refined values
 const useRefinedContent = capture.publishUseRefined !== false && Boolean(capture.refined);
 const initialTitle = useRefinedContent
   ? (capture.refined?.title || capture.title || '')
   : (capture.title || '');
 const initialBody = useRefinedContent
-  ? (capture.refined?.body || capture.text || capture.comment || '')
-  : (capture.text || capture.comment || '');
+  ? (capture.refined?.body || capture.note || '')
+  : (capture.note || '');
 const initialTags = useRefinedContent
   ? (capture.refined?.suggestedTags || capture.tags || [])
   : (capture.tags || []);
-const initialCollection = useRefinedContent
-  ? (capture.refined?.suggestedType || capture.inferredCollection)
-  : capture.inferredCollection;
-const initialNoteType = useRefinedContent
-  ? (capture.refined?.suggestedNoteType || capture.inferredNoteType)
-  : capture.inferredNoteType;
+const initialKind = useRefinedContent
+  ? (capture.refined?.suggestedKind || capture.kind)
+  : capture.kind;
+const initialActivityType = capture.activityType || 'update';
 
 // Check if content has been refined (and user hasn't overridden with manual edits)
 const isRefined = useRefinedContent;
@@ -126,20 +119,20 @@ const isRefined = useRefinedContent;
 // Allow editing for pending and approved (queued) captures
 const canEdit = capture.status === 'pending' || capture.status === 'approved';
 
-// Collections options
-const collections: { value: InferredCollection; label: string }[] = [
-  { value: 'til', label: 'TIL' },
-  { value: 'notes', label: 'Note' },
-  { value: 'resources', label: 'Resource' },
-  { value: 'project-update', label: 'Project Update' },
+// Kind options for discoveries
+const kinds: { value: DiscoveryKind; label: string }[] = [
+  { value: 'learning', label: 'Learning' },
+  { value: 'resource', label: 'Resource' },
 ];
 
-// Note type options
-const noteTypes: { value: InferredNoteType; label: string }[] = [
-  { value: 'link', label: 'Link' },
-  { value: 'thought', label: 'Thought' },
-  { value: 'essay', label: 'Essay' },
-  { value: 'snippet', label: 'Snippet' },
+// Activity type options for project updates
+const activityTypes: { value: ActivityType; label: string }[] = [
+  { value: 'update', label: 'Update' },
+  { value: 'milestone', label: 'Milestone' },
+  { value: 'fix', label: 'Fix' },
+  { value: 'learning', label: 'Learning' },
+  { value: 'discovery', label: 'Discovery' },
+  { value: 'experiment', label: 'Experiment' },
 ];
 ---
 
@@ -148,10 +141,10 @@ const noteTypes: { value: InferredNoteType; label: string }[] = [
   data-capture-id={capture.id}
   data-has-refined={isRefined ? 'true' : 'false'}
   data-edit-mode="false"
-  data-raw-text={capture.text || capture.comment || ''}
+  data-raw-note={capture.note || ''}
   data-raw-tags={JSON.stringify(capture.tags || [])}
-  data-raw-collection={capture.inferredCollection}
-  data-raw-note-type={capture.inferredNoteType || ''}
+  data-raw-kind={capture.kind}
+  data-raw-activity-type={capture.activityType || ''}
 >
   <header class="capture-header">
     <div class="capture-select">
@@ -163,10 +156,10 @@ const noteTypes: { value: InferredNoteType; label: string }[] = [
     </div>
     <div class="capture-meta">
       <span class="capture-time">{formatDate(capture.createdAt)}</span>
-      <span class="capture-type">{getTypeLabel(capture)}</span>
+      <span class="capture-type">{getKindLabel(capture)}</span>
       <span class="capture-source">{capture.source}</span>
-      {capture.project && (
-        <span class="capture-project">{capture.project}</span>
+      {capture.projectSlug && (
+        <span class="capture-project">{capture.projectSlug}</span>
       )}
     </div>
     {isRefined && (
@@ -215,22 +208,11 @@ const noteTypes: { value: InferredNoteType; label: string }[] = [
             </div>
           )}
 
-          {!capture.project && (
+          {!capture.projectSlug && (
             <div class="display-classification">
               <span class="display-collection">{
-                initialCollection === 'til' ? 'TIL' :
-                initialCollection === 'resources' ? 'Resource' :
-                'Note'
+                initialKind === 'resource' ? 'Resource' : 'Learning'
               }</span>
-              {initialNoteType && (
-                <span class="display-note-type">{
-                  initialNoteType === 'link' ? 'Link' :
-                  initialNoteType === 'thought' ? 'Thought' :
-                  initialNoteType === 'essay' ? 'Essay' :
-                  initialNoteType === 'snippet' ? 'Snippet' :
-                  initialNoteType
-                }</span>
-              )}
             </div>
           )}
 
@@ -323,30 +305,29 @@ const noteTypes: { value: InferredNoteType; label: string }[] = [
             </div>
           </div>
 
-          {!capture.project && (
-            <div class="field-row">
-              <div class="field-group field-group-small">
-                <label class="field-label">Collection</label>
-                <select class="field-select" data-field="collection">
-                  {collections.map((c) => (
-                    <option value={c.value} selected={c.value === initialCollection}>
-                      {c.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+          {!capture.projectSlug && (
+            <div class="field-group field-group-small">
+              <label class="field-label">Kind</label>
+              <select class="field-select" data-field="kind">
+                {kinds.map((k) => (
+                  <option value={k.value} selected={k.value === initialKind}>
+                    {k.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
-              <div class="field-group field-group-small">
-                <label class="field-label">Note Type</label>
-                <select class="field-select" data-field="noteType">
-                  <option value="">None</option>
-                  {noteTypes.map((t) => (
-                    <option value={t.value} selected={t.value === initialNoteType}>
-                      {t.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+          {capture.projectSlug && (
+            <div class="field-group field-group-small">
+              <label class="field-label">Activity Type</label>
+              <select class="field-select" data-field="activityType">
+                {activityTypes.map((t) => (
+                  <option value={t.value} selected={t.value === initialActivityType}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
             </div>
           )}
 
@@ -388,20 +369,10 @@ const noteTypes: { value: InferredNoteType; label: string }[] = [
 
         <div class="display-classification">
           <span class="display-collection">{
-            capture.project ? 'Project Update' :
-            initialCollection === 'til' ? 'TIL' :
-            initialCollection === 'resources' ? 'Resource' :
-            'Note'
+            capture.projectSlug ? 'Project Update' :
+            initialKind === 'resource' ? 'Resource' :
+            'Learning'
           }</span>
-          {!capture.project && initialNoteType && (
-            <span class="display-note-type">{
-              initialNoteType === 'link' ? 'Link' :
-              initialNoteType === 'thought' ? 'Thought' :
-              initialNoteType === 'essay' ? 'Essay' :
-              initialNoteType === 'snippet' ? 'Snippet' :
-              initialNoteType
-            }</span>
-          )}
         </div>
       </>
     )}

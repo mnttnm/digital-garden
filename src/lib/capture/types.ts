@@ -6,34 +6,24 @@
  */
 
 export type CaptureSource = 'raycast' | 'shortcut' | 'slack' | 'api';
-export type CaptureType = 'url' | 'text' | 'image' | 'mixed';
 export type CaptureStatus = 'pending' | 'approved' | 'published' | 'rejected';
-export type InferredCollection = 'til' | 'notes' | 'resources' | 'project-update';
-export type InferredNoteType = 'link' | 'thought' | 'essay' | 'snippet';
 
-/**
- * Activity type for project updates (matches projects schema)
- */
-export type ProjectActivityType = 'update' | 'learning' | 'discovery' | 'milestone' | 'experiment' | 'fix';
+// Content classification
+export type DiscoveryKind = 'learning' | 'resource';
+export type ActivityType = 'update' | 'milestone' | 'fix' | 'learning' | 'discovery' | 'experiment';
 
-/**
- * Activity entry for a project (matches projects schema)
- */
-export interface ProjectActivityEntry {
-  date: string;
-  title: string;
-  summary: string;
-  tags: string[];
-  type: ProjectActivityType;
-  highlights?: string[];
-  image?: string;
-  imageAlt?: string;
-  imageCaption?: string;
-  actionLabel?: string;
-  actionUrl?: string;
-  code?: string;
-  codeLanguage?: string;
-  links?: Array<{ label: string; url: string }>;
+export interface CaptureImage {
+  src: string;
+  alt?: string;
+  caption?: string;
+  data?: string; // base64 for upload
+}
+
+export interface CaptureVideo {
+  src: string;
+  poster?: string;
+  caption?: string;
+  data?: string; // base64 for upload
 }
 
 /**
@@ -43,61 +33,47 @@ export interface Capture {
   id: string;
   createdAt: string;
   source: CaptureSource;
-  type: CaptureType;
-
-  // Content fields
-  title?: string;
-  url?: string;
-  text?: string;
-  comment?: string;
-  images?: CaptureImage[];
-  tags?: string[];
-
-  // Project association (for project updates)
-  project?: string;
-
-  // Status
   status: CaptureStatus;
 
-  // Inferred content classification
-  inferredCollection: InferredCollection;
-  inferredNoteType?: InferredNoteType;
+  // Content
+  title?: string;
+  url?: string;
+  note?: string; // User's commentary (renamed from "text")
 
-  // AI refinement (populated on-demand)
+  // Classification
+  kind: DiscoveryKind;
+  projectSlug?: string; // If set, this is a project update
+  activityType?: ActivityType; // Only for project updates
+
+  // Media (arrays for consistency)
+  images?: CaptureImage[];
+  videos?: CaptureVideo[];
+  code?: string;
+  codeLanguage?: string;
+
+  // Metadata
+  tags?: string[];
+  prompts?: string[]; // AI prompts used
+
+  // AI refinement
   refined?: RefinedCapture;
-
-  // Publishing preference (set when approved)
   publishUseRefined?: boolean;
 
-  // Published content info (set after publishing)
+  // After publishing
   publishedSlug?: string;
-  publishedCollection?: InferredCollection;
 }
-
-export interface CaptureImage {
-  url: string;
-  data?: string; // base64 for initial upload
-}
-
-/**
- * Resource types for the resources collection
- */
-export type ResourceType = 'blog' | 'newsletter' | 'twitter' | 'youtube' | 'community' | 'podcast' | 'tool';
 
 /**
  * AI-refined version of a capture
  */
 export interface RefinedCapture {
-  title: string;
+  title: string; // User's title (refined)
+  linkTitle?: string; // Extracted page title from URL
   body: string;
-  takeaway?: string;
-  description?: string; // For resources collection
-  linkTitle?: string; // Actual page title from URL (for link notes/resources)
   suggestedTags: string[];
-  suggestedType: InferredCollection;
-  suggestedNoteType?: InferredNoteType;
-  suggestedResourceType?: ResourceType;
+  suggestedKind: DiscoveryKind;
   refinedAt: string;
+  promptUsed: string; // Track the refinement prompt
 }
 
 /**
@@ -105,12 +81,25 @@ export interface RefinedCapture {
  */
 export interface CaptureIngestPayload {
   url?: string;
-  text?: string;
-  comment?: string;
-  imageBase64?: string;
+  note?: string; // Renamed from "text"
   source: CaptureSource;
   tags?: string[];
-  project?: string; // Project slug for project updates
+  project?: string;
+  activityType?: ActivityType; // Can set during capture
+
+  // Media
+  images?: Array<{
+    data: string; // base64
+    alt?: string;
+    caption?: string;
+  }>;
+  videos?: Array<{
+    data: string; // base64
+    poster?: string;
+    caption?: string;
+  }>;
+  code?: string;
+  codeLanguage?: string;
 }
 
 /**
@@ -126,62 +115,62 @@ export interface CaptureIngestResponse {
  */
 export interface CaptureUpdatePayload {
   title?: string;
-  text?: string;
-  comment?: string;
+  note?: string;
   tags?: string[];
   url?: string;
   images?: CaptureImage[];
-  inferredCollection?: InferredCollection;
-  inferredNoteType?: InferredNoteType;
+  videos?: CaptureVideo[];
+  code?: string;
+  codeLanguage?: string;
+  kind?: DiscoveryKind;
+  activityType?: ActivityType;
   publishUseRefined?: boolean;
 }
 
 /**
- * MDX frontmatter for different content types
+ * MDX frontmatter for discoveries collection
  */
-export interface TilFrontmatter {
+export interface DiscoveryFrontmatter {
   title: string;
   date: string;
+  kind: DiscoveryKind;
   tags: string[];
-  image?: string;
-  imageAlt?: string;
-  draft: boolean;
-}
-
-export interface NoteFrontmatter {
-  title: string;
-  date: string;
-  tags: string[];
-  type: InferredNoteType;
-  link?: string;
+  url?: string;
   linkTitle?: string;
-  takeaway?: string;
-  image?: string;
-  imageAlt?: string;
-  featured: boolean;
-  draft: boolean;
-}
-
-export interface ResourceFrontmatter {
-  title: string;
-  date: string;
-  url: string;
-  type: ResourceType;
-  description: string;
-  featured: boolean;
-  tags: string[];
-  image?: string;
-  imageAlt?: string;
+  images: Array<{ src: string; alt?: string; caption?: string }>;
+  videos: Array<{ src: string; poster?: string; caption?: string }>;
+  code?: string;
+  codeLanguage?: string;
+  prompts: string[];
   draft: boolean;
 }
 
 /**
- * Result of transforming a capture to MDX (for notes/TIL/resources)
+ * Activity entry for a project (matches projects schema)
+ */
+export interface ProjectActivityEntry {
+  date: string;
+  title: string;
+  summary: string;
+  tags: string[];
+  activityType: ActivityType;
+  images: Array<{ src: string; alt?: string; caption?: string }>;
+  videos: Array<{ src: string; poster?: string; caption?: string }>;
+  code?: string;
+  codeLanguage?: string;
+  url?: string;
+  actionLabel?: string;
+  actionUrl?: string;
+  prompts: string[];
+}
+
+/**
+ * Result of transforming a capture to MDX (for discoveries)
  */
 export interface TransformResult {
-  collection: 'til' | 'notes' | 'resources';
+  collection: 'discoveries';
   filename: string;
-  frontmatter: TilFrontmatter | NoteFrontmatter | ResourceFrontmatter;
+  frontmatter: DiscoveryFrontmatter;
   body: string;
   fullContent: string;
 }

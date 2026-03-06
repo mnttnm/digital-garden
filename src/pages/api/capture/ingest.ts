@@ -4,7 +4,7 @@
  * POST /api/capture/ingest
  *
  * Main entry point for all capture clients (Raycast, iOS Shortcut, Slack).
- * Validates input, infers content type, and stores in Redis.
+ * Validates input, infers content kind, and stores in Redis.
  */
 
 import type { APIRoute } from 'astro';
@@ -12,9 +12,8 @@ import {
   createCapture,
   type CaptureIngestPayload,
   type CaptureSource,
-  type CaptureType,
-  type InferredCollection,
-  type InferredNoteType,
+  type DiscoveryKind,
+  type ActivityType,
 } from '../../../lib/capture';
 
 export const prerender = false;
@@ -44,67 +43,16 @@ function verifyApiKey(request: Request): boolean {
 }
 
 /**
- * Detect the content type from the payload
+ * Infer the kind of content
  */
-function detectContentType(payload: CaptureIngestPayload): CaptureType {
-  const hasUrl = Boolean(payload.url);
-  const hasText = Boolean(payload.text);
-  const hasImage = Boolean(payload.imageBase64);
-
-  if (hasImage && (hasUrl || hasText)) return 'mixed';
-  if (hasImage) return 'image';
-  if (hasUrl && hasText) return 'mixed';
-  if (hasUrl) return 'url';
-  return 'text';
-}
-
-/**
- * Infer which collection this content belongs to
- */
-function inferCollection(payload: CaptureIngestPayload): InferredCollection {
-  // If project is specified, it's a project update
-  if (payload.project) {
-    return 'project-update';
-  }
-
-  const textLength = (payload.text?.length || 0) + (payload.comment?.length || 0);
-
-  // Short text = TIL
-  if (textLength > 0 && textLength < 500 && !payload.url) {
-    return 'til';
-  }
-
-  // URL with minimal text = likely a link note
-  if (payload.url && textLength < 200) {
-    return 'notes';
-  }
-
-  // Longer content = notes
-  return 'notes';
-}
-
-/**
- * Infer the note type for notes collection
- * Note: Only called when collection is 'notes', not for project updates
- */
-function inferNoteType(payload: CaptureIngestPayload): InferredNoteType | undefined {
+function inferKind(payload: CaptureIngestPayload): DiscoveryKind {
+  // URL-based content is typically a resource
   if (payload.url) {
-    return 'link';
+    return 'resource';
   }
 
-  const textLength = (payload.text?.length || 0) + (payload.comment?.length || 0);
-
-  if (textLength < 300) {
-    return 'thought';
-  }
-
-  // Check if text contains code blocks
-  if (payload.text?.includes('```')) {
-    return 'snippet';
-  }
-
-  // Long text without code blocks is an essay
-  return 'essay';
+  // Everything else is a learning
+  return 'learning';
 }
 
 /**
@@ -112,6 +60,13 @@ function inferNoteType(payload: CaptureIngestPayload): InferredNoteType | undefi
  */
 function isValidSource(source: string): source is CaptureSource {
   return ['raycast', 'shortcut', 'slack', 'api'].includes(source);
+}
+
+/**
+ * Validate the activity type value
+ */
+function isValidActivityType(type: string): type is ActivityType {
+  return ['update', 'milestone', 'fix', 'learning', 'discovery', 'experiment'].includes(type);
 }
 
 export const POST: APIRoute = async ({ request }) => {
@@ -135,9 +90,10 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // Validate that we have some content
-    if (!payload.url && !payload.text && !payload.imageBase64) {
+    const hasImages = payload.images && payload.images.length > 0;
+    if (!payload.url && !payload.note && !hasImages) {
       return new Response(
-        JSON.stringify({ error: 'Must provide url, text, or image' }),
+        JSON.stringify({ error: 'Must provide url, note, or images' }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
@@ -154,30 +110,43 @@ export const POST: APIRoute = async ({ request }) => {
       }
     }
 
-    // Detect content type and infer collection
-    const type = detectContentType(payload);
-    const inferredCollection = inferCollection(payload);
-    const inferredNoteType = inferCollection(payload) === 'notes'
-      ? inferNoteType(payload)
+    // Infer kind
+    const kind = inferKind(payload);
+
+    // Validate activity type if provided
+    const activityType = payload.activityType && isValidActivityType(payload.activityType)
+      ? payload.activityType
       : undefined;
 
-    // Handle image upload (store base64 for now, could upload to CDN later)
-    const images = payload.imageBase64
-      ? [{ url: '', data: payload.imageBase64 }]
-      : undefined;
+    // Build images array from payload
+    const images = payload.images?.map(img => ({
+      src: '',
+      data: img.data,
+      alt: img.alt,
+      caption: img.caption,
+    }));
+
+    // Build videos array from payload
+    const videos = payload.videos?.map(vid => ({
+      src: '',
+      data: vid.data,
+      poster: vid.poster,
+      caption: vid.caption,
+    }));
 
     // Create the capture
     const capture = await createCapture({
       source: payload.source,
-      type,
       url: payload.url,
-      text: payload.text,
-      comment: payload.comment,
+      note: payload.note,
       images,
+      videos,
       tags: payload.tags,
-      project: payload.project,
-      inferredCollection,
-      inferredNoteType,
+      projectSlug: payload.project,
+      kind,
+      activityType,
+      code: payload.code,
+      codeLanguage: payload.codeLanguage,
     });
 
     return new Response(

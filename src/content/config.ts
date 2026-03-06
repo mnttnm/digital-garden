@@ -1,53 +1,36 @@
 import { defineCollection, z } from 'astro:content';
 
-// Schema for notes - unified collection of all content types
-const notes = defineCollection({
+// Schema for discoveries (replaces notes, til, resources)
+const discoveries = defineCollection({
   type: 'content',
   schema: z.object({
+    // Core fields
     title: z.string(),
     date: z.coerce.date(),
+    kind: z.enum(['learning', 'resource']),
     tags: z.array(z.string()).default([]),
-    featured: z.boolean().default(false),
-    type: z.enum(['link', 'snippet', 'essay', 'thought']),
-    link: z.string().url().optional(),
-    linkTitle: z.string().optional(),
-    takeaway: z.string().optional(),
-    image: z.string().optional(),
-    imageAlt: z.string().optional(),
     draft: z.boolean().default(false),
-  }),
-});
 
-// Schema for TILs (Today I Learned)
-const til = defineCollection({
-  type: 'content',
-  schema: z.object({
-    title: z.string(),
-    date: z.coerce.date(),
-    tags: z.array(z.string()).default([]),
-    project: z.string().optional(), // Links to a project by slug
-    link: z.string().url().optional(), // External link for link-style TILs
-    linkTitle: z.string().optional(), // Title for the link preview
-    image: z.string().optional(),
-    imageAlt: z.string().optional(),
-    draft: z.boolean().default(false),
-  }),
-});
+    // Link (optional - present for resources and link-based learnings)
+    url: z.string().url().optional(),
+    linkTitle: z.string().optional(), // Actual page title (for link widget display)
 
-// Schema for resources (blogs, newsletters, twitter, youtube, communities)
-const resources = defineCollection({
-  type: 'content',
-  schema: z.object({
-    title: z.string(),
-    date: z.coerce.date(),
-    url: z.string().url(),
-    type: z.enum(['blog', 'newsletter', 'twitter', 'youtube', 'community', 'podcast', 'tool']),
-    description: z.string(),
-    featured: z.boolean().default(false),
-    tags: z.array(z.string()).default([]),
-    image: z.string().optional(),
-    imageAlt: z.string().optional(),
-    draft: z.boolean().default(false),
+    // Media (all use arrays for consistency)
+    images: z.array(z.object({
+      src: z.string(),
+      alt: z.string().optional(),
+      caption: z.string().optional(),
+    })).default([]),
+    videos: z.array(z.object({
+      src: z.string(),
+      poster: z.string().optional(),
+      caption: z.string().optional(),
+    })).default([]),
+    code: z.string().optional(),
+    codeLanguage: z.string().optional(),
+
+    // Prompts used to create/refine this content
+    prompts: z.array(z.string()).default([]),
   }),
 });
 
@@ -55,56 +38,72 @@ const resources = defineCollection({
 const projects = defineCollection({
   type: 'content',
   schema: z.object({
+    // Core fields
     title: z.string(),
     description: z.string(),
     date: z.coerce.date(),
-    featured: z.boolean().default(false),
+    tags: z.array(z.string()).default([]),
+    draft: z.boolean().default(false),
+
+    // Project-specific
     github: z.string().url().optional(),
     live: z.string().url().optional(),
     stack: z.array(z.string()).default([]),
+
+    // Legacy fields (kept for backward compatibility)
+    featured: z.boolean().default(false),
     outcome: z.string().optional(),
-    tags: z.array(z.string()).default([]),
-    activity: z.array(
-      z.object({
-        date: z.coerce.date(),
-        title: z.string(),
-        summary: z.string(),
-        tags: z.array(z.string()).default([]),
-        type: z.enum(['update', 'learning', 'discovery', 'milestone', 'experiment', 'fix']).default('update'),
-        highlights: z.array(z.string()).default([]),
-        image: z.string().optional(), // Can be relative path or full URL
-        imageAlt: z.string().optional(),
-        imageCaption: z.string().optional(),
-        images: z.array(
-          z.object({
-            src: z.string(),
-            alt: z.string().optional(),
-            caption: z.string().optional(),
-          })
-        ).default([]),
-        videos: z.array(
-          z.object({
-            src: z.string(),
-            poster: z.string().optional(),
-            title: z.string().optional(),
-            caption: z.string().optional(),
-          })
-        ).default([]),
-        actionLabel: z.string().optional(),
-        actionUrl: z.string().optional(),
-        code: z.string().optional(),
-        codeLanguage: z.string().optional(),
-        links: z.array(
-          z.object({
-            label: z.string(),
-            url: z.string().url(),
-          })
-        ).default([]),
-      })
-    ).default([]),
     image: z.string().optional(),
-    draft: z.boolean().default(false),
+
+    // Activity log (same media schema as discoveries)
+    activity: z.array(z.object({
+      date: z.coerce.date(),
+      title: z.string(),
+      summary: z.string(),
+      activityType: z.enum([
+        'update',
+        'milestone',
+        'fix',
+        'learning',
+        'discovery',
+        'experiment'
+      ]).default('update'),
+      tags: z.array(z.string()).default([]),
+
+      // Media (same structure as discoveries)
+      images: z.array(z.object({
+        src: z.string(),
+        alt: z.string().optional(),
+        caption: z.string().optional(),
+      })).default([]),
+      videos: z.array(z.object({
+        src: z.string(),
+        poster: z.string().optional(),
+        caption: z.string().optional(),
+        title: z.string().optional(), // Legacy field
+      })).default([]),
+      code: z.string().optional(),
+      codeLanguage: z.string().optional(),
+
+      // Links
+      url: z.string().url().optional(),
+      actionLabel: z.string().optional(),
+      actionUrl: z.string().url().optional(),
+      links: z.array(z.object({
+        label: z.string(),
+        url: z.string().url(),
+      })).default([]),
+
+      // Legacy fields (kept for backward compatibility)
+      highlights: z.array(z.string()).default([]),
+      image: z.string().optional(),
+      imageAlt: z.string().optional(),
+      imageCaption: z.string().optional(),
+
+      // Prompts
+      prompts: z.array(z.string()).default([]),
+    })).default([]),
   }),
 });
 
-export const collections = { notes, projects, til, resources };
+export const collections = { discoveries, projects };

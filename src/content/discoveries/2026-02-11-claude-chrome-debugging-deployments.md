@@ -1,8 +1,14 @@
 ---
-title: "Use Claude in Chrome for debugging deployment issues"
+title: Use Claude in Chrome for debugging deployment issues
 date: 2026-02-11
-tags: ["debugging", "tooling"]
+kind: learning
+tags:
+  - debugging
+  - tooling
 draft: false
+images: []
+videos: []
+prompts: []
 ---
 
 When you're following deployment docs step by step and still hitting errors, Claude in Chrome can bridge the gap between documentation and your actual configuration.

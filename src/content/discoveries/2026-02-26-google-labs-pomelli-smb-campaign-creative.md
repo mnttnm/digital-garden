@@ -1,12 +1,18 @@
 ---
 title: "Google Labs Pomelli: a premium first-release experience for SMB campaign creation"
 date: 2026-02-26
-tags: ["ai-tools", "marketing", "creative-automation", "smb"]
-type: "link"
-link: "https://labs.google.com/pomelli/"
-linkTitle: "Pomelli by Google Labs"
-takeaway: "Blown away by this one: the onboarding is smooth, the Business DNA setup is actually useful, and the creatives look close to ready-to-post."
+kind: resource
+tags:
+  - ai-tools
+  - marketing
+  - creative-automation
+  - smb
 draft: false
+url: "https://labs.google.com/pomelli/"
+linkTitle: Pomelli by Google Labs
+images: []
+videos: []
+prompts: []
 ---
 
 Tried [Pomelli](https://labs.google.com/pomelli/) today.

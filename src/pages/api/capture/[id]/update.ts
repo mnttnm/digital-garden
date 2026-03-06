@@ -3,7 +3,7 @@
  *
  * PATCH /api/capture/[id]/update
  *
- * Updates capture metadata (title, text, tags, etc.)
+ * Updates capture metadata (title, note, tags, etc.)
  */
 
 import type { APIRoute } from 'astro';
@@ -59,18 +59,17 @@ export const PATCH: APIRoute = async ({ params, request }) => {
     const updates = await request.json() as CaptureUpdatePayload;
 
     // Validate updates
-    if (updates.inferredCollection &&
-        !['til', 'notes', 'resources', 'project-update'].includes(updates.inferredCollection)) {
+    if (updates.kind && !['learning', 'resource'].includes(updates.kind)) {
       return new Response(
-        JSON.stringify({ error: 'Invalid collection' }),
+        JSON.stringify({ error: 'Invalid kind' }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    if (updates.inferredNoteType &&
-        !['link', 'thought', 'essay', 'snippet'].includes(updates.inferredNoteType)) {
+    if (updates.activityType &&
+        !['update', 'milestone', 'fix', 'learning', 'discovery', 'experiment'].includes(updates.activityType)) {
       return new Response(
-        JSON.stringify({ error: 'Invalid note type' }),
+        JSON.stringify({ error: 'Invalid activity type' }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }

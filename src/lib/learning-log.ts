@@ -1,62 +1,69 @@
 import { getCollection, type CollectionEntry } from 'astro:content';
 
-type NoteType = CollectionEntry<'notes'>['data']['type'];
+type DiscoveryKind = CollectionEntry<'discoveries'>['data']['kind'];
 type ProjectActivity = CollectionEntry<'projects'>['data']['activity'][number];
 
-export type LearningLogBucket = 'project-updates' | 'what-i-discovered';
-export type LearningLogSourceType = NoteType | ProjectActivity['type'] | 'til';
-export type LearningLogCategory = 'projects' | 'learnings' | 'resources' | 'thoughts';
+export type FeedBucket = 'project-updates' | 'discoveries';
+export type FeedSourceType = DiscoveryKind | ProjectActivity['activityType'];
 
-export interface LearningLogLinkPreview {
+export interface FeedLinkPreview {
   title: string;
   url: string;
   domain: string;
-  tweetAuthor?: string; // For X/Twitter links, the @username
+  tweetAuthor?: string;
 }
 
-export interface LearningLogCodePreview {
+export interface FeedCodePreview {
   language: string;
   code: string;
 }
 
-export interface LearningLogImagePreview {
+export interface FeedImagePreview {
   src: string;
   alt: string;
   caption?: string;
 }
 
-export interface LearningLogVideoPreview {
+export interface FeedVideoPreview {
   src: string;
   poster?: string;
   title?: string;
   caption?: string;
 }
 
-export interface LearningLogActionLink {
+export interface FeedActionLink {
   label: string;
   href: string;
   isExternal: boolean;
 }
 
-export interface LearningLogItem {
+export interface FeedItem {
   id: string;
-  bucket: LearningLogBucket;
-  category: LearningLogCategory;
+  bucket: FeedBucket;
   date: Date;
   title: string;
   crux: string;
   href: string;
+  isExternal: boolean;
+
+  // Context
+  kind?: DiscoveryKind;
   projectSlug?: string;
   projectTitle?: string;
+  activityType?: ProjectActivity['activityType'];
+
+  // Media previews
+  images?: FeedImagePreview[];
+  video?: FeedVideoPreview;
+  code?: FeedCodePreview;
+
+  // Link preview (for entries with url)
+  linkPreview?: FeedLinkPreview;
+
+  // Action link (for project updates)
+  actionLink?: FeedActionLink;
+
   tags: string[];
-  sourceType: LearningLogSourceType;
-  isExternal: boolean;
-  linkPreview?: LearningLogLinkPreview;
-  codePreview?: LearningLogCodePreview;
-  imagePreview?: LearningLogImagePreview;
-  imagePreviews?: LearningLogImagePreview[];
-  videoPreview?: LearningLogVideoPreview;
-  actionLink?: LearningLogActionLink;
 }
 
 function slugify(input: string): string {
@@ -124,17 +131,25 @@ function getTweetAuthor(url: string): string | undefined {
     const host = parsed.hostname.replace(/^www\./, '');
     if (host !== 'twitter.com' && host !== 'x.com') return undefined;
 
-    // Match /user/status/123 pattern
     const match = parsed.pathname.match(/^\/([^/]+)\/status\/(\d+)/);
     if (!match) return undefined;
 
-    return match[1]; // Return the username
+    return match[1];
   } catch {
     return undefined;
   }
 }
 
-function getCodePreview(markdown: string): LearningLogCodePreview | undefined {
+function getCodePreview(code: string | undefined, language: string | undefined): FeedCodePreview | undefined {
+  if (!code) return undefined;
+
+  return {
+    language: (language || 'text').toLowerCase(),
+    code: truncate(code.trim(), 320),
+  };
+}
+
+function getCodePreviewFromMarkdown(markdown: string): FeedCodePreview | undefined {
   const match = markdown.match(/```([a-zA-Z0-9_-]+)?\n([\s\S]*?)```/);
   if (!match?.[2]) return undefined;
 
@@ -144,7 +159,17 @@ function getCodePreview(markdown: string): LearningLogCodePreview | undefined {
   };
 }
 
-function getImagePreviews(markdown: string): LearningLogImagePreview[] {
+function getImagePreviews(images: Array<{ src: string; alt?: string; caption?: string }>): FeedImagePreview[] {
+  return images
+    .filter((img) => Boolean(img.src))
+    .map((img) => ({
+      src: img.src,
+      alt: img.alt || 'Image',
+      caption: img.caption,
+    }));
+}
+
+function getImagePreviewsFromMarkdown(markdown: string): FeedImagePreview[] {
   const matches = Array.from(markdown.matchAll(/!\[([^\]]*)\]\(([^)]+)\)/g));
   if (matches.length === 0) return [];
 
@@ -156,13 +181,20 @@ function getImagePreviews(markdown: string): LearningLogImagePreview[] {
     .filter((image) => Boolean(image.src));
 }
 
-function getNoteCategory(type: NoteType): LearningLogCategory {
-  if (type === 'link') return 'resources';
-  if (type === 'thought') return 'thoughts';
-  return 'learnings';
+function getVideoPreview(videos: Array<{ src: string; poster?: string; caption?: string; title?: string }>): FeedVideoPreview | undefined {
+  const video = videos.find((v) => Boolean(v.src));
+  if (!video) return undefined;
+
+  return {
+    src: video.src,
+    poster: video.poster,
+    title: video.title,
+    caption: video.caption,
+  };
 }
 
-function getProjectEventImagePreviews(event: ProjectActivity): LearningLogImagePreview[] {
+function getProjectEventImagePreviews(event: ProjectActivity): FeedImagePreview[] {
+  // First check for images array
   const galleryPreviews = event.images
     .filter((image) => Boolean(image.src))
     .map((image) => ({
@@ -173,6 +205,7 @@ function getProjectEventImagePreviews(event: ProjectActivity): LearningLogImageP
 
   if (galleryPreviews.length > 0) return galleryPreviews;
 
+  // Fall back to legacy single image field
   if (event.image) {
     return [{
       src: event.image,
@@ -181,6 +214,7 @@ function getProjectEventImagePreviews(event: ProjectActivity): LearningLogImageP
     }];
   }
 
+  // Fall back to video posters
   const videoPosterPreviews = event.videos
     .filter((video) => Boolean(video.poster))
     .map((video) => ({
@@ -192,7 +226,7 @@ function getProjectEventImagePreviews(event: ProjectActivity): LearningLogImageP
   return videoPosterPreviews;
 }
 
-function getProjectEventVideoPreview(event: ProjectActivity): LearningLogVideoPreview | undefined {
+function getProjectEventVideoPreview(event: ProjectActivity): FeedVideoPreview | undefined {
   const video = event.videos.find((v) => Boolean(v.src));
   if (!video) return undefined;
 
@@ -204,183 +238,118 @@ function getProjectEventVideoPreview(event: ProjectActivity): LearningLogVideoPr
   };
 }
 
-export async function getLearningLogItems(): Promise<LearningLogItem[]> {
-  const [notes, projects, tils, resources] = await Promise.all([
-    getCollection('notes', ({ data }) => !data.draft),
+export async function getFeedItems(): Promise<FeedItem[]> {
+  const [discoveries, projects] = await Promise.all([
+    getCollection('discoveries', ({ data }) => !data.draft),
     getCollection('projects', ({ data }) => !data.draft),
-    getCollection('til', ({ data }) => !data.draft),
-    getCollection('resources', ({ data }) => !data.draft),
   ]);
 
-  const noteItems: LearningLogItem[] = notes.map((note) => {
-    // Always route note titles to internal detail pages.
-    // External links are still surfaced via link previews and note detail "View original".
-    const isExternal = false;
-    const href = `/notes/${note.slug}/`;
-    const crux = note.data.takeaway?.trim() || firstSentenceOrExcerpt(note.body) || note.data.title;
-    const linkPreview = note.data.type === 'link' && note.data.link
+  const discoveryItems: FeedItem[] = discoveries.map((discovery) => {
+    const href = `/discoveries/${discovery.slug}/`;
+    const crux = firstSentenceOrExcerpt(discovery.body) || discovery.data.title;
+
+    // Build link preview if URL is present
+    const linkPreview = discovery.data.url
       ? {
-          title: note.data.linkTitle || note.data.title,
-          url: note.data.link,
-          domain: getDomain(note.data.link),
-          tweetAuthor: getTweetAuthor(note.data.link),
+          title: discovery.data.linkTitle || discovery.data.title,
+          url: discovery.data.url,
+          domain: getDomain(discovery.data.url),
+          tweetAuthor: getTweetAuthor(discovery.data.url),
         }
       : undefined;
-    const codePreview = note.data.type === 'snippet' ? getCodePreview(note.body) : undefined;
-    const bodyImagePreviews = getImagePreviews(note.body);
 
-    // Prefer frontmatter image, fall back to body markdown images
-    const frontmatterImage = note.data.image
-      ? { src: note.data.image, alt: note.data.imageAlt || note.data.title }
-      : undefined;
-    const imagePreviews = frontmatterImage
-      ? [frontmatterImage, ...bodyImagePreviews]
-      : bodyImagePreviews;
+    // Build code preview from frontmatter or body
+    const codePreview = discovery.data.code
+      ? getCodePreview(discovery.data.code, discovery.data.codeLanguage)
+      : getCodePreviewFromMarkdown(discovery.body);
+
+    // Build image previews from frontmatter or body
+    const frontmatterImages = getImagePreviews(discovery.data.images);
+    const bodyImages = getImagePreviewsFromMarkdown(discovery.body);
+    const images = frontmatterImages.length > 0 ? frontmatterImages : bodyImages;
+
+    // Build video preview from frontmatter
+    const video = getVideoPreview(discovery.data.videos);
 
     return {
-      id: `note-${note.slug}`,
-      bucket: 'what-i-discovered',
-      category: getNoteCategory(note.data.type),
-      date: note.data.date,
-      title: note.data.title,
+      id: `discovery-${discovery.slug}`,
+      bucket: 'discoveries' as const,
+      date: discovery.data.date,
+      title: discovery.data.title,
       crux,
       href,
-      tags: note.data.tags ?? [],
-      sourceType: note.data.type,
-      isExternal,
+      isExternal: false,
+      kind: discovery.data.kind,
+      tags: discovery.data.tags ?? [],
       linkPreview,
-      codePreview,
-      imagePreview: imagePreviews[0],
-      imagePreviews: imagePreviews.length > 0 ? imagePreviews : undefined,
+      code: codePreview,
+      images: images.length > 0 ? images : undefined,
+      video,
     };
   });
 
-  const projectItems: LearningLogItem[] = projects.flatMap((project) =>
+  const projectItems: FeedItem[] = projects.flatMap((project) =>
     project.data.activity.map((event) => {
       const anchor = getProjectEventAnchor(project.slug, event.date, event.title);
       const eventTags = event.tags ?? [];
-      const actionHref = event.actionUrl;
-      const actionIsExternal = actionHref ? /^https?:\/\//i.test(actionHref) : false;
       const imagePreviews = getProjectEventImagePreviews(event);
       const videoPreview = getProjectEventVideoPreview(event);
       const hasVisualMedia = imagePreviews.length > 0 || videoPreview;
 
+      // Build link preview from links array or url field
+      let linkPreview: FeedLinkPreview | undefined;
+      if (!hasVisualMedia) {
+        if (event.url) {
+          linkPreview = {
+            title: event.title,
+            url: event.url,
+            domain: getDomain(event.url),
+          };
+        } else if (event.links && event.links[0]) {
+          linkPreview = {
+            title: event.links[0].label,
+            url: event.links[0].url,
+            domain: getDomain(event.links[0].url),
+          };
+        }
+      }
+
+      // Build action link if present
+      const actionLink = event.actionUrl && event.actionLabel
+        ? {
+            label: event.actionLabel,
+            href: event.actionUrl,
+            isExternal: /^https?:\/\//i.test(event.actionUrl),
+          }
+        : undefined;
+
       return {
         id: `project-${project.slug}-${anchor}`,
         bucket: 'project-updates' as const,
-        category: 'projects' as const,
         date: event.date,
         title: event.title,
         crux: event.summary,
         href: `/projects/${project.slug}/#${anchor}`,
+        isExternal: false,
         projectSlug: project.slug,
         projectTitle: project.data.title,
+        activityType: event.activityType,
         tags: eventTags.length > 0 ? eventTags : (project.data.tags ?? []),
-        sourceType: event.type,
-        isExternal: false,
-        linkPreview: !hasVisualMedia && event.links[0]
-          ? {
-              title: event.links[0].label,
-              url: event.links[0].url,
-              domain: getDomain(event.links[0].url),
-            }
+        linkPreview,
+        code: event.code
+          ? getCodePreview(event.code, event.codeLanguage)
           : undefined,
-        codePreview: event.code
-          ? {
-              language: (event.codeLanguage || 'text').toLowerCase(),
-              code: truncate(event.code.trim(), 320),
-            }
-          : undefined,
-        imagePreview: imagePreviews[0],
-        imagePreviews: imagePreviews.length > 0 ? imagePreviews : undefined,
-        videoPreview,
-        actionLink: actionHref && event.actionLabel
-          ? {
-              label: event.actionLabel,
-              href: actionHref,
-              isExternal: actionIsExternal,
-            }
-          : undefined,
+        images: imagePreviews.length > 0 ? imagePreviews : undefined,
+        video: videoPreview,
+        actionLink,
       };
     })
   );
 
-  // Build a map of project slugs to titles for TIL lookups
-  const projectMap = new Map(projects.map((p) => [p.slug, p.data.title]));
-
-  const tilItems: LearningLogItem[] = tils.map((til) => {
-    const crux = firstSentenceOrExcerpt(til.body) || til.data.title;
-    const bodyImagePreviews = getImagePreviews(til.body);
-
-    // Prefer frontmatter image, fall back to body markdown images
-    const frontmatterImage = til.data.image
-      ? { src: til.data.image, alt: til.data.imageAlt || til.data.title }
-      : undefined;
-    const imagePreviews = frontmatterImage
-      ? [frontmatterImage, ...bodyImagePreviews]
-      : bodyImagePreviews;
-
-    // Look up linked project if specified
-    const projectSlug = til.data.project;
-    const projectTitle = projectSlug ? projectMap.get(projectSlug) : undefined;
-
-    // Create link preview if TIL has a link
-    const linkPreview = til.data.link
-      ? {
-          title: til.data.linkTitle || til.data.title,
-          url: til.data.link,
-          domain: getDomain(til.data.link),
-          tweetAuthor: getTweetAuthor(til.data.link),
-        }
-      : undefined;
-
-    return {
-      id: `til-${til.slug}`,
-      bucket: 'what-i-discovered',
-      category: 'learnings',
-      date: til.data.date,
-      title: til.data.title,
-      crux,
-      href: `/til/${til.slug}/`,
-      projectSlug,
-      projectTitle,
-      tags: til.data.tags ?? [],
-      sourceType: 'til',
-      isExternal: false,
-      linkPreview,
-      imagePreview: imagePreviews[0],
-      imagePreviews: imagePreviews.length > 0 ? imagePreviews : undefined,
-    };
-  });
-
-  const resourceItems: LearningLogItem[] = resources.map((resource) => {
-    const linkPreview = {
-      title: resource.data.title,
-      url: resource.data.url,
-      domain: getDomain(resource.data.url),
-      tweetAuthor: getTweetAuthor(resource.data.url),
-    };
-
-    const imagePreviews = resource.data.image
-      ? [{ src: resource.data.image, alt: resource.data.imageAlt || resource.data.title }]
-      : [];
-
-    return {
-      id: `resource-${resource.slug}`,
-      bucket: 'what-i-discovered' as const,
-      category: 'resources' as const,
-      date: resource.data.date,
-      title: resource.data.title,
-      crux: resource.data.description,
-      href: resource.data.url,
-      tags: resource.data.tags ?? [],
-      sourceType: 'link' as const,
-      isExternal: true,
-      linkPreview,
-      imagePreview: imagePreviews[0],
-      imagePreviews: imagePreviews.length > 0 ? imagePreviews : undefined,
-    };
-  });
-
-  return [...projectItems, ...noteItems, ...tilItems, ...resourceItems].sort((a, b) => b.date.valueOf() - a.date.valueOf());
+  return [...projectItems, ...discoveryItems].sort((a, b) => b.date.valueOf() - a.date.valueOf());
 }
+
+// Legacy export for backward compatibility during transition
+export type LearningLogItem = FeedItem;
+export type LearningLogBucket = FeedBucket;
+export const getLearningLogItems = getFeedItems;

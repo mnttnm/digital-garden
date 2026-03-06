@@ -287,8 +287,8 @@ const counts = { pending, approved, published, rejected };
         url: card.querySelector('[data-field="url"]')?.value || '',
         tags: getTagsFromCard(card),
         images: getImagesFromCard(card),
-        collection: card.querySelector('[data-field="collection"]')?.value || '',
-        noteType: card.querySelector('[data-field="noteType"]')?.value || '',
+        kind: card.querySelector('[data-field="kind"]')?.value || '',
+        activityType: card.querySelector('[data-field="activityType"]')?.value || '',
       };
     }
 
@@ -532,12 +532,12 @@ const counts = { pending, approved, published, rejected };
         },
         body: JSON.stringify({
           title: values.title || undefined,
-          text: values.body,
+          note: values.body,
           url: values.url || undefined,
           images: values.images.length > 0 ? values.images : undefined,
           tags: values.tags,
-          inferredCollection: values.collection,
-          inferredNoteType: values.noteType || null,
+          kind: values.kind || undefined,
+          activityType: values.activityType || undefined,
           // Manual edits override AI refinement during publish
           publishUseRefined: false,
         }),
@@ -622,29 +622,22 @@ const counts = { pending, approved, published, rejected };
       const bodyEl = displayMode.querySelector('.display-body');
       const tagsEl = displayMode.querySelector('.display-tags');
       const collEl = displayMode.querySelector('.display-collection');
-      const noteTypeEl = displayMode.querySelector('.display-note-type');
 
       const displayTitle = titleEl?.textContent || '';
       const displayBody = bodyEl?.textContent || '';
       const displayTags = tagsEl ?
         Array.from(tagsEl.querySelectorAll('.tag')).map(t => t.textContent.replace('#', '')) : [];
-      const displayCollection = collEl?.textContent?.toLowerCase()
-        .replace('til', 'til')
-        .replace('note', 'notes')
-        .replace('resource', 'resources') || 'notes';
-      const displayNoteType = noteTypeEl?.textContent?.toLowerCase() || '';
+      const displayKind = collEl?.textContent?.toLowerCase() === 'resource' ? 'resource' : 'learning';
 
       // Set field values
       const titleField = card.querySelector('[data-field="title"]');
       const bodyField = card.querySelector('[data-field="body"]');
-      const collectionField = card.querySelector('[data-field="collection"]');
-      const noteTypeField = card.querySelector('[data-field="noteType"]');
+      const kindField = card.querySelector('[data-field="kind"]');
       const tagsList = card.querySelector('.tags-list');
 
       if (titleField) titleField.value = displayTitle;
       if (bodyField) bodyField.value = displayBody;
-      if (collectionField) collectionField.value = displayCollection;
-      if (noteTypeField) noteTypeField.value = displayNoteType;
+      if (kindField) kindField.value = displayKind;
 
       // Revert tags
       if (tagsList) {
@@ -734,29 +727,10 @@ const counts = { pending, approved, published, rejected };
 
       // Update classification
       const classEl = displayMode.querySelector('.display-classification');
-      if (classEl && values.collection) {
-        const collLabel = values.collection === 'til' ? 'TIL' :
-          values.collection === 'resources' ? 'Resource' : 'Note';
+      if (classEl && values.kind) {
+        const kindLabel = values.kind === 'resource' ? 'Resource' : 'Learning';
         const collEl = classEl.querySelector('.display-collection');
-        if (collEl) collEl.textContent = collLabel;
-
-        let noteTypeEl = classEl.querySelector('.display-note-type');
-        if (values.noteType) {
-          const noteLabel = values.noteType === 'link' ? 'Link' :
-            values.noteType === 'thought' ? 'Thought' :
-            values.noteType === 'essay' ? 'Essay' :
-            values.noteType === 'snippet' ? 'Snippet' : values.noteType;
-          if (noteTypeEl) {
-            noteTypeEl.textContent = noteLabel;
-          } else {
-            noteTypeEl = document.createElement('span');
-            noteTypeEl.className = 'display-note-type';
-            noteTypeEl.textContent = noteLabel;
-            classEl.appendChild(noteTypeEl);
-          }
-        } else if (noteTypeEl) {
-          noteTypeEl.remove();
-        }
+        if (collEl) collEl.textContent = kindLabel;
       }
     }
 
@@ -764,22 +738,22 @@ const counts = { pending, approved, published, rejected };
     // Reset to Raw
     // ==========================================
     function resetToRaw(card) {
-      const rawText = card.dataset.rawText || '';
+      const rawNote = card.dataset.rawNote || '';
       const rawTags = JSON.parse(card.dataset.rawTags || '[]');
-      const rawCollection = card.dataset.rawCollection || 'notes';
-      const rawNoteType = card.dataset.rawNoteType || '';
+      const rawKind = card.dataset.rawKind || 'learning';
+      const rawActivityType = card.dataset.rawActivityType || '';
 
       // Update fields
       const titleField = card.querySelector('[data-field="title"]');
       const bodyField = card.querySelector('[data-field="body"]');
-      const collectionField = card.querySelector('[data-field="collection"]');
-      const noteTypeField = card.querySelector('[data-field="noteType"]');
+      const kindField = card.querySelector('[data-field="kind"]');
+      const activityTypeField = card.querySelector('[data-field="activityType"]');
       const tagsList = card.querySelector('.tags-list');
 
       if (titleField) titleField.value = '';
-      if (bodyField) bodyField.value = rawText;
-      if (collectionField) collectionField.value = rawCollection;
-      if (noteTypeField) noteTypeField.value = rawNoteType;
+      if (bodyField) bodyField.value = rawNote;
+      if (kindField) kindField.value = rawKind;
+      if (activityTypeField) activityTypeField.value = rawActivityType;
 
       // Reset tags
       if (tagsList) {
@@ -1022,16 +996,12 @@ const counts = { pending, approved, published, rejected };
                 const titleField = card.querySelector('[data-field="title"]');
                 const bodyField = card.querySelector('[data-field="body"]');
                 const tagsList = card.querySelector('.tags-list');
-                const collectionField = card.querySelector('[data-field="collection"]');
-                const noteTypeField = card.querySelector('[data-field="noteType"]');
+                const kindField = card.querySelector('[data-field="kind"]');
 
                 if (titleField) titleField.value = data.refined.title || '';
                 if (bodyField) bodyField.value = data.refined.body || '';
-                if (collectionField && data.refined.suggestedType) {
-                  collectionField.value = data.refined.suggestedType;
-                }
-                if (noteTypeField && data.refined.suggestedNoteType) {
-                  noteTypeField.value = data.refined.suggestedNoteType;
+                if (kindField && data.refined.suggestedKind) {
+                  kindField.value = data.refined.suggestedKind;
                 }
 
                 // Update tags

@@ -12,7 +12,7 @@ activity:
     title: "New Project: Context-first operating model established for daily execution"
     summary: "The system was structured around a small set of source-of-truth files so daily plans are generated from real constraints instead of generic productivity prompts."
     tags: ["system-design", "planning", "context-architecture"]
-    type: "milestone"
+    activityType: "milestone"
     highlights:
       - "Goals, life context, dashboard, plan, and log operate as one decision layer"
       - "Daily recommendations now align with actual delivery priorities"
@@ -34,7 +34,7 @@ activity:
     title: "Workflow optimization pass added for stronger day-to-day fit"
     summary: "The operating model was refined to better match real weekly rhythms by improving prioritization, reducing planning overhead, and tightening feedback loops."
     tags: ["workflow-optimization", "iteration", "operations"]
-    type: "learning"
+    activityType: "learning"
     highlights:
       - "Task selection became more selective and execution-focused"
       - "Planning overhead reduced by standardizing daily decision checkpoints"
@@ -44,7 +44,7 @@ activity:
     title: "Claude Co-work becoming the natural daily interface"
     summary: "Accessing the system primarily through Claude Co-work now feels like the natural way to work. The chat interface combined with easily toggleable connectors and plugins creates a flexible operating environment that adapts to different use cases."
     tags: ["claude-cowork", "interface", "connectors"]
-    type: "update"
+    activityType: "update"
     highlights:
       - "Chat-based interaction fits naturally into daily planning workflows"
       - "Connectors for Jira, Slack, Calendar, and other tools can be enabled or disabled per context"

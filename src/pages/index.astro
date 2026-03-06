@@ -1,9 +1,9 @@
 ---
 import Base from "../layouts/Base.astro";
 import {
-  getLearningLogItems,
-  type LearningLogCategory,
-  type LearningLogItem,
+  getFeedItems,
+  type FeedItem,
+  type FeedBucket,
 } from "../lib/learning-log";
 import OnboardingOverlay from "../components/onboarding/OnboardingOverlay.astro";
 import xAccounts from "../resources/x-accounts.json";
@@ -23,7 +23,7 @@ const requestedPage = Number.parseInt(
 const currentPage =
   Number.isFinite(requestedPage) && requestedPage > 0 ? requestedPage : 1;
 
-const allItems = await getLearningLogItems();
+const allItems = await getFeedItems();
 
 const visibleCount = currentPage * ITEMS_PER_PAGE;
 const visibleItems = allItems.slice(0, visibleCount);
@@ -44,35 +44,33 @@ function resolveInternalHref(href: string) {
   return `${base}${normalized}`;
 }
 
-function getCategoryLabel(item: LearningLogItem) {
-  const labels: Record<LearningLogCategory, string> = {
-    projects: "PROJECT UPDATE",
-    learnings: "LEARNING",
-    resources: "RESOURCE",
-    thoughts: "THOUGHT",
-  };
-  return labels[item.category];
+function getCategoryLabel(item: FeedItem) {
+  if (item.bucket === 'project-updates') {
+    return 'PROJECT UPDATE';
+  }
+  // For discoveries, use kind
+  if (item.kind === 'resource') {
+    return 'RESOURCE';
+  }
+  return 'LEARNING';
 }
 
-function getCategoryDotClass(item: LearningLogItem) {
-  const dotClasses: Record<LearningLogCategory, string> = {
-    projects: "dot-project",
-    learnings: "dot-learning",
-    resources: "dot-resource",
-    thoughts: "dot-thought",
-  };
-  return dotClasses[item.category];
+function getCategoryDotClass(item: FeedItem) {
+  if (item.bucket === 'project-updates') {
+    return 'dot-project';
+  }
+  if (item.kind === 'resource') {
+    return 'dot-resource';
+  }
+  return 'dot-learning';
 }
 
-function getTags(item: LearningLogItem) {
+function getTags(item: FeedItem) {
   return item.tags.slice(0, 3);
 }
 
-function getImagePreviews(item: LearningLogItem) {
-  if (item.imagePreviews && item.imagePreviews.length > 0) {
-    return item.imagePreviews;
-  }
-  return item.imagePreview ? [item.imagePreview] : [];
+function getImagePreviews(item: FeedItem) {
+  return item.images || [];
 }
 ---
 
@@ -152,24 +150,24 @@ function getImagePreviews(item: LearningLogItem) {
                       </a>
                     </h2>
 
-                    {item.videoPreview && (
+                    {item.video && (
                       <div class="entry-video">
                         <video
                           controls
                           preload="metadata"
                           playsinline
-                          poster={item.videoPreview.poster}
-                          aria-label={item.videoPreview.title}
+                          poster={item.video.poster}
+                          aria-label={item.video.title}
                         >
-                          <source src={item.videoPreview.src} />
+                          <source src={item.video.src} />
                         </video>
-                        {item.videoPreview.caption && (
-                          <p class="entry-video-caption">{item.videoPreview.caption}</p>
+                        {item.video.caption && (
+                          <p class="entry-video-caption">{item.video.caption}</p>
                         )}
                       </div>
                     )}
 
-                    {!item.videoPreview && previews.length > 0 && (
+                    {!item.video && previews.length > 0 && (
                       <div class="entry-thumbnails" data-lightbox-gallery>
                         {previews.slice(0, 3).map((preview, i) => {
                           const isLast = i === 2;
@@ -259,14 +257,14 @@ function getImagePreviews(item: LearningLogItem) {
                       </a>
                     )}
 
-                    {item.codePreview && (
+                    {item.code && (
                       <div class="code-block">
                         <div class="code-block-header">
-                          <span>{item.codePreview.language}</span>
+                          <span>{item.code.language}</span>
                           <span>code</span>
                         </div>
                         <pre>
-                          <code>{item.codePreview.code}</code>
+                          <code>{item.code.code}</code>
                         </pre>
                       </div>
                     )}

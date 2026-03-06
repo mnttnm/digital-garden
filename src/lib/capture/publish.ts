@@ -143,6 +143,7 @@ function serializeActivity(activity: ProjectActivityEntry): string {
   lines.push(`  - date: ${activity.date}`);
   lines.push(`    title: "${activity.title.replace(/"/g, '\\"')}"`);
   lines.push(`    summary: "${activity.summary.replace(/"/g, '\\"').replace(/\n/g, ' ')}"`);
+  lines.push(`    activityType: "${activity.activityType}"`);
 
   if (activity.tags.length > 0) {
     lines.push(`    tags:`);
@@ -151,28 +152,30 @@ function serializeActivity(activity: ProjectActivityEntry): string {
     lines.push(`    tags: []`);
   }
 
-  lines.push(`    type: "${activity.type}"`);
-
-  if (activity.highlights && activity.highlights.length > 0) {
-    lines.push(`    highlights:`);
-    activity.highlights.forEach(h => lines.push(`      - "${h.replace(/"/g, '\\"')}"`));
+  // Images array
+  if (activity.images && activity.images.length > 0) {
+    lines.push(`    images:`);
+    activity.images.forEach(img => {
+      lines.push(`      - src: "${img.src}"`);
+      if (img.alt) lines.push(`        alt: "${img.alt.replace(/"/g, '\\"')}"`);
+      if (img.caption) lines.push(`        caption: "${img.caption.replace(/"/g, '\\"')}"`);
+    });
+  } else {
+    lines.push(`    images: []`);
   }
 
-  if (activity.image) {
-    lines.push(`    image: "${activity.image}"`);
+  // Videos array
+  if (activity.videos && activity.videos.length > 0) {
+    lines.push(`    videos:`);
+    activity.videos.forEach(vid => {
+      lines.push(`      - src: "${vid.src}"`);
+      if (vid.poster) lines.push(`        poster: "${vid.poster}"`);
+      if (vid.caption) lines.push(`        caption: "${vid.caption.replace(/"/g, '\\"')}"`);
+    });
+  } else {
+    lines.push(`    videos: []`);
   }
-  if (activity.imageAlt) {
-    lines.push(`    imageAlt: "${activity.imageAlt.replace(/"/g, '\\"')}"`);
-  }
-  if (activity.imageCaption) {
-    lines.push(`    imageCaption: "${activity.imageCaption.replace(/"/g, '\\"')}"`);
-  }
-  if (activity.actionLabel) {
-    lines.push(`    actionLabel: "${activity.actionLabel}"`);
-  }
-  if (activity.actionUrl) {
-    lines.push(`    actionUrl: "${activity.actionUrl}"`);
-  }
+
   if (activity.code) {
     lines.push(`    code: |`);
     activity.code.split('\n').forEach(line => lines.push(`      ${line}`));
@@ -180,13 +183,17 @@ function serializeActivity(activity: ProjectActivityEntry): string {
   if (activity.codeLanguage) {
     lines.push(`    codeLanguage: "${activity.codeLanguage}"`);
   }
-  if (activity.links && activity.links.length > 0) {
-    lines.push(`    links:`);
-    activity.links.forEach(link => {
-      lines.push(`      - label: "${link.label}"`);
-      lines.push(`        url: "${link.url}"`);
-    });
+  if (activity.url) {
+    lines.push(`    url: "${activity.url}"`);
   }
+  if (activity.actionLabel) {
+    lines.push(`    actionLabel: "${activity.actionLabel}"`);
+  }
+  if (activity.actionUrl) {
+    lines.push(`    actionUrl: "${activity.actionUrl}"`);
+  }
+
+  lines.push(`    prompts: []`);
 
   return lines.join('\n');
 }
@@ -324,10 +331,10 @@ async function publishProjectActivity(
   }
 
   // Save image if present
-  let imageUrl: string | undefined;
   if (result.imageData) {
-    imageUrl = await saveImage(config, result.imageData, capture.id);
-    result.activity.image = imageUrl;
+    const imageUrl = await saveImage(config, result.imageData, capture.id);
+    if (!result.activity.images) result.activity.images = [];
+    result.activity.images.push({ src: imageUrl });
   }
 
   // Insert new activity
@@ -413,9 +420,8 @@ export async function publishCapture(
   }
 
   // Generate commit message
-  const collection = contentResult.collection === 'til' ? 'TIL' : 'note';
   const title = contentResult.frontmatter.title;
-  const message = `content: add ${collection} "${title}"`;
+  const message = `content: add discovery "${title}"`;
 
   // Commit to GitHub
   const response = await createFile(config, path, fullContent, message);
@@ -454,12 +460,11 @@ export function previewPublish(capture: Capture, useRefined = true): {
     };
   }
 
-  // Handle notes/TIL
+  // Handle discoveries
   const contentResult = result as TransformResult;
   const path = getContentPath(contentResult);
-  const collection = contentResult.collection === 'til' ? 'TIL' : 'note';
   const title = contentResult.frontmatter.title;
-  const message = `content: add ${collection} "${title}"`;
+  const message = `content: add discovery "${title}"`;
 
   return {
     path,
@@ -564,7 +569,8 @@ export async function batchPublishCaptures(
       // Handle image for project activity
       if (result.imageData) {
         const imageUrl = await saveImage(config, result.imageData, capture.id);
-        result.activity.image = imageUrl;
+        if (!result.activity.images) result.activity.images = [];
+        result.activity.images.push({ src: imageUrl });
       }
 
       updatedContent = insertActivityIntoProject(updatedContent, result.activity);

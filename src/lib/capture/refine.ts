@@ -3,84 +3,77 @@
  *
  * Transforms raw captured content into publication-ready markdown
  * using the configured AI provider.
+ *
+ * Philosophy: Fix, don't transform
+ * - Preserve the user's voice
+ * - Fix grammar and spelling
+ * - Never add or remove information
+ * - Keep it raw and authentic
  */
 
 import { generateObject } from 'ai';
 import { z } from 'zod';
 import { getAIModel, isAIConfigured } from './providers';
-import type { Capture, RefinedCapture, InferredNoteType, InferredCollection } from './types';
+import type { Capture, RefinedCapture, DiscoveryKind } from './types';
 
 // Schema for AI-generated refinement
 const refinementSchema = z.object({
-  title: z.string().describe('User commentary/heading - what the user is saying about this content (< 60 chars)'),
+  title: z.string().describe('User\'s title/framing of this entry (< 60 chars)'),
   body: z.string().describe('Clean markdown body - preserve original meaning, only fix grammar'),
-  takeaway: z.string().optional().describe('One-sentence summary of the key insight'),
-  description: z.string().optional().describe('For resources: 1-2 sentence description of what this resource is'),
-  linkTitle: z.string().optional().describe('For URLs: the actual title of the linked page/article (e.g., "How to Build X" not user commentary)'),
+  linkTitle: z.string().optional().describe('For URLs: the actual title of the linked page/article'),
   suggestedTags: z.array(z.string()).describe('2-4 relevant topic tags'),
-  suggestedType: z.enum(['til', 'notes', 'resources', 'project-update']).describe('Which collection this belongs to'),
-  suggestedNoteType: z.enum(['link', 'thought', 'essay', 'snippet']).optional()
-    .describe('For notes collection, the type of note'),
-  suggestedResourceType: z.enum(['blog', 'newsletter', 'twitter', 'youtube', 'community', 'podcast', 'tool']).optional()
-    .describe('For resources collection, the type of resource'),
+  suggestedKind: z.enum(['learning', 'resource']).describe('learning = user insights, resource = sharing a link/tool'),
 });
 
 type RefinementOutput = z.infer<typeof refinementSchema>;
 
-const REFINEMENT_PROMPT = `You are a minimal content editor. Your job is to PRESERVE the user's original message while only fixing grammar and spelling.
+const REFINEMENT_PROMPT = `You are helping refine a personal note. The user's authentic voice matters more than polish.
 
-CRITICAL RULES:
-- DO NOT add information the user didn't provide
-- DO NOT remove information the user provided
-- DO NOT change the meaning or tone
-- DO NOT over-format with headers/lists unless the original clearly needs it
-- DO NOT editorialize or add your own commentary
-- ONLY fix grammar, spelling, and basic punctuation
-- Keep the body SHORT - match the length of the original content
+Rules:
+- Fix grammar, spelling, and sentence flow
+- Keep the original tone and style (casual, personal, authentic)
+- Do NOT add information the user didn't provide
+- Do NOT remove any information
+- Do NOT make it sound corporate or professional
+- Preserve the user's personality and writing quirks
+- Keep it SHORT — match the original length
 
-Content classification (pick the MOST appropriate):
-- Resources: When user is SHARING a link/URL as a reference (twitter, blog, newsletter, youtube, podcast, tool, community)
-  → Use this when the URL IS the content being shared
-  → suggestedResourceType: twitter (for x.com/twitter.com), youtube (for youtube.com), blog, newsletter, podcast, tool, community
-- TIL: Short learnings or tips the user discovered (< 200 words, no URL focus)
-- Notes (link): URL + substantial user commentary/analysis about it
-- Notes (thought): Personal reflections, opinions (no URL)
-- Notes (essay): Longer structured pieces (> 300 words)
-- Notes (snippet): Code-focused content
-- Project Update: ONLY if a project is explicitly specified
+Content classification:
+- resource: When the user is SHARING a link/URL as a reference or recommendation
+  → The URL IS the content being shared
+- learning: User's own insights, discoveries, tips, or reflections
+  → Personal experiences and learnings
 
-For Resources/Links:
-- title: User's commentary or why they're sharing (e.g., "A Billboard worthy reminder", "Great thread on AI agents")
-- linkTitle: The actual page/article title from the URL (e.g., "Building AI Agents with Claude", "Thread by @user")
-- description: 1-2 sentences about what this resource offers
+For content with a URL:
+- title: User's framing/commentary (e.g., "A Billboard worthy reminder", "Great thread on AI agents")
+- linkTitle: The actual page/article title from the URL (e.g., "Building AI Agents with Claude")
 - body: User's comment about why they're sharing it (keep brief)
 
-For Notes/TIL:
+For content without a URL:
 - title: Capture the essence in < 60 chars
-- linkTitle: If URL provided, the actual page title
 - body: User's content with grammar fixes only
-- takeaway: One sentence key insight
 
 Raw capture:
 {capture}
 
 URL (if provided): {url}
-User's comment (if provided): {comment}
-Project (if specified): {project}`;
+User's note (if provided): {note}
+Project (if specified): {project}
+
+Return the refined version that sounds like the same person wrote it, just cleaner.`;
 
 /**
  * Build the prompt from a capture
  */
 function buildPrompt(capture: Capture): string {
-  const captureText = capture.text || '';
+  const captureNote = capture.note || '';
   const url = capture.url || 'None';
-  const comment = capture.comment || 'None';
-  const project = capture.project || 'None';
+  const project = capture.projectSlug || 'None';
 
   return REFINEMENT_PROMPT
-    .replace('{capture}', captureText)
+    .replace('{capture}', captureNote)
     .replace('{url}', url)
-    .replace('{comment}', comment)
+    .replace('{note}', captureNote)
     .replace('{project}', project);
 }
 
@@ -103,7 +96,7 @@ export async function refineCapture(capture: Capture): Promise<RefinedCapture | 
       prompt,
     });
 
-    return mapToRefinedCapture(object);
+    return mapToRefinedCapture(object, prompt);
   } catch (error) {
     console.error('AI refinement failed:', error);
     return null;
@@ -113,18 +106,15 @@ export async function refineCapture(capture: Capture): Promise<RefinedCapture | 
 /**
  * Map AI output to RefinedCapture type
  */
-function mapToRefinedCapture(output: RefinementOutput): RefinedCapture {
+function mapToRefinedCapture(output: RefinementOutput, promptUsed: string): RefinedCapture {
   return {
     title: output.title,
     body: output.body,
-    takeaway: output.takeaway,
-    description: output.description,
     linkTitle: output.linkTitle,
     suggestedTags: output.suggestedTags,
-    suggestedType: output.suggestedType as InferredCollection,
-    suggestedNoteType: output.suggestedNoteType as InferredNoteType | undefined,
-    suggestedResourceType: output.suggestedResourceType as RefinedCapture['suggestedResourceType'],
+    suggestedKind: output.suggestedKind as DiscoveryKind,
     refinedAt: new Date().toISOString(),
+    promptUsed,
   };
 }
 
@@ -133,15 +123,13 @@ function mapToRefinedCapture(output: RefinementOutput): RefinedCapture {
  * Used as fallback when AI is not available
  */
 export function generateFallbackTitle(capture: Capture): string {
-  if (capture.comment) {
-    // Use first sentence of comment
-    const firstSentence = capture.comment.match(/^[^.!?]+[.!?]?/)?.[0] || capture.comment;
-    return truncate(firstSentence, 60);
+  if (capture.title) {
+    return capture.title;
   }
 
-  if (capture.text) {
-    // Use first sentence of text
-    const firstSentence = capture.text.match(/^[^.!?]+[.!?]?/)?.[0] || capture.text;
+  if (capture.note) {
+    // Use first sentence of note
+    const firstSentence = capture.note.match(/^[^.!?]+[.!?]?/)?.[0] || capture.note;
     return truncate(firstSentence, 60);
   }
 

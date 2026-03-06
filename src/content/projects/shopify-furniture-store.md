@@ -12,7 +12,7 @@ activity:
     title: "New Project: Starting the WooCommerce to Shopify migration"
     summary: "Kicking off a project to migrate my sister's furniture store from WooCommerce to Shopify. The goal: use AI as much as possible — Shopify CLI, Shopify MCP, and Claude Code — instead of the visual builder. A learning experiment to see how far agentic coding can take a real store build."
     tags: ["kickoff", "shopify", "agentic-coding", "migration"]
-    type: "milestone"
+    activityType: "milestone"
     highlights:
       - "Product data exported from WooCommerce, converted via scripts, and uploaded to Shopify"
       - "Shopify CLI and Shopify MCP set up as the primary development interface with Claude Code"
@@ -25,7 +25,7 @@ activity:
     title: "Configuring a Shopify store via Claude Code feels surprisingly good"
     summary: "Been setting up a Shopify store with Claude Code instead of clicking around the admin. Theme colors, collections, nav menus — all through CLI and API calls. Honestly? It flows way better than I expected. No tab-switching, no hunting for the right settings panel. Just describe what I want, watch it happen. The combo of Shopify CLI and their MCP server is what makes it work. AI needs APIs, not buttons."
     tags: ["shopify", "ai-assisted", "mcp", "cli"]
-    type: "learning"
+    activityType: "learning"
     highlights:
       - "Theme colors, collections, and nav menus configured entirely through CLI and API"
       - "No tab-switching or hunting for settings panels"

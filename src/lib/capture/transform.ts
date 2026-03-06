@@ -9,11 +9,7 @@ import type {
   Capture,
   TransformResult,
   ProjectActivityTransformResult,
-  TilFrontmatter,
-  NoteFrontmatter,
-  ResourceFrontmatter,
-  InferredNoteType,
-  ResourceType,
+  DiscoveryFrontmatter,
   ProjectActivityEntry,
 } from './types';
 import { generateFallbackTitle } from './refine';
@@ -44,19 +40,72 @@ function formatDate(date: Date | string): string {
  * Check if a string value needs YAML quoting
  */
 function needsQuoting(value: string): boolean {
-  // Empty strings need quotes
   if (value.length === 0) return true;
-
-  // Check for characters that require quoting
   if (/[:\[\]{}#&*!|>'"%@`\n\r]/.test(value)) return true;
-
-  // Values starting with special chars need quoting
   if (/^[-?]/.test(value)) return true;
-
-  // Values that look like numbers, booleans, or null need quoting
   if (/^(true|false|null|yes|no|on|off|\d+\.?\d*|\.inf|\.nan)$/i.test(value)) return true;
-
   return false;
+}
+
+/**
+ * Serialize a value for YAML
+ */
+function serializeValue(value: unknown, indent = 0): string {
+  const prefix = '  '.repeat(indent);
+
+  if (value === undefined || value === null) {
+    return '';
+  }
+
+  if (Array.isArray(value)) {
+    if (value.length === 0) {
+      return '[]';
+    }
+
+    // Check if it's an array of objects
+    if (typeof value[0] === 'object' && value[0] !== null) {
+      const items = value.map((item) => {
+        const entries = Object.entries(item as Record<string, unknown>);
+        const lines: string[] = [];
+        let first = true;
+        for (const [k, v] of entries) {
+          if (v === undefined || v === null) continue;
+          const itemPrefix = first ? `${prefix}  - ` : `${prefix}    `;
+          first = false;
+          if (typeof v === 'string' && needsQuoting(v)) {
+            lines.push(`${itemPrefix}${k}: "${v.replace(/"/g, '\\"')}"`);
+          } else {
+            lines.push(`${itemPrefix}${k}: ${v}`);
+          }
+        }
+        return lines.join('\n');
+      });
+      return '\n' + items.join('\n');
+    }
+
+    // Array of primitives
+    const items = value.map((item) => {
+      const str = String(item);
+      if (needsQuoting(str)) {
+        return `${prefix}  - "${str.replace(/"/g, '\\"')}"`;
+      }
+      return `${prefix}  - ${str}`;
+    });
+    return '\n' + items.join('\n');
+  }
+
+  if (typeof value === 'boolean') {
+    return String(value);
+  }
+
+  if (typeof value === 'string') {
+    if (needsQuoting(value)) {
+      return `"${value.replace(/"/g, '\\"')}"`;
+    }
+    return value;
+  }
+
+  return String(value);
 }
 
 /**
@@ -68,30 +117,11 @@ function serializeFrontmatter(fm: Record<string, unknown>): string {
   for (const [key, value] of Object.entries(fm)) {
     if (value === undefined || value === null) continue;
 
-    if (Array.isArray(value)) {
-      if (value.length === 0) {
-        lines.push(`${key}: []`);
-      } else {
-        lines.push(`${key}:`);
-        value.forEach((item) => {
-          const str = String(item);
-          if (needsQuoting(str)) {
-            lines.push(`  - "${str.replace(/"/g, '\\"')}"`);
-          } else {
-            lines.push(`  - ${str}`);
-          }
-        });
-      }
-    } else if (typeof value === 'boolean') {
-      lines.push(`${key}: ${value}`);
-    } else if (typeof value === 'string') {
-      if (needsQuoting(value)) {
-        lines.push(`${key}: "${value.replace(/"/g, '\\"')}"`);
-      } else {
-        lines.push(`${key}: ${value}`);
-      }
+    const serialized = serializeValue(value);
+    if (serialized.startsWith('\n')) {
+      lines.push(`${key}:${serialized}`);
     } else {
-      lines.push(`${key}: ${value}`);
+      lines.push(`${key}: ${serialized}`);
     }
   }
 
@@ -105,7 +135,6 @@ function getTitle(capture: Capture, useRefined: boolean): string {
   if (useRefined && capture.refined?.title) {
     return capture.refined.title;
   }
-  // Use manually saved title if available
   if (capture.title) {
     return capture.title;
   }
@@ -120,18 +149,8 @@ function getBody(capture: Capture, useRefined: boolean): string {
     return capture.refined.body;
   }
 
-  // Build body from raw content
-  const parts: string[] = [];
-
-  if (capture.comment) {
-    parts.push(capture.comment);
-  }
-
-  if (capture.text && capture.text !== capture.comment) {
-    parts.push(capture.text);
-  }
-
-  return parts.join('\n\n') || '';
+  // Build body from raw content (note field renamed from text)
+  return capture.note || '';
 }
 
 /**
@@ -145,176 +164,70 @@ function getTags(capture: Capture, useRefined: boolean): string[] {
 }
 
 /**
- * Determine the note type for notes collection
+ * Get kind from refined content or capture
  */
-function getNoteType(capture: Capture, useRefined: boolean): InferredNoteType {
-  if (useRefined && capture.refined?.suggestedNoteType) {
-    return capture.refined.suggestedNoteType;
+function getKind(capture: Capture, useRefined: boolean): 'learning' | 'resource' {
+  if (useRefined && capture.refined?.suggestedKind) {
+    return capture.refined.suggestedKind;
   }
-
-  if (capture.inferredNoteType) {
-    return capture.inferredNoteType;
-  }
-
-  // Infer from content
-  if (capture.url && (!capture.text || capture.text.length < 200)) {
-    return 'link';
-  }
-
-  const textLength = (capture.text?.length || 0) + (capture.comment?.length || 0);
-
-  if (textLength < 300) {
-    return 'thought';
-  }
-
-  return 'essay';
+  return capture.kind;
 }
 
 /**
- * Transform a capture to TIL format
+ * Transform a capture to Discovery format
  */
-function transformToTil(capture: Capture, useRefined: boolean): TransformResult {
+function transformToDiscovery(capture: Capture, useRefined: boolean): TransformResult {
   const date = formatDate(capture.createdAt);
   const title = getTitle(capture, useRefined);
   const body = getBody(capture, useRefined);
   const tags = getTags(capture, useRefined);
+  const kind = getKind(capture, useRefined);
 
-  const frontmatter: TilFrontmatter = {
+  // Build images array from capture
+  const images = (capture.images || []).map((img) => ({
+    src: img.src,
+    alt: img.alt,
+    caption: img.caption,
+  }));
+
+  // Build videos array from capture
+  const videos = (capture.videos || []).map((vid) => ({
+    src: vid.src,
+    poster: vid.poster,
+    caption: vid.caption,
+  }));
+
+  const frontmatter: DiscoveryFrontmatter = {
     title,
     date,
+    kind,
     tags,
+    images,
+    videos,
+    prompts: capture.prompts || [],
     draft: false,
   };
 
-  const filename = `${date}-${slugify(title)}.md`;
-  const fullContent = `---\n${serializeFrontmatter(frontmatter as unknown as Record<string, unknown>)}\n---\n\n${body}\n`;
-
-  return {
-    collection: 'til',
-    filename,
-    frontmatter,
-    body,
-    fullContent,
-  };
-}
-
-/**
- * Transform a capture to Notes format
- */
-function transformToNote(capture: Capture, useRefined: boolean): TransformResult {
-  const date = formatDate(capture.createdAt);
-  const title = getTitle(capture, useRefined);
-  const body = getBody(capture, useRefined);
-  const tags = getTags(capture, useRefined);
-  const noteType = getNoteType(capture, useRefined);
-  const takeaway = useRefined ? capture.refined?.takeaway : undefined;
-
-  const frontmatter: NoteFrontmatter = {
-    title,
-    date,
-    tags,
-    type: noteType,
-    featured: false,
-    draft: false,
-  };
-
-  // Add link fields for link-type notes
-  if (noteType === 'link' && capture.url) {
-    frontmatter.link = capture.url;
-    // Use refined linkTitle (actual page title) if available, otherwise fall back to title
-    frontmatter.linkTitle = (useRefined && capture.refined?.linkTitle) || title;
-  }
-
-  // Add takeaway if available
-  if (takeaway) {
-    frontmatter.takeaway = takeaway;
-  }
-
-  const filename = `${date}-${slugify(title)}.md`;
-  const fullContent = `---\n${serializeFrontmatter(frontmatter as unknown as Record<string, unknown>)}\n---\n\n${body}\n`;
-
-  return {
-    collection: 'notes',
-    filename,
-    frontmatter,
-    body,
-    fullContent,
-  };
-}
-
-/**
- * Get the resource type from URL or refined suggestion
- */
-function getResourceType(capture: Capture, useRefined: boolean): ResourceType {
-  if (useRefined && capture.refined?.suggestedResourceType) {
-    return capture.refined.suggestedResourceType;
-  }
-
-  // Infer from URL
+  // Add URL for link-based content
   if (capture.url) {
-    const url = capture.url.toLowerCase();
-    if (url.includes('twitter.com') || url.includes('x.com')) return 'twitter';
-    if (url.includes('youtube.com') || url.includes('youtu.be')) return 'youtube';
-    if (url.includes('substack.com') || url.includes('newsletter')) return 'newsletter';
-    if (url.includes('podcast') || url.includes('spotify.com/show')) return 'podcast';
+    frontmatter.url = capture.url;
+    // Use refined linkTitle (actual page title) if available
+    if (useRefined && capture.refined?.linkTitle) {
+      frontmatter.linkTitle = capture.refined.linkTitle;
+    }
   }
 
-  return 'blog'; // Default fallback
-}
-
-/**
- * Get description for resources
- */
-function getDescription(capture: Capture, useRefined: boolean): string {
-  if (useRefined && capture.refined?.description) {
-    return capture.refined.description;
+  // Add code fields if present
+  if (capture.code) {
+    frontmatter.code = capture.code;
+    frontmatter.codeLanguage = capture.codeLanguage;
   }
 
-  // Use comment as description, or generate a simple one
-  if (capture.comment) {
-    return capture.comment.slice(0, 200);
-  }
-
-  return 'A useful resource worth checking out.';
-}
-
-/**
- * Transform a capture to Resource format
- */
-function transformToResource(capture: Capture, useRefined: boolean): TransformResult {
-  const date = formatDate(capture.createdAt);
-  const title = getTitle(capture, useRefined);
-  const tags = getTags(capture, useRefined);
-  const resourceType = getResourceType(capture, useRefined);
-  const description = getDescription(capture, useRefined);
-  const body = getBody(capture, useRefined);
-
-  if (!capture.url) {
-    throw new Error('Resource capture requires a URL');
-  }
-
-  const frontmatter: ResourceFrontmatter = {
-    title,
-    date,
-    url: capture.url,
-    type: resourceType,
-    description,
-    featured: false,
-    tags,
-    draft: false,
-  };
-
-  // Add image fields if present
-  if (capture.images?.[0]?.url) {
-    frontmatter.image = capture.images[0].url;
-    frontmatter.imageAlt = title;
-  }
-
-  const filename = `${slugify(title)}.md`;
+  const filename = `${date}-${slugify(title)}.md`;
   const fullContent = `---\n${serializeFrontmatter(frontmatter as unknown as Record<string, unknown>)}\n---\n\n${body}\n`;
 
   return {
-    collection: 'resources',
+    collection: 'discoveries',
     filename,
     frontmatter,
     body,
@@ -334,26 +247,51 @@ function transformToProjectActivity(
   const summary = getBody(capture, useRefined);
   const tags = getTags(capture, useRefined);
 
-  // Get image data if present
+  // Get image data if present (for uploading)
   const imageData = capture.images?.[0]?.data;
-  const imageCaption = capture.comment && capture.images?.length ? capture.comment : undefined;
+
+  // Build images array
+  const images = (capture.images || [])
+    .filter((img) => img.src)
+    .map((img) => ({
+      src: img.src,
+      alt: img.alt,
+      caption: img.caption,
+    }));
+
+  // Build videos array
+  const videos = (capture.videos || [])
+    .filter((vid) => vid.src)
+    .map((vid) => ({
+      src: vid.src,
+      poster: vid.poster,
+      caption: vid.caption,
+    }));
 
   const activity: ProjectActivityEntry = {
     date,
     title,
     summary,
     tags,
-    type: 'update', // Default to 'update', can be manually edited later if needed
+    activityType: capture.activityType || 'update',
+    images,
+    videos,
+    prompts: capture.prompts || [],
   };
 
-  // Add image caption if we have an image
-  if (imageCaption) {
-    activity.imageCaption = imageCaption;
+  // Add optional fields
+  if (capture.code) {
+    activity.code = capture.code;
+    activity.codeLanguage = capture.codeLanguage;
+  }
+
+  if (capture.url) {
+    activity.url = capture.url;
   }
 
   return {
     collection: 'project-update',
-    projectSlug: capture.project!,
+    projectSlug: capture.projectSlug!,
     activity,
     imageData,
   };
@@ -363,7 +301,7 @@ function transformToProjectActivity(
  * Check if a capture should be transformed as a project activity
  */
 export function isProjectUpdate(capture: Capture): boolean {
-  return Boolean(capture.project);
+  return Boolean(capture.projectSlug);
 }
 
 /**
@@ -377,24 +315,12 @@ export function transformCapture(
   useRefined = true
 ): TransformResult | ProjectActivityTransformResult {
   // Route project updates to project activity transform
-  if (capture.project) {
+  if (capture.projectSlug) {
     return transformToProjectActivity(capture, useRefined);
   }
 
-  // Use refined suggestion if available, otherwise use inferred collection
-  const collection = useRefined && capture.refined?.suggestedType
-    ? capture.refined.suggestedType
-    : capture.inferredCollection;
-
-  if (collection === 'til') {
-    return transformToTil(capture, useRefined);
-  }
-
-  if (collection === 'resources') {
-    return transformToResource(capture, useRefined);
-  }
-
-  return transformToNote(capture, useRefined);
+  // All non-project content goes to discoveries
+  return transformToDiscovery(capture, useRefined);
 }
 
 /**

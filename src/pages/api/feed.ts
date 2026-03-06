@@ -1,8 +1,7 @@
 import type { APIRoute } from "astro";
 import {
-  getLearningLogItems,
-  type LearningLogCategory,
-  type LearningLogItem,
+  getFeedItems,
+  type FeedItem,
 } from "../../lib/learning-log";
 
 const ITEMS_PER_PAGE = 10;
@@ -11,24 +10,24 @@ function formatEntryDate(date: Date) {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-function getCategoryLabel(category: LearningLogCategory) {
-  const labels: Record<LearningLogCategory, string> = {
-    projects: "PROJECT UPDATE",
-    learnings: "LEARNING",
-    resources: "RESOURCE",
-    thoughts: "THOUGHT",
-  };
-  return labels[category];
+function getCategoryLabel(item: FeedItem) {
+  if (item.bucket === 'project-updates') {
+    return 'PROJECT UPDATE';
+  }
+  if (item.kind === 'resource') {
+    return 'RESOURCE';
+  }
+  return 'LEARNING';
 }
 
-function getCategoryDotClass(category: LearningLogCategory) {
-  const dotClasses: Record<LearningLogCategory, string> = {
-    projects: "dot-project",
-    learnings: "dot-learning",
-    resources: "dot-resource",
-    thoughts: "dot-thought",
-  };
-  return dotClasses[category];
+function getCategoryDotClass(item: FeedItem) {
+  if (item.bucket === 'project-updates') {
+    return 'dot-project';
+  }
+  if (item.kind === 'resource') {
+    return 'dot-resource';
+  }
+  return 'dot-learning';
 }
 
 function escapeHtml(str: string) {
@@ -50,15 +49,8 @@ function resolveInternalHref(href: string, base: string) {
   return `${base}${normalized}`;
 }
 
-function getImagePreviews(item: LearningLogItem) {
-  if (item.imagePreviews && item.imagePreviews.length > 0) {
-    return item.imagePreviews;
-  }
-  return item.imagePreview ? [item.imagePreview] : [];
-}
-
-function renderItem(item: LearningLogItem, index: number, base: string): string {
-  const previews = getImagePreviews(item);
+function renderItem(item: FeedItem, index: number, base: string): string {
+  const images = item.images || [];
   const tags = item.tags.slice(0, 3);
 
   let html = `<li class="entry-item reveal" style="--reveal-delay: ${Math.min(index * 42, 260)}ms;">
@@ -66,8 +58,8 @@ function renderItem(item: LearningLogItem, index: number, base: string): string 
       <aside class="entry-margin">
         <time datetime="${item.date.toISOString()}">${formatEntryDate(item.date)}</time>
         <p class="entry-category">
-          ${getCategoryLabel(item.category)}
-          <span class="entry-dot ${getCategoryDotClass(item.category)}" aria-hidden="true"></span>
+          ${getCategoryLabel(item)}
+          <span class="entry-dot ${getCategoryDotClass(item)}" aria-hidden="true"></span>
         </p>
       </aside>
       <div class="entry-main">`;
@@ -82,18 +74,25 @@ function renderItem(item: LearningLogItem, index: number, base: string): string 
     </a>
   </h2>`;
 
-  if (previews.length > 0) {
+  if (item.video) {
+    html += `<div class="entry-video">
+      <video controls preload="metadata" playsinline${item.video.poster ? ` poster="${escapeHtml(item.video.poster)}"` : ''}>
+        <source src="${escapeHtml(item.video.src)}" />
+      </video>
+      ${item.video.caption ? `<p class="entry-video-caption">${escapeHtml(item.video.caption)}</p>` : ''}
+    </div>`;
+  } else if (images.length > 0) {
     html += `<div class="entry-thumbnails" data-lightbox-gallery>`;
-    previews.slice(0, 3).forEach((preview, i) => {
+    images.slice(0, 3).forEach((preview, i) => {
       const isLast = i === 2;
-      const hasMore = isLast && previews.length > 3;
-      const extraCount = previews.length - 3;
+      const hasMore = isLast && images.length > 3;
+      const extraCount = images.length - 3;
       html += `<div class="entry-thumbnail${hasMore ? " has-more" : ""}">
         <img src="${escapeHtml(preview.src)}" alt="${escapeHtml(preview.alt)}" loading="lazy" data-lightbox />
         ${hasMore ? `<span class="thumbnail-more">+${extraCount}</span>` : ""}
       </div>`;
     });
-    previews.slice(3).forEach((preview) => {
+    images.slice(3).forEach((preview) => {
       html += `<img src="${escapeHtml(preview.src)}" alt="${escapeHtml(preview.alt)}" class="sr-only" data-lightbox />`;
     });
     html += `</div>`;
@@ -119,13 +118,13 @@ function renderItem(item: LearningLogItem, index: number, base: string): string 
     </a>`;
   }
 
-  if (item.codePreview) {
+  if (item.code) {
     html += `<div class="code-block">
       <div class="code-block-header">
-        <span>${escapeHtml(item.codePreview.language)}</span>
+        <span>${escapeHtml(item.code.language)}</span>
         <span>code</span>
       </div>
-      <pre><code>${escapeHtml(item.codePreview.code)}</code></pre>
+      <pre><code>${escapeHtml(item.code.code)}</code></pre>
     </div>`;
   }
 
@@ -161,7 +160,7 @@ export const GET: APIRoute = async ({ url }) => {
   const validPage = Number.isFinite(page) && page > 0 ? page : 1;
   const base = import.meta.env.BASE_URL;
 
-  const allItems = await getLearningLogItems();
+  const allItems = await getFeedItems();
   const start = (validPage - 1) * ITEMS_PER_PAGE;
   const end = start + ITEMS_PER_PAGE;
   const items = allItems.slice(start, end);

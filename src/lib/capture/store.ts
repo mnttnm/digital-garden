@@ -118,13 +118,15 @@ export async function updateCapture(
   const updated: Capture = {
     ...capture,
     title: updates.title ?? capture.title,
-    text: updates.text ?? capture.text,
-    comment: updates.comment ?? capture.comment,
+    note: updates.note ?? capture.note,
     tags: updates.tags ?? capture.tags,
     url: updates.url ?? capture.url,
     images: updates.images ?? capture.images,
-    inferredCollection: updates.inferredCollection ?? capture.inferredCollection,
-    inferredNoteType: updates.inferredNoteType ?? capture.inferredNoteType,
+    videos: updates.videos ?? capture.videos,
+    code: updates.code ?? capture.code,
+    codeLanguage: updates.codeLanguage ?? capture.codeLanguage,
+    kind: updates.kind ?? capture.kind,
+    activityType: updates.activityType ?? capture.activityType,
     publishUseRefined: updates.publishUseRefined ?? capture.publishUseRefined,
   };
 
@@ -224,19 +226,18 @@ export async function getApprovedCaptures(): Promise<Capture[]> {
  * Bulk update captures to published status with slug info
  */
 export async function markAsPublished(
-  publishedInfo: Array<{ id: string; slug: string; collection: string }>
+  publishedInfo: Array<{ id: string; slug: string }>
 ): Promise<void> {
   const redis = getRedis();
 
   for (const info of publishedInfo) {
     const capture = await getCapture(info.id);
     if (capture && capture.status === 'approved') {
-      // Update capture with published slug and collection
+      // Update capture with published slug
       const updated: Capture = {
         ...capture,
         status: 'published',
         publishedSlug: info.slug,
-        publishedCollection: info.collection as 'til' | 'notes',
       };
 
       // Move between status sets

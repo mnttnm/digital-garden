@@ -9,18 +9,18 @@
 export type {
   Capture,
   CaptureSource,
-  CaptureType,
   CaptureStatus,
   CaptureImage,
+  CaptureVideo,
   CaptureIngestPayload,
   CaptureIngestResponse,
   CaptureUpdatePayload,
   RefinedCapture,
-  InferredCollection,
-  InferredNoteType,
+  DiscoveryKind,
+  ActivityType,
+  DiscoveryFrontmatter,
+  ProjectActivityEntry,
   TransformResult,
-  TilFrontmatter,
-  NoteFrontmatter,
 } from './types';
 
 // Store operations

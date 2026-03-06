@@ -1,8 +1,14 @@
 ---
-title: "Compound Engineering plugin for AI-assisted dev workflows"
+title: Compound Engineering plugin for AI-assisted dev workflows
 date: 2026-02-11
-tags: ["ai-tools", "workflow"]
+kind: learning
+tags:
+  - ai-tools
+  - workflow
 draft: false
+images: []
+videos: []
+prompts: []
 ---
 
 Finally got around to installing the [Compound Engineering plugin](https://every.to/guides/compound-engineering) from Every.to. It's a Claude Code plugin that provides a structured workflow for AI-assisted development.
