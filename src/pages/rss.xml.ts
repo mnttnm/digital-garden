@@ -14,7 +14,7 @@ export async function GET(context: any) {
   }));
 
   return rss({
-    title: 'learning.log · Mohit Tater',
+    title: 'learning.log by Mohit',
     description: 'Project updates and discoveries from Mohit.',
     site: context.site,
     items: rssItems,
