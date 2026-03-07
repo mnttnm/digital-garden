@@ -13,8 +13,8 @@ const MAX_ATTEMPTS_PER_WINDOW = 3;
 
 // Initialize Redis client (lazy, same pattern as capture store)
 function getRedis(): Redis | null {
-  const url = import.meta.env.UPSTASH_REDIS_REST_URL;
-  const token = import.meta.env.UPSTASH_REDIS_REST_TOKEN;
+  const url = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
 
   if (!url || !token) {
     // Rate limiting disabled if Redis not configured

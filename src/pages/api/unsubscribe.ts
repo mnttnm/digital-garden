@@ -4,7 +4,7 @@ import { validateUnsubscribeToken } from '../../lib/newsletter/unsubscribe';
 
 export const prerender = false;
 
-const resend = new Resend(import.meta.env.RESEND_API_KEY);
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 function htmlResponse(status: number, title: string, message: string, isError = false): Response {
   const bgColor = isError ? '#fef2f2' : '#f0fdf4';
@@ -81,7 +81,7 @@ export const GET: APIRoute = async ({ request }) => {
     return htmlResponse(400, 'Missing Token', 'No unsubscribe token provided. Please use the link from your email.', true);
   }
 
-  const secret = import.meta.env.UNSUBSCRIBE_SECRET;
+  const secret = process.env.UNSUBSCRIBE_SECRET;
   if (!secret) {
     console.error('UNSUBSCRIBE_SECRET not configured');
     return htmlResponse(500, 'Configuration Error', 'Unsubscribe is not configured. Please contact the site owner.', true);
@@ -96,7 +96,7 @@ export const GET: APIRoute = async ({ request }) => {
     return htmlResponse(400, 'Invalid Link', errorMsg, true);
   }
 
-  const audienceId = import.meta.env.RESEND_AUDIENCE_ID;
+  const audienceId = process.env.RESEND_AUDIENCE_ID;
   if (!audienceId) {
     console.error('RESEND_AUDIENCE_ID not configured');
     return htmlResponse(500, 'Configuration Error', 'Newsletter is not configured. Please contact the site owner.', true);

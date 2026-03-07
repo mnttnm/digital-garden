@@ -30,8 +30,8 @@ interface CreateFileResponse {
  * Get GitHub configuration from environment
  */
 function getGitHubConfig(): GitHubConfig {
-  const token = import.meta.env.GITHUB_TOKEN;
-  const repo = import.meta.env.GITHUB_REPO;
+  const token = process.env.GITHUB_TOKEN;
+  const repo = process.env.GITHUB_REPO;
 
   if (!token || !repo) {
     throw new Error('Missing GITHUB_TOKEN or GITHUB_REPO environment variables');
@@ -48,7 +48,7 @@ function getGitHubConfig(): GitHubConfig {
  * Check if GitHub publishing is configured
  */
 export function isGitHubConfigured(): boolean {
-  return Boolean(import.meta.env.GITHUB_TOKEN && import.meta.env.GITHUB_REPO);
+  return Boolean(process.env.GITHUB_TOKEN && process.env.GITHUB_REPO);
 }
 
 /**

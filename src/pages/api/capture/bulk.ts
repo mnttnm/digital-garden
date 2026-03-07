@@ -19,7 +19,7 @@ import {
 export const prerender = false;
 
 function verifyAdmin(request: Request): boolean {
-  const adminPassword = import.meta.env.ADMIN_PASSWORD;
+  const adminPassword = process.env.ADMIN_PASSWORD;
   if (!adminPassword) return false;
 
   const authHeader = request.headers.get('Authorization');

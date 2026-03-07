@@ -4,7 +4,7 @@ import { getClientIp, checkRateLimit, incrementRateLimit } from '../../lib/newsl
 
 export const prerender = false;
 
-const resend = new Resend(import.meta.env.RESEND_API_KEY);
+const resend = new Resend(process.env.RESEND_API_KEY);
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 type Frequency = 'daily' | 'weekly';
@@ -195,7 +195,7 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // Add to Resend Audience
-    const audienceId = import.meta.env.RESEND_AUDIENCE_ID;
+    const audienceId = process.env.RESEND_AUDIENCE_ID;
 
     if (!audienceId) {
       console.error('RESEND_AUDIENCE_ID not configured');
@@ -240,7 +240,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     // Send welcome email (only for new subscribers)
     const welcomeEmail = getWelcomeEmail(frequency, preference);
-    const fromEmail = import.meta.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
+    const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
 
     const sendResult = await resend.emails.send({
       from: fromEmail,
