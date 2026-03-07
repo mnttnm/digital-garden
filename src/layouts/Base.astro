@@ -22,7 +22,7 @@ const normalizedBase = base.endsWith("/") ? base : `${base}/`;
 const homeHref = normalizedBase;
 const aboutHref = `${normalizedBase}about/`;
 const projectsHref = `${normalizedBase}projects/`;
-const resourcesHref = `${normalizedBase}resources/`;
+const resourcesHref = `${normalizedBase}my-stack/`;
 const currentPath = Astro.url.pathname.endsWith("/")
   ? Astro.url.pathname
   : `${Astro.url.pathname}/`;
@@ -388,8 +388,8 @@ const lastUpdatedRelativeLabel = latestLogItem
           root.dataset.appearance = resolvedAppearance;
           root.dataset.appearanceMode = state.appearanceMode;
 
-          syncRadioButtons("[data-warmth]", state.warmth, "data-warmth");
-          syncRadioButtons("[data-font]", state.font, "data-font");
+          syncRadioButtons("button[data-warmth]", state.warmth, "data-warmth");
+          syncRadioButtons("button[data-font]", state.font, "data-font");
           syncRadioButtons(
             "button[data-appearance]",
             state.appearanceMode,
@@ -440,7 +440,7 @@ const lastUpdatedRelativeLabel = latestLogItem
               return;
             }
 
-            const warmthButton = target.closest("[data-warmth]");
+            const warmthButton = target.closest("button[data-warmth]");
             if (warmthButton) {
               state.warmth =
                 warmthButton.getAttribute("data-warmth") || "warm";
@@ -449,7 +449,7 @@ const lastUpdatedRelativeLabel = latestLogItem
               return;
             }
 
-            const fontButton = target.closest("[data-font]");
+            const fontButton = target.closest("button[data-font]");
             if (fontButton) {
               state.font = fontButton.getAttribute("data-font") || "serif";
               applyState();
@@ -522,7 +522,7 @@ const lastUpdatedRelativeLabel = latestLogItem
     <script>
       // Swipe navigation between pages
       (function setupSwipeNavigation() {
-        const NAV_ORDER = ['/', '/projects/', '/resources/', '/about/'];
+        const NAV_ORDER = ['/', '/projects/', '/my-stack/', '/about/'];
         const SWIPE_THRESHOLD = 80;
         const SWIPE_VELOCITY_THRESHOLD = 0.3;
 
