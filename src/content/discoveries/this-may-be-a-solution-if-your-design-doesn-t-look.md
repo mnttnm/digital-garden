@@ -15,5 +15,5 @@ videos: []
 prompts: []
 ---
 
-“Codex doesn’t build good design”
+“Codex/Claude doesn’t build good designs for me”
 See if this fixes it.

@@ -17,6 +17,4 @@ prompts: []
 
 I asked Claude to use the Impeccable skills to audit my project for UI flaws and to generate an interactive visual audit report instead of a plain .md file. I have to say, it’s much better to go through its suggestions when most of them are visualized.
 
-impeccable.style
-
-I asked Claude to use the Impeccable skills to audit my project for UI flaws and to generate an interactive visual audit report instead of a plain .md file. I have to say, it’s much better to go through its suggestions when most of them are visualized. impeccable.style
+[check it out at impeccable.style](https://impeccable.style/)
