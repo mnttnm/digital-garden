@@ -12,7 +12,7 @@ import { getCapture, previewPublish } from '../../../../lib/capture';
 export const prerender = false;
 
 function verifyAdmin(request: Request): boolean {
-  const adminPassword = process.env.ADMIN_PASSWORD;
+  const adminPassword = import.meta.env.ADMIN_PASSWORD;
   if (!adminPassword) return false;
 
   const url = new URL(request.url);

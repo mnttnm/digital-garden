@@ -12,7 +12,7 @@ import { getCapture, updateCaptureStatus } from '../../../../lib/capture';
 export const prerender = false;
 
 function verifyAdmin(request: Request): boolean {
-  const adminPassword = process.env.ADMIN_PASSWORD;
+  const adminPassword = import.meta.env.ADMIN_PASSWORD;
 
   if (!adminPassword) {
     console.error('ADMIN_PASSWORD not configured');

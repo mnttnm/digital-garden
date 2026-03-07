@@ -23,8 +23,8 @@ import {
 export const prerender = false;
 
 function verifyAuth(request: Request): boolean {
-  const adminPassword = process.env.ADMIN_PASSWORD;
-  const cronSecret = process.env.CRON_SECRET;
+  const adminPassword = import.meta.env.ADMIN_PASSWORD;
+  const cronSecret = import.meta.env.CRON_SECRET;
 
   // Check admin password (for manual trigger)
   const authHeader = request.headers.get('Authorization');

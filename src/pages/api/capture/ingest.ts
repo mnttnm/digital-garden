@@ -23,7 +23,7 @@ export const prerender = false;
  */
 function verifyApiKey(request: Request): boolean {
   const authHeader = request.headers.get('Authorization');
-  const apiKey = process.env.CAPTURE_API_KEY;
+  const apiKey = import.meta.env.CAPTURE_API_KEY;
 
   if (!apiKey) {
     console.error('CAPTURE_API_KEY not configured');

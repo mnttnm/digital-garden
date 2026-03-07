@@ -21,8 +21,8 @@ interface ProviderConfig {
  * Get the configured AI provider from environment
  */
 function getProviderConfig(): ProviderConfig {
-  const provider = (process.env.AI_PROVIDER || 'google') as AIProvider;
-  const model = process.env.AI_MODEL || 'gemini-2.0-flash-exp';
+  const provider = (import.meta.env.AI_PROVIDER || 'google') as AIProvider;
+  const model = import.meta.env.AI_MODEL || 'gemini-2.0-flash-exp';
   return { provider, model };
 }
 
@@ -34,7 +34,7 @@ export function getAIModel(): LanguageModel {
 
   switch (provider) {
     case 'openai': {
-      const apiKey = process.env.OPENAI_API_KEY;
+      const apiKey = import.meta.env.OPENAI_API_KEY;
       if (!apiKey) {
         throw new Error('OPENAI_API_KEY is required when AI_PROVIDER=openai');
       }
@@ -43,7 +43,7 @@ export function getAIModel(): LanguageModel {
     }
 
     case 'google': {
-      const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+      const apiKey = import.meta.env.GOOGLE_GENERATIVE_AI_API_KEY;
       if (!apiKey) {
         throw new Error('GOOGLE_GENERATIVE_AI_API_KEY is required when AI_PROVIDER=google');
       }
@@ -52,8 +52,8 @@ export function getAIModel(): LanguageModel {
     }
 
     case 'azure': {
-      const resourceName = process.env.AZURE_RESOURCE_NAME;
-      const apiKey = process.env.AZURE_API_KEY;
+      const resourceName = import.meta.env.AZURE_RESOURCE_NAME;
+      const apiKey = import.meta.env.AZURE_API_KEY;
       if (!resourceName || !apiKey) {
         throw new Error('AZURE_RESOURCE_NAME and AZURE_API_KEY are required when AI_PROVIDER=azure');
       }
@@ -70,15 +70,15 @@ export function getAIModel(): LanguageModel {
  * Check if AI refinement is configured
  */
 export function isAIConfigured(): boolean {
-  const provider = process.env.AI_PROVIDER || 'google';
+  const provider = import.meta.env.AI_PROVIDER || 'google';
 
   switch (provider) {
     case 'openai':
-      return Boolean(process.env.OPENAI_API_KEY);
+      return Boolean(import.meta.env.OPENAI_API_KEY);
     case 'google':
-      return Boolean(process.env.GOOGLE_GENERATIVE_AI_API_KEY);
+      return Boolean(import.meta.env.GOOGLE_GENERATIVE_AI_API_KEY);
     case 'azure':
-      return Boolean(process.env.AZURE_RESOURCE_NAME && process.env.AZURE_API_KEY);
+      return Boolean(import.meta.env.AZURE_RESOURCE_NAME && import.meta.env.AZURE_API_KEY);
     default:
       return false;
   }
