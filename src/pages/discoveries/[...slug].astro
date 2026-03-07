@@ -56,6 +56,7 @@ function getKindLabel(kind: string) {
 const base = import.meta.env.BASE_URL;
 const hasImages = discovery.data.images && discovery.data.images.length > 0;
 const hasVideos = discovery.data.videos && discovery.data.videos.length > 0;
+const hasPrompts = discovery.data.prompts && discovery.data.prompts.length > 0;
 ---
 
 <Base title={discovery.data.title}>
@@ -73,13 +74,34 @@ const hasVideos = discovery.data.videos && discovery.data.videos.length > 0;
       </div>
       <h1 class="article-title">{discovery.data.title}</h1>
       {discovery.data.url && (
-        <p class="article-link">
+        <p class="article-link-top">
           <a href={discovery.data.url} target="_blank" rel="noopener">
-            {discovery.data.linkTitle || 'View original'} →
+            {discovery.data.linkTitle || new URL(discovery.data.url).hostname.replace('www.', '')}
           </a>
         </p>
       )}
     </header>
+
+    <div class="article-content">
+      <Content />
+    </div>
+
+    {hasPrompts && (
+      <div class="article-prompts">
+        <span class="prompts-label">Prompts used</span>
+        <ul class="prompts-list">
+          {discovery.data.prompts.map((prompt) => (
+            <li>{prompt}</li>
+          ))}
+        </ul>
+      </div>
+    )}
+
+    {discovery.data.code && (
+      <div class="article-code">
+        <pre><code class={`language-${discovery.data.codeLanguage || 'text'}`}>{discovery.data.code}</code></pre>
+      </div>
+    )}
 
     {hasImages && (
       <figure class="article-images">
@@ -105,13 +127,11 @@ const hasVideos = discovery.data.videos && discovery.data.videos.length > 0;
       </div>
     )}
 
-    <div class="article-content">
-      <Content />
-    </div>
-
-    {discovery.data.code && (
-      <div class="article-code">
-        <pre><code class={`language-${discovery.data.codeLanguage || 'text'}`}>{discovery.data.code}</code></pre>
+    {discovery.data.url && (
+      <div class="article-cta">
+        <a href={discovery.data.url} target="_blank" rel="noopener" class="cta-link">
+          Check it out →
+        </a>
       </div>
     )}
 
@@ -203,7 +223,9 @@ const hasVideos = discovery.data.videos && discovery.data.videos.length > 0;
   }
 
   .article-header {
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--color-border);
   }
 
   .article-meta {
@@ -228,24 +250,83 @@ const hasVideos = discovery.data.videos && discovery.data.videos.length > 0;
 
   .article-title {
     margin-top: 0;
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.5rem;
   }
 
-  .article-link {
-    margin-bottom: 0;
+  .article-link-top {
+    margin: 0;
   }
 
-  .article-link a {
+  .article-link-top a {
+    font-size: 0.82rem;
+    color: var(--text-tertiary);
+    text-decoration: none;
+    transition: color 0.15s ease;
+  }
+
+  .article-link-top a:hover {
+    color: var(--accent);
+  }
+
+  .article-cta {
+    margin: 1.5rem 0 2rem 0;
+  }
+
+  .cta-link {
+    font-size: 0.9rem;
     color: var(--accent);
     text-decoration: none;
+    transition: color 0.15s ease;
   }
 
-  .article-link a:hover {
+  .cta-link:hover {
+    color: var(--accent-hover);
     text-decoration: underline;
   }
 
+  .article-prompts {
+    margin-bottom: 2rem;
+    padding: 1rem 1.25rem;
+    background: var(--color-code-bg);
+    border-radius: 6px;
+  }
+
+  .prompts-label {
+    display: block;
+    font-size: 0.69rem;
+    font-weight: 500;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    margin-bottom: 0.75rem;
+  }
+
+  .prompts-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .prompts-list li {
+    font-size: 0.88rem;
+    font-family: var(--font-mono);
+    color: var(--text-secondary);
+    padding-left: 1rem;
+    position: relative;
+  }
+
+  .prompts-list li::before {
+    content: "›";
+    position: absolute;
+    left: 0;
+    color: var(--text-tertiary);
+  }
+
   .article-images {
-    margin: 0 0 2rem 0;
+    margin: 0 0 1.5rem 0;
     display: flex;
     flex-direction: column;
     gap: 1rem;
@@ -267,7 +348,7 @@ const hasVideos = discovery.data.videos && discovery.data.videos.length > 0;
   }
 
   .article-videos {
-    margin: 0 0 2rem 0;
+    margin: 0 0 1.5rem 0;
     display: flex;
     flex-direction: column;
     gap: 1rem;
@@ -284,7 +365,7 @@ const hasVideos = discovery.data.videos && discovery.data.videos.length > 0;
   }
 
   .article-content {
-    margin-bottom: 3rem;
+    margin-bottom: 2rem;
   }
 
   .article-code {
