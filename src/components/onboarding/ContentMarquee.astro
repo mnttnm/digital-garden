@@ -23,13 +23,8 @@ interface Props {
 const { items, voices = [], speed = 40 } = Astro.props;
 
 // Prioritize variety - show learnings/resources/thoughts more prominently
-const learnings = items.filter(
-  (i) =>
-    i.category === "learnings" ||
-    i.category === "resources" ||
-    i.category === "thoughts",
-);
-const projects = items.filter((i) => i.category === "projects");
+const learnings = items.filter((i) => i.bucket === "discoveries");
+const projects = items.filter((i) => i.bucket === "project-updates");
 
 // Convert top voices to marquee items format
 const topVoices = voices.slice(0, 5).map((v) => ({
@@ -53,15 +48,15 @@ type MarqueeItem = {
 const learningMarquee: MarqueeItem[] = learnings.map((i) => ({
   title: i.title,
   crux: i.crux,
-  category: i.category,
-  image: i.imagePreview?.src,
+  category: i.kind === "resource" ? "resources" : "learnings",
+  image: i.images?.[0]?.src,
 }));
 
 const projectMarquee: MarqueeItem[] = projects.map((i) => ({
   title: i.title,
   crux: i.crux,
-  category: i.category,
-  image: i.imagePreview?.src,
+  category: "projects",
+  image: i.images?.[0]?.src,
 }));
 
 const marqueeItems: MarqueeItem[] = [];
