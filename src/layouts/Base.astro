@@ -4,6 +4,7 @@ import { getLearningLogItems } from "../lib/learning-log";
 import ImageLightbox from "../components/ImageLightbox.astro";
 import SubscribeForm from "../components/SubscribeForm.astro";
 import SubscribeToast from "../components/SubscribeToast.astro";
+import SubscribeModal from "../components/SubscribeModal.astro";
 import { ViewTransitions } from "astro:transitions";
 
 interface Props {
@@ -152,146 +153,149 @@ const lastUpdatedRelativeLabel = latestLogItem
             )
           }
         </div>
-        <div class="site-header-actions">
-          <nav class="site-nav">
-            <a
-              href={homeHref}
-              class:list={["nav-link", { active: currentPath === homeHref }]}
-            >
-              <span class="nav-label-full">logs</span>
-              <span class="nav-label-short">journal</span>
-            </a>
-            <a
-              href={projectsHref}
-              class:list={[
-                "nav-link",
-                { active: currentPath.startsWith(projectsHref) },
-              ]}
-            >
-              <span class="nav-label-full">projects</span>
-              <span class="nav-label-short">projects</span>
-            </a>
-            <a
-              href={resourcesHref}
-              class:list={[
-                "nav-link",
-                { active: currentPath.startsWith(resourcesHref) },
-              ]}
-            >
-              <span class="nav-label-full">my stack</span>
-              <span class="nav-label-short">my stack</span>
-            </a>
-            <a
-              href={aboutHref}
-              class:list={["nav-link", { active: currentPath === aboutHref }]}
-            >
-              <span class="nav-label-full">about</span>
-              <span class="nav-label-short">about me</span>
-            </a>
-          </nav>
-
-          <div class="theme-controls" data-theme-controls>
-            <button
-              class="theme-toggle-button"
-              type="button"
-              aria-label="Open theme settings"
-              aria-expanded="false"
-              aria-controls="theme-panel"
-              data-theme-toggle
-            >
-              <span class="theme-label-full">theme</span>
-              <svg class="theme-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="4"></circle>
-                <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path>
-              </svg>
-            </button>
-            <section
-              id="theme-panel"
-              class="theme-panel"
-              hidden
-              data-theme-panel
-              aria-label="Theme settings"
-            >
-              <div class="theme-row">
-                <span class="theme-label">Warmth</span>
-                <div
-                  class="theme-swatch-group"
-                  role="radiogroup"
-                  aria-label="Warmth"
-                >
-                  <button
-                    class="theme-swatch warmth-cool"
-                    type="button"
-                    data-warmth="cool"
-                    role="radio"
-                    aria-checked="false"
-                    aria-label="Cool"></button>
-                  <button
-                    class="theme-swatch warmth-warm"
-                    type="button"
-                    data-warmth="warm"
-                    role="radio"
-                    aria-checked="true"
-                    aria-label="Warm"></button>
-                  <button
-                    class="theme-swatch warmth-warmer"
-                    type="button"
-                    data-warmth="warmer"
-                    role="radio"
-                    aria-checked="false"
-                    aria-label="Warmer"></button>
-                </div>
+        <nav class="site-nav">
+          <a
+            href={homeHref}
+            class:list={["nav-link", { active: currentPath === homeHref }]}
+          >
+            <span class="nav-label-full">logs</span>
+            <span class="nav-label-short">log</span>
+          </a>
+          <a
+            href={projectsHref}
+            class:list={[
+              "nav-link",
+              { active: currentPath.startsWith(projectsHref) },
+            ]}
+          >
+            <span class="nav-label-full">projects</span>
+            <span class="nav-label-short">projects</span>
+          </a>
+          <a
+            href={resourcesHref}
+            class:list={[
+              "nav-link",
+              { active: currentPath.startsWith(resourcesHref) },
+            ]}
+          >
+            <span class="nav-label-full">my stack</span>
+            <span class="nav-label-short">stack</span>
+          </a>
+          <a
+            href={aboutHref}
+            class:list={["nav-link", { active: currentPath === aboutHref }]}
+          >
+            <span class="nav-label-full">about</span>
+            <span class="nav-label-short">about</span>
+          </a>
+          <a
+            href="#subscribe"
+            class="nav-link nav-link-subscribe"
+          >
+            <span class="nav-label-full">subscribe</span>
+            <span class="nav-label-short">subscribe</span>
+          </a>
+        </nav>
+        <div class="theme-controls" data-theme-controls>
+          <button
+            class="theme-toggle-button"
+            type="button"
+            aria-label="Open theme settings"
+            aria-expanded="false"
+            aria-controls="theme-panel"
+            data-theme-toggle
+          >
+            <svg class="theme-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="4"></circle>
+              <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path>
+            </svg>
+          </button>
+          <section
+            id="theme-panel"
+            class="theme-panel"
+            hidden
+            data-theme-panel
+            aria-label="Theme settings"
+          >
+            <div class="theme-row">
+              <span class="theme-label">Warmth</span>
+              <div
+                class="theme-swatch-group"
+                role="radiogroup"
+                aria-label="Warmth"
+              >
+                <button
+                  class="theme-swatch warmth-cool"
+                  type="button"
+                  data-warmth="cool"
+                  role="radio"
+                  aria-checked="false"
+                  aria-label="Cool"></button>
+                <button
+                  class="theme-swatch warmth-warm"
+                  type="button"
+                  data-warmth="warm"
+                  role="radio"
+                  aria-checked="true"
+                  aria-label="Warm"></button>
+                <button
+                  class="theme-swatch warmth-warmer"
+                  type="button"
+                  data-warmth="warmer"
+                  role="radio"
+                  aria-checked="false"
+                  aria-label="Warmer"></button>
               </div>
-              <div class="theme-row">
-                <span class="theme-label">Font</span>
-                <div
-                  class="theme-segmented"
-                  role="radiogroup"
-                  aria-label="Entry title font"
+            </div>
+            <div class="theme-row">
+              <span class="theme-label">Font</span>
+              <div
+                class="theme-segmented"
+                role="radiogroup"
+                aria-label="Entry title font"
+              >
+                <button
+                  type="button"
+                  data-font="serif"
+                  role="radio"
+                  aria-checked="true">Serif</button
                 >
-                  <button
-                    type="button"
-                    data-font="serif"
-                    role="radio"
-                    aria-checked="true">Serif</button
-                  >
-                  <button
-                    type="button"
-                    data-font="sans"
-                    role="radio"
-                    aria-checked="false">Sans</button
-                  >
-                </div>
-              </div>
-              <div class="theme-row">
-                <span class="theme-label">Appearance</span>
-                <div
-                  class="theme-segmented"
-                  role="radiogroup"
-                  aria-label="Appearance mode"
+                <button
+                  type="button"
+                  data-font="sans"
+                  role="radio"
+                  aria-checked="false">Sans</button
                 >
-                  <button
-                    type="button"
-                    data-appearance="light"
-                    role="radio"
-                    aria-checked="false">Light</button
-                  >
-                  <button
-                    type="button"
-                    data-appearance="dark"
-                    role="radio"
-                    aria-checked="false">Dark</button
-                  >
-                  <button
-                    type="button"
-                    data-appearance="auto"
-                    role="radio"
-                    aria-checked="true">Auto</button
-                  >
-                </div>
               </div>
-            </section>
-          </div>
+            </div>
+            <div class="theme-row">
+              <span class="theme-label">Appearance</span>
+              <div
+                class="theme-segmented"
+                role="radiogroup"
+                aria-label="Appearance mode"
+              >
+                <button
+                  type="button"
+                  data-appearance="light"
+                  role="radio"
+                  aria-checked="false">Light</button
+                >
+                <button
+                  type="button"
+                  data-appearance="dark"
+                  role="radio"
+                  aria-checked="false">Dark</button
+                >
+                <button
+                  type="button"
+                  data-appearance="auto"
+                  role="radio"
+                  aria-checked="true">Auto</button
+                >
+              </div>
+            </div>
+          </section>
         </div>
       </header>
 
@@ -505,6 +509,7 @@ const lastUpdatedRelativeLabel = latestLogItem
 
     <ImageLightbox />
     <SubscribeToast />
+    <SubscribeModal />
 
     <!-- Back to Top Button -->
     <button
@@ -678,6 +683,8 @@ const lastUpdatedRelativeLabel = latestLogItem
         transform: translateY(1rem);
         transition: opacity 0.2s ease, transform 0.2s ease, background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
         box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.1);
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
       }
 
       .back-to-top.visible {
@@ -699,8 +706,8 @@ const lastUpdatedRelativeLabel = latestLogItem
         .back-to-top {
           bottom: calc(1rem + env(safe-area-inset-bottom, 0));
           right: calc(1rem + env(safe-area-inset-right, 0));
-          width: 2.75rem;
-          height: 2.75rem;
+          width: 3rem;
+          height: 3rem;
         }
       }
     </style>

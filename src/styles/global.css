@@ -340,10 +340,10 @@ th {
 
 .site-nav {
   display: flex;
+  align-items: center;
   gap: 1.35rem;
   font-family: var(--font-serif);
   font-size: 0.98rem;
-  padding-top: 0.1rem;
 }
 
 /* Nav label switching for mobile */
@@ -351,19 +351,9 @@ th {
   display: none;
 }
 
+/* Theme icon always visible (removed text label) */
 .theme-icon {
-  display: none;
-}
-
-.theme-label-full {
-  display: inline;
-}
-
-.site-header-actions {
-  display: flex;
-  align-items: baseline;
-  gap: 1rem;
-  min-width: 0;
+  display: block;
 }
 
 .site-nav .nav-link {
@@ -859,18 +849,35 @@ html[data-appearance='dark'] .warmth-warmer { background: #3b3026; }
 }
 
 @media (max-width: 700px) {
-  .site-header-actions {
-    width: 100%;
+  /* Use grid for mobile header layout:
+     [brand] [theme]
+     [  nav  nav   ] */
+  .site-header {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: start;
-    gap: 0.75rem;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "brand theme"
+      "nav nav";
+    gap: 0.75rem 1rem;
   }
 
+  .site-brand {
+    grid-area: brand;
+  }
+
+  /* Theme moves to top-right via grid (despite being last in HTML) */
+  .theme-controls {
+    grid-area: theme;
+    align-self: start;
+  }
+
+  /* Nav spans full width on second row */
   .site-nav {
+    grid-area: nav;
+    display: flex;
+    flex-wrap: wrap;
     gap: 1.1rem;
     font-size: 0.88rem;
-    min-width: 0;
   }
 
   .site-nav .nav-link {
@@ -885,15 +892,6 @@ html[data-appearance='dark'] .warmth-warmer { background: #3b3026; }
 
   .nav-label-short {
     display: inline;
-  }
-
-  /* Show icon, hide text for theme */
-  .theme-label-full {
-    display: none;
-  }
-
-  .theme-icon {
-    display: block;
   }
 
   .theme-toggle-button {
