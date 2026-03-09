@@ -5,6 +5,7 @@ import ImageLightbox from "../components/ImageLightbox.astro";
 import SubscribeForm from "../components/SubscribeForm.astro";
 import SubscribeToast from "../components/SubscribeToast.astro";
 import SubscribeModal from "../components/SubscribeModal.astro";
+import PostHog from "../components/PostHog.astro";
 import { ViewTransitions } from "astro:transitions";
 
 interface Props {
@@ -134,6 +135,7 @@ const lastUpdatedRelativeLabel = latestLogItem
       href={`${base}rss.xml`}
     />
     <link rel="icon" type="image/svg+xml" href={`${base}favicon.svg`} />
+    <PostHog />
     <ViewTransitions />
   </head>
   <body>

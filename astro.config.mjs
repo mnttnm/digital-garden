@@ -21,6 +21,18 @@ export default defineConfig({
       fs: {
         // Allow serving symlinked dependencies from the sibling checkout during local dev.
         allow: [projectRoot, siblingRepoRoot]
+      },
+      proxy: {
+        '/ingest/static': {
+          target: 'https://us-assets.i.posthog.com',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/ingest/, '')
+        },
+        '/ingest': {
+          target: 'https://us.i.posthog.com',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/ingest/, '')
+        }
       }
     }
   },
