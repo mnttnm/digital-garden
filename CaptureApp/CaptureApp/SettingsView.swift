@@ -17,7 +17,7 @@ struct SettingsView: View {
 
                         TextField("https://yoursite.vercel.app", text: $apiUrl)
                             .textFieldStyle(.roundedBorder)
-                            .onChange(of: apiUrl) { _, newValue in
+                            .onChange(of: apiUrl) { newValue in
                                 settings.apiUrl = newValue
                             }
 
@@ -37,13 +37,13 @@ struct SettingsView: View {
                             if showingApiKey {
                                 TextField("Enter API key", text: $apiKey)
                                     .textFieldStyle(.roundedBorder)
-                                    .onChange(of: apiKey) { _, newValue in
+                                    .onChange(of: apiKey) { newValue in
                                         settings.apiKey = newValue
                                     }
                             } else {
                                 SecureField("Enter API key", text: $apiKey)
                                     .textFieldStyle(.roundedBorder)
-                                    .onChange(of: apiKey) { _, newValue in
+                                    .onChange(of: apiKey) { newValue in
                                         settings.apiKey = newValue
                                     }
                             }
@@ -81,11 +81,11 @@ struct SettingsView: View {
 
             Section {
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("Keyboard Shortcut")
+                    Text("Keyboard Shortcuts")
                         .font(.headline)
 
                     HStack {
-                        Text("Global Hotkey:")
+                        Text("Show Capture:")
                         Spacer()
                         Text("Cmd + Shift + C")
                             .font(.system(.body, design: .monospaced))
@@ -95,13 +95,31 @@ struct SettingsView: View {
                             .cornerRadius(4)
                     }
 
-                    Text("Press this keyboard shortcut from any application to open Capture")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                    Toggle(isOn: $settings.enableQuickCaptureHotkey) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Enable Quick Capture Hotkey")
+                            Text("Sends clipboard immediately without showing the form")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+
+                    if settings.enableQuickCaptureHotkey {
+                        HStack {
+                            Text("Quick Capture:")
+                            Spacer()
+                            Text("Cmd + Ctrl + C")
+                                .font(.system(.body, design: .monospaced))
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(Color.gray.opacity(0.2))
+                                .cornerRadius(4)
+                        }
+                    }
 
                     Divider()
 
-                    Text("Note: For the global keyboard shortcut to work, you need to grant Accessibility permissions to this app in System Settings > Privacy & Security > Accessibility")
+                    Text("Note: For global hotkeys to work, grant Accessibility (and sometimes Input Monitoring) permission in System Settings > Privacy & Security.")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }

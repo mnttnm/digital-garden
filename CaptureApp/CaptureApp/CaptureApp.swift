@@ -5,58 +5,63 @@ import AppKit
 struct CaptureApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @StateObject private var settingsManager = SettingsManager.shared
+    @StateObject private var navigation = AppNavigationState.shared
 
     var body: some Scene {
-        WindowGroup {
-            ContentView()
+        // We manage the main capture window manually (NSWindow) so we can reliably
+        // show/hide it from a global hotkey and keep the app running in the menu bar.
+        MenuBarExtra("Capture", systemImage: "tray.and.arrow.down") {
+            CaptureMenu()
                 .environmentObject(settingsManager)
-                .frame(minWidth: 500, minHeight: 600)
+                .environmentObject(navigation)
         }
-        .windowStyle(.hiddenTitleBar)
-        .windowResizability(.contentSize)
+        .menuBarExtraStyle(.window)
         .commands {
-            CommandGroup(replacing: .newItem) {}
+            // Keep Cmd+, working without spawning a separate Settings window.
+            CommandGroup(replacing: .appSettings) {
+                Button("Configuration…") {
+                    navigation.selectedTab = .configuration
+                    AppWindowController.shared.showCaptureWindow()
+                }
+                .keyboardShortcut(",", modifiers: [.command])
+            }
         }
 
-        Settings {
-            SettingsView()
-                .environmentObject(settingsManager)
-        }
+        // Keep the app running even if windows are closed.
+        // The main capture window is handled by AppWindowController.
     }
 }
 
-class AppDelegate: NSObject, NSApplicationDelegate {
-    var hotKeyMonitor: Any?
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    private var hotKeyMonitor: Any?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // Register global keyboard shortcut (Cmd+Shift+C)
-        registerGlobalHotKey()
-
-        // Make the app appear in front
-        NSApp.activate(ignoringOtherApps: true)
+        registerGlobalHotKeys()
+        AppWindowController.shared.showCaptureWindow()
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
-        return true
+        // Menu bar app: stay alive when windows close.
+        return false
     }
 
-    func registerGlobalHotKey() {
-        // Using NSEvent for global monitoring
-        // Cmd+Shift+C to open capture window
-        hotKeyMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            // Check for Cmd+Shift+C
-            if event.modifierFlags.contains([.command, .shift]) && event.keyCode == 8 { // 'c' key
+    private func registerGlobalHotKeys() {
+        // Cmd+Shift+C: open capture window
+        hotKeyMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { event in
+            if event.modifierFlags.contains([.command, .shift]) && event.keyCode == 8 {
                 DispatchQueue.main.async {
-                    self?.bringAppToFront()
+                    AppWindowController.shared.showCaptureWindow()
+                }
+                return
+            }
+
+            // Cmd+Ctrl+C: quick capture clipboard (optional)
+            if event.modifierFlags.contains([.command, .control]) && event.keyCode == 8 {
+                DispatchQueue.main.async {
+                    guard SettingsManager.shared.enableQuickCaptureHotkey else { return }
+                    Task { await QuickCaptureService.shared.quickCaptureFromClipboard() }
                 }
             }
-        }
-    }
-
-    func bringAppToFront() {
-        NSApp.activate(ignoringOtherApps: true)
-        if let window = NSApp.windows.first {
-            window.makeKeyAndOrderFront(nil)
         }
     }
 

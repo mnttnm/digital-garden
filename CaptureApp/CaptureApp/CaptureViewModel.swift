@@ -28,6 +28,12 @@ class CaptureViewModel: ObservableObject {
     private let clipboard: ClipboardManager
     private let settings: SettingsManager
 
+    // Persistence
+    private var cancellables = Set<AnyCancellable>()
+    private let lastProjectKey = "CaptureApp.LastProject"
+    private let lastActivityTypeKey = "CaptureApp.LastActivityType"
+    private let lastCodeLanguageKey = "CaptureApp.LastCodeLanguage"
+
     static let customProjectValue = "__custom__"
 
     var isProjectSelected: Bool {
@@ -48,6 +54,44 @@ class CaptureViewModel: ObservableObject {
         self.api = api
         self.clipboard = clipboard
         self.settings = settings
+
+        // Restore last-used selections for faster repeated capture.
+        self.selectedProject = UserDefaults.standard.string(forKey: lastProjectKey) ?? ""
+
+        if let raw = UserDefaults.standard.string(forKey: lastActivityTypeKey),
+           let type = ActivityType(rawValue: raw) {
+            self.selectedActivityType = type
+        }
+
+        if let raw = UserDefaults.standard.string(forKey: lastCodeLanguageKey),
+           let lang = CodeLanguage(rawValue: raw) {
+            self.selectedCodeLanguage = lang
+        }
+
+        setupPersistence()
+    }
+
+    private func setupPersistence() {
+        $selectedProject
+            .removeDuplicates()
+            .sink { value in
+                UserDefaults.standard.set(value, forKey: self.lastProjectKey)
+            }
+            .store(in: &cancellables)
+
+        $selectedActivityType
+            .removeDuplicates()
+            .sink { value in
+                UserDefaults.standard.set(value.rawValue, forKey: self.lastActivityTypeKey)
+            }
+            .store(in: &cancellables)
+
+        $selectedCodeLanguage
+            .removeDuplicates()
+            .sink { value in
+                UserDefaults.standard.set(value.rawValue, forKey: self.lastCodeLanguageKey)
+            }
+            .store(in: &cancellables)
     }
 
     // MARK: - Actions
@@ -62,6 +106,14 @@ class CaptureViewModel: ObservableObject {
         // Fetch projects
         do {
             projects = try await api.fetchProjects()
+
+            // If the stored project no longer exists, reset selection.
+            if !selectedProject.isEmpty && selectedProject != Self.customProjectValue {
+                let slugs = Set(projects.map { $0.slug })
+                if !slugs.contains(selectedProject) {
+                    selectedProject = ""
+                }
+            }
         } catch {
             print("Failed to fetch projects: \(error)")
         }
@@ -132,7 +184,7 @@ class CaptureViewModel: ObservableObject {
 
     func submit() async {
         guard settings.isConfigured else {
-            errorMessage = "Please configure API URL and key in Settings (Cmd+,)"
+            errorMessage = "Please configure API URL and key (Config tab / Cmd+,)"
             return
         }
 

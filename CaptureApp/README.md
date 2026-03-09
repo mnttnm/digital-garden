@@ -1,130 +1,105 @@
-# Digital Garden Capture - Native macOS App
+# Digital Garden Capture (macOS) — CaptureApp
 
-A native SwiftUI macOS app for capturing content to your digital garden, replicating the full functionality of the Raycast extension.
+A native SwiftUI macOS app for capturing URLs, text, notes, tags, project updates, code snippets, and media into the Digital Garden capture queue.
 
-## Features
+Goal: **feature parity with (and eventually better than) the Raycast extension** in `capture-extension/`.
 
-- **Full Capture Form**: Content, notes, tags, project selection, code snippets
-- **Clipboard Integration**: Auto-fills from clipboard (text, URLs, images)
-- **Media Support**: Add/upload images and videos via file picker
-- **Project Updates**: Select projects and activity types
-- **Code Snippets**: Include code with syntax highlighting language selection
-- **Global Keyboard Shortcut**: `Cmd+Shift+C` from anywhere
-- **Secure Settings**: API key stored in macOS Keychain
+## What you get today
 
-## Setup Instructions
+- Full capture form (content, note, tags, project + activity type, code snippet + language)
+- Media attachments: add images + videos via file picker
+- Clipboard auto-fill (text/URL, or image on clipboard)
+- Fetches project list from the backend (falls back to a local list if unavailable)
+- Global hotkey: `Cmd + Shift + C` brings the app to the front
+- Settings UI (`Cmd + ,`) with API key stored in **macOS Keychain**
 
-### Step 1: Create Xcode Project
+## Requirements
 
-1. Open **Xcode**
-2. File → New → Project
-3. Select **macOS** → **App**
-4. Configure:
-   - Product Name: `CaptureApp`
-   - Team: Your team (or Personal Team)
-   - Organization Identifier: `com.digitalgarden`
-   - Interface: **SwiftUI**
-   - Language: **Swift**
-   - Uncheck "Include Tests"
-5. Choose save location (e.g., your Downloads folder temporarily)
+- macOS 13+
+- Xcode 15+
+- Homebrew (for `xcodegen`)
+- A deployed Digital Garden backend with:
+  - `POST /api/capture/ingest`
+  - `GET /api/capture/projects`
+  - `CAPTURE_API_KEY` configured on the backend
 
-### Step 2: Replace Project Files
+## Quick start (recommended)
 
-1. In Finder, navigate to the newly created Xcode project
-2. Delete the auto-generated Swift files in the `CaptureApp` folder
-3. Copy all `.swift` files from this `CaptureApp/CaptureApp/` folder into the Xcode project's `CaptureApp` folder
-4. Copy the `Assets.xcassets` folder (replace existing)
-5. Copy `Info.plist` and `CaptureApp.entitlements`
+This repo uses **XcodeGen** so you don’t have to manually create an Xcode project.
 
-### Step 3: Configure Xcode Project
+```bash
+cd CaptureApp
+./setup.sh
+```
 
-1. Select the project in the navigator
-2. Select the `CaptureApp` target
-3. **General** tab:
-   - Deployment Target: macOS 13.0 or later
-4. **Signing & Capabilities** tab:
-   - Ensure signing is configured
-   - Add capability: **Keychain Sharing** (for storing API key)
-5. **Build Settings**:
-   - Search for "Info.plist" and set Custom Info.plist path if needed
+Then:
 
-### Step 4: Add Files to Project
-
-In Xcode:
-1. Right-click on the CaptureApp folder in the navigator
-2. Select "Add Files to CaptureApp"
-3. Select all the Swift files and assets you copied
-4. Ensure "Copy items if needed" is checked
-5. Click Add
-
-### Step 5: Build and Run
-
-1. Press `Cmd+R` to build and run
-2. The app will open with the capture form
-3. Go to **CaptureApp → Settings** (or `Cmd+,`) to configure:
-   - API URL: Your site URL (e.g., `https://yoursite.vercel.app`)
-   - API Key: Your `CAPTURE_API_KEY`
-
-### Step 6: Enable Global Keyboard Shortcut
-
-For the `Cmd+Shift+C` global shortcut to work:
-
-1. Open **System Settings**
-2. Go to **Privacy & Security** → **Accessibility**
-3. Click the lock to make changes
-4. Add `CaptureApp` to the list and enable it
+1. Open `CaptureApp/CaptureApp.xcodeproj`
+2. Select the `CaptureApp` scheme
+3. Build + run (`Cmd + R`)
+4. Open Settings (`Cmd + ,`) and set:
+   - **API URL**: e.g. `https://your-site.vercel.app`
+   - **API Key**: your backend `CAPTURE_API_KEY`
 
 ## Usage
 
-### Opening the App
+- Launch from Spotlight/Dock (the global hotkey works while the app is running)
+- Global hotkey: `Cmd + Shift + C` brings the app to the front
+- Submit: `Cmd + Return`
+- Cancel: `Esc`
 
-- **From Dock/Spotlight**: Launch like any app
-- **Global Shortcut**: Press `Cmd+Shift+C` from anywhere (requires Accessibility permission)
+Tip: you can close the capture window — the app stays running in the menu bar so the hotkeys remain available.
 
-### Capturing Content
+### Clipboard behavior
 
-1. **Content**: Paste a URL or type text
-   - URLs are auto-detected and captured as resources
-   - Plain text becomes a learning entry
-2. **Add Media**: Click "Add Images or Videos" to select files
-3. **Note**: Add your thoughts or commentary
-4. **Project**: Select if this is a project update
-   - Choose activity type (update, milestone, fix, etc.)
-5. **Tags**: Add comma-separated tags
-6. **Code**: Optionally include a code snippet with language
-7. **Submit**: Press `Cmd+Return` or click "Capture"
+On launch, the app attempts to auto-fill from the clipboard:
 
-### Clipboard Auto-Fill
+- Text / URL → fills the **Content** field
+- Image → adds it as a media item
 
-When you open the app, it automatically:
-- Detects text/URLs in clipboard and fills the Content field
-- Detects images in clipboard and adds them to Media
+## Raycast parity checklist
 
-## Project Structure
+This is the current “parity map” against `capture-extension/`.
 
-```
-CaptureApp/
-├── CaptureApp.swift        # App entry point, global hotkey
-├── ContentView.swift       # Main capture form UI
-├── CaptureViewModel.swift  # Business logic
-├── CaptureAPI.swift        # API client
-├── ClipboardManager.swift  # Clipboard reading
-├── Models.swift            # Data models
-├── SettingsManager.swift   # Settings persistence
-├── SettingsView.swift      # Settings UI
-├── Info.plist
-├── CaptureApp.entitlements
-└── Assets.xcassets/
-```
+Implemented in the macOS app:
 
-## API Compatibility
+- UI capture form (equivalent to Raycast `Capture Content`)
+- Clipboard text/URL auto-fill
+- Clipboard image auto-fill (best-effort)
+- Attach image/video files from disk
+- Tags, project selection, activity type
+- Code snippet + language
+- Fetch projects from `/api/capture/projects` (fallback list if not reachable)
+- API key stored in Keychain (Raycast stores preferences)
 
-This app sends the same payload format as the Raycast extension:
+Implemented in the macOS app (delight upgrades):
+
+- Menu bar app stays running (invocable without keeping a window open)
+- “Quick Capture” (no UI): `Cmd + Ctrl + C` sends clipboard immediately (toggle in Settings)
+- Drag & drop media onto the window to attach
+- Remembers last selected project/activity type/code language
+
+Still to do (to be “better than Raycast”):
+
+- Better clipboard-image extraction across apps (Raycast uses an `osascript` fallback for some placeholder cases)
+- UX polish:
+  - Inline validation + better error states
+  - Better media previews (e.g. video thumbnails)
+  - Drag from clipboard / paste media directly
+- Optional: Launch at Login
+
+If you want, we can turn this section into a concrete roadmap (with milestones) once we decide what “better than Raycast” means for you (menubar app? quick capture? screenshot capture?).
+
+## API compatibility
+
+The macOS app posts the same capture payload shape as the Raycast extension.
+
+Example:
 
 ```json
 {
-  "source": "shortcut",
-  "url": "https://...",
+  "source": "api",
+  "url": "https://example.com",
   "note": "My thoughts",
   "tags": ["ai", "productivity"],
   "project": "project-slug",
@@ -136,40 +111,60 @@ This app sends the same payload format as the Raycast extension:
 }
 ```
 
+Notes:
+
+- At least one of: `url`, `note`, `images`, `videos` must be present.
+- `source` is currently set to `"api"` in the macOS app code.
+
+## Project structure
+
+```
+CaptureApp/
+  CaptureApp/
+    CaptureApp.swift        # App entry point + global hotkey
+    ContentView.swift       # Main capture form UI
+    CaptureViewModel.swift  # Form state + payload building + submit
+    CaptureAPI.swift        # /projects fetch + /ingest submit
+    ClipboardManager.swift  # Clipboard reading
+    Models.swift            # API + local models
+    SettingsManager.swift   # UserDefaults + Keychain
+    SettingsView.swift      # Settings UI
+    Info.plist
+    CaptureApp.entitlements
+    Assets.xcassets/
+  project.yml               # XcodeGen project definition
+  setup.sh                  # Generates .xcodeproj via xcodegen
+```
+
+## Permissions (global hotkey)
+
+The app uses a global key event monitor to detect `Cmd + Shift + C`.
+
+If the hotkey doesn’t work:
+
+1. Open **System Settings** → **Privacy & Security**
+2. Check **Accessibility** and **Input Monitoring**
+3. Enable `CaptureApp` if prompted
+4. Quit + relaunch the app
+
 ## Troubleshooting
 
-### "Capture Failed: Not configured"
-- Open Settings (`Cmd+,`) and enter your API URL and key
+### “Not configured” / can’t submit
 
-### Global shortcut not working
-- Grant Accessibility permission in System Settings
-- Restart the app after granting permission
+Open Settings (`Cmd + ,`) and set API URL + API key.
 
-### Images not loading from clipboard
-- Make sure the image is actually in the clipboard (try pasting in Preview first)
-- Some apps use proprietary clipboard formats that may not be supported
+### 401 Unauthorized
 
-### Build errors in Xcode
-- Ensure you're using Xcode 15+ with macOS Sonoma SDK
-- Check that all Swift files are added to the target (Target Membership checkbox)
+Your API key doesn’t match the backend’s `CAPTURE_API_KEY`.
 
-## Creating a Distributable App
+### Projects don’t load
 
-1. In Xcode, select **Product** → **Archive**
-2. Once archived, click **Distribute App**
-3. Choose **Copy App** for local use, or sign for distribution
-4. The `.app` bundle can be copied to `/Applications`
+The app will fall back to a small hardcoded list if `GET /api/capture/projects` fails.
 
-## Alternative: Quick Apple Shortcut
+## Build a distributable app
 
-For just quick capture (clipboard → API), you can also use a macOS Shortcut:
+In Xcode:
 
-1. Open **Shortcuts** app
-2. Create new shortcut
-3. Add actions:
-   - Get Clipboard
-   - Get Contents of URL (POST to your API)
-   - Show Notification
-4. Assign a keyboard shortcut in Shortcuts settings
-
-The native app provides the full form experience that the Shortcut cannot.
+1. Product → Archive
+2. Distribute App → Copy App (for local use)
+3. Copy the resulting `.app` to `/Applications`

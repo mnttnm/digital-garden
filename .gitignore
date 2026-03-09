@@ -40,3 +40,7 @@ resources-page*.png
 
 # Archived docs
 docs/archived/
+
+# CaptureApp (macOS)
+CaptureApp/.build/
+CaptureApp/CaptureApp.xcodeproj/

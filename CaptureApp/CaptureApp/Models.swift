@@ -4,7 +4,9 @@ import AppKit
 // MARK: - API Models
 
 struct CapturePayload: Codable {
-    var source: String = "shortcut"
+    // Must match backend CaptureSource (src/lib/capture/types.ts)
+    // Allowed: raycast | shortcut | slack | api
+    var source: String = "api"
     var url: String?
     var note: String?
     var tags: [String]?

@@ -4,61 +4,86 @@ import UniformTypeIdentifiers
 struct ContentView: View {
     @StateObject private var viewModel = CaptureViewModel()
     @EnvironmentObject private var settings: SettingsManager
+    @EnvironmentObject private var navigation: AppNavigationState
     @State private var showingFilePicker = false
+    @State private var isDropTargeted = false
+
+    @State private var isDetailsExpanded = false
 
     var body: some View {
         VStack(spacing: 0) {
-            // Header
             header
 
             Divider()
 
-            // Main content
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    // Media preview
-                    if !viewModel.mediaItems.isEmpty {
-                        mediaSection
-                    }
+            TabView(selection: $navigation.selectedTab) {
+                captureTab
+                    .tabItem { Label("Capture", systemImage: "square.and.pencil") }
+                    .tag(AppNavigationState.Tab.capture)
 
-                    // Content field
-                    contentSection
-
-                    // File picker button
-                    filePickerButton
-
-                    // Note field
-                    noteSection
-
-                    Divider()
-                        .padding(.vertical, 8)
-
-                    // Project section
-                    projectSection
-
-                    // Tags
-                    tagsSection
-
-                    Divider()
-                        .padding(.vertical, 8)
-
-                    // Code section
-                    codeSection
-                }
-                .padding(20)
+                configurationTab
+                    .tabItem { Label("Config", systemImage: "gearshape") }
+                    .tag(AppNavigationState.Tab.configuration)
             }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
 
             Divider()
 
-            // Footer with submit button
             footer
         }
-        .frame(width: 500, height: 700)
+        .frame(minWidth: 520, minHeight: 640)
         .background(Color(NSColor.windowBackgroundColor))
-        .onAppear {
-            Task {
-                await viewModel.loadInitialData()
+        .onDrop(of: [UTType.fileURL], isTargeted: $isDropTargeted) { providers in
+            for provider in providers {
+                _ = provider.loadObject(ofClass: URL.self) { object, error in
+                    if let error {
+                        print("Drop load error: \(error)")
+                        return
+                    }
+
+                    guard let url = object else { return }
+                    DispatchQueue.main.async {
+                        viewModel.addMediaFromFiles([url])
+                    }
+                }
             }
+            return true
+        }
+        .overlay {
+            if isDropTargeted {
+                RoundedRectangle(cornerRadius: 16)
+                    .strokeBorder(style: StrokeStyle(lineWidth: 2, dash: [8]))
+                    .foregroundColor(.accentColor)
+                    .padding(16)
+                    .overlay {
+                        VStack(spacing: 8) {
+                            Image(systemName: "photo.on.rectangle.angled")
+                                .font(.system(size: 28, weight: .semibold))
+                            Text("Drop images or videos to attach")
+                                .font(.headline)
+                        }
+                        .foregroundColor(.accentColor)
+                    }
+                    .transition(.opacity)
+            }
+        }
+        .onAppear {
+            if !settings.isConfigured {
+                navigation.selectedTab = .configuration
+            }
+            Task { await viewModel.loadInitialData() }
+        }
+        .onChange(of: settings.isConfigured) { configured in
+            if configured, navigation.selectedTab == .configuration {
+                navigation.selectedTab = .capture
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .captureAppWillShowWindow)) { _ in
+            if !settings.isConfigured {
+                navigation.selectedTab = .configuration
+            }
+            Task { await viewModel.loadInitialData() }
         }
         .fileImporter(
             isPresented: $showingFilePicker,
@@ -85,12 +110,60 @@ struct ContentView: View {
             set: { if !$0 { viewModel.successMessage = nil } }
         )) {
             Button("OK") {
+                let message = viewModel.successMessage ?? "Captured!"
                 viewModel.successMessage = nil
-                NSApp.terminate(nil)
+                HUDToastController.shared.show(message: message, kind: .success)
+                AppWindowController.shared.hideCaptureWindow()
             }
         } message: {
             Text(viewModel.successMessage ?? "")
         }
+    }
+
+    private var captureTab: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            if !viewModel.mediaItems.isEmpty {
+                mediaSection
+            }
+
+            contentSection
+
+            HStack {
+                filePickerButton
+                Spacer()
+            }
+
+            noteSection
+
+            DisclosureGroup("Details", isExpanded: $isDetailsExpanded) {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 14) {
+                        projectSection
+                        tagsSection
+                        codeSection
+                    }
+                    .padding(.top, 8)
+                    .padding(.trailing, 4)
+                }
+                .frame(maxHeight: 260)
+            }
+            .disclosureGroupStyle(.automatic)
+
+            Spacer(minLength: 0)
+        }
+        .onAppear {
+            // Auto-expand details if the user has already filled any of them.
+            if !viewModel.selectedProject.isEmpty ||
+                !viewModel.tags.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+                !viewModel.codeSnippet.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                isDetailsExpanded = true
+            }
+        }
+    }
+
+    private var configurationTab: some View {
+        InlineConfigurationView()
+            .environmentObject(settings)
     }
 
     // MARK: - Header
@@ -111,9 +184,9 @@ struct ContentView: View {
 
             if !settings.isConfigured {
                 Button("Configure") {
-                    NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+                    navigation.selectedTab = .configuration
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(.borderedProminent)
             }
         }
         .padding(16)
@@ -195,7 +268,7 @@ struct ContentView: View {
 
             TextEditor(text: $viewModel.content)
                 .font(.body)
-                .frame(height: 80)
+                .frame(height: 70)
                 .padding(8)
                 .background(Color(NSColor.textBackgroundColor))
                 .cornerRadius(8)
@@ -233,7 +306,7 @@ struct ContentView: View {
 
             TextEditor(text: $viewModel.note)
                 .font(.body)
-                .frame(height: 60)
+                .frame(height: 54)
                 .padding(8)
                 .background(Color(NSColor.textBackgroundColor))
                 .cornerRadius(8)
@@ -327,7 +400,7 @@ struct ContentView: View {
 
                 TextEditor(text: $viewModel.codeSnippet)
                     .font(.system(.body, design: .monospaced))
-                    .frame(height: 80)
+                    .frame(height: 70)
                     .padding(8)
                     .background(Color(NSColor.textBackgroundColor))
                     .cornerRadius(8)
@@ -361,7 +434,7 @@ struct ContentView: View {
     private var footer: some View {
         HStack {
             Button("Cancel") {
-                NSApp.terminate(nil)
+                AppWindowController.shared.hideCaptureWindow()
             }
             .keyboardShortcut(.escape, modifiers: [])
 
@@ -391,4 +464,5 @@ struct ContentView: View {
 #Preview {
     ContentView()
         .environmentObject(SettingsManager.shared)
+        .environmentObject(AppNavigationState.shared)
 }

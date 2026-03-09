@@ -5,6 +5,8 @@ class SettingsManager: ObservableObject {
     static let shared = SettingsManager()
 
     private let apiUrlKey = "CaptureAPIURL"
+    private let enableQuickCaptureHotkeyKey = "EnableQuickCaptureHotkey"
+
     private let apiKeyService = "com.digitalgarden.capture"
     private let apiKeyAccount = "apiKey"
 
@@ -20,6 +22,12 @@ class SettingsManager: ObservableObject {
         }
     }
 
+    @Published var enableQuickCaptureHotkey: Bool {
+        didSet {
+            UserDefaults.standard.set(enableQuickCaptureHotkey, forKey: enableQuickCaptureHotkeyKey)
+        }
+    }
+
     var isConfigured: Bool {
         !apiUrl.isEmpty && !apiKey.isEmpty
     }
@@ -27,6 +35,7 @@ class SettingsManager: ObservableObject {
     private init() {
         self.apiUrl = UserDefaults.standard.string(forKey: apiUrlKey) ?? ""
         self.apiKey = ""
+        self.enableQuickCaptureHotkey = UserDefaults.standard.object(forKey: enableQuickCaptureHotkeyKey) as? Bool ?? true
 
         // Load API key from keychain
         if let key = loadApiKeyFromKeychain() {
