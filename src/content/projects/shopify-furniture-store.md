@@ -8,6 +8,33 @@ outcome: "Exploring how far agentic AI tools can take a real e-commerce migratio
 tags: ["shopify", "e-commerce", "ai-assisted", "migration", "agentic-coding"]
 image: "/images/projects/shopify-furniture-store/spotlight.png"
 activity:
+  - date: 2026-03-09
+    title: "Longest Claude Session for Shopify Theme"
+    summary: "Ran my longest Claude session to generate a Shopify theme for the store. The session lasted almost 30 minutes and produced a theme for me to test. Of course, it wasn't as finished as I wanted, but letting agents run for such a long duration on a task is definitely a new experience for me. The `claude --dangerously-skip-permission` command was needed to make it happen."
+    activityType: "learning"
+    tags:
+      - "Claude"
+      - "AI Agents"
+      - "Shopify Themes"
+      - "AI Development"
+    images:
+      - src: "/captures/2026-03-09-mmj5ehlb-8ubl.png"
+    videos: []
+    code: |
+      Prompt Gist:
+           1. Primary Request and Intent:
+              The user requested building a production-grade, premium Shopify store for Greetwood, an
+           Indian furniture brand. Key requirements:
+              - Create custom premium widgets (not basic Dawn defaults) that are reusable and publishable
+              - Target Indian market with premium, bug-free, seamless, intuitive, clean, modern
+           experience
+              - Use Shopify CLI only (IDE-first, code-first approach)
+              - Lead all aspects: design, UX, marketing, copy
+              - Track progress via git commits
+              - Use placeholder images until real ones are provided
+              - Don't stop until complete
+    codeLanguage: "markdown"
+    prompts: []
   - date: 2026-02-28
     title: "New Project: Starting the WooCommerce to Shopify migration"
     summary: "Kicking off a project to migrate my sister's furniture store from WooCommerce to Shopify. The goal: use AI as much as possible — Shopify CLI, Shopify MCP, and Claude Code — instead of the visual builder. A learning experiment to see how far agentic coding can take a real store build."
