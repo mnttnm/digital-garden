@@ -27,13 +27,13 @@ export default async function QuickCaptureCommand() {
 
     // Detect if content is a URL
     let url: string | undefined;
-    let text: string | undefined;
+    let note: string | undefined;
 
     try {
       new URL(trimmedContent);
       url = trimmedContent;
     } catch {
-      text = trimmedContent;
+      note = trimmedContent;
     }
 
     // Send to capture API
@@ -45,7 +45,7 @@ export default async function QuickCaptureCommand() {
       },
       body: JSON.stringify({
         url,
-        text,
+        note,
         source: "raycast",
       }),
     });

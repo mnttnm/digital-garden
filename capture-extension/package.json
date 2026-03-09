@@ -3,7 +3,7 @@
   "name": "digital-garden-capture",
   "title": "Digital Garden Capture",
   "description": "Quickly capture content to your digital garden for later review",
-  "icon": "extension-icon.png",
+  "icon": "command-icon.png",
   "author": "mohittater",
   "categories": ["Productivity", "Developer Tools"],
   "license": "MIT",

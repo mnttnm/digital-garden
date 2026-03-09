@@ -21,32 +21,82 @@ interface Preferences {
 
 interface FormValues {
   content: string;
-  comment: string;
+  note: string;
   tags: string;
   project: string;
+  customProject: string;
+  activityType: string;
+  code: string;
+  codeLanguage: string;
 }
 
-// Known projects - add new projects here as they're created
-const PROJECTS = [
-  { value: "", title: "None (not a project update)" },
-  { value: "digital-garden", title: "learning.log (Digital Garden)" },
-  { value: "business-co-pilot-claude-code", title: "Business Co-Pilot" },
+interface ProjectItem {
+  slug: string;
+  title: string;
+}
+
+// Fallback projects if API is unavailable
+const FALLBACK_PROJECTS: ProjectItem[] = [
+  { slug: "digital-garden", title: "learning.log" },
+  { slug: "business-co-pilot-system", title: "Business Co-Pilot System" },
+  { slug: "shopify-furniture-store", title: "Shopify Furniture Store" },
 ];
 
-// Image file extensions we support
+const CUSTOM_PROJECT_VALUE = "__custom__";
+
+// Activity types for project updates
+const ACTIVITY_TYPES = [
+  { value: "", title: "Default (update)" },
+  { value: "update", title: "Update" },
+  { value: "milestone", title: "Milestone" },
+  { value: "fix", title: "Fix" },
+  { value: "learning", title: "Learning" },
+  { value: "discovery", title: "Discovery" },
+  { value: "experiment", title: "Experiment" },
+];
+
+// Common code languages
+const CODE_LANGUAGES = [
+  { value: "", title: "None" },
+  { value: "typescript", title: "TypeScript" },
+  { value: "javascript", title: "JavaScript" },
+  { value: "python", title: "Python" },
+  { value: "ruby", title: "Ruby" },
+  { value: "go", title: "Go" },
+  { value: "rust", title: "Rust" },
+  { value: "bash", title: "Bash" },
+  { value: "css", title: "CSS" },
+  { value: "html", title: "HTML" },
+  { value: "json", title: "JSON" },
+  { value: "yaml", title: "YAML" },
+  { value: "markdown", title: "Markdown" },
+  { value: "sql", title: "SQL" },
+  { value: "swift", title: "Swift" },
+];
+
+// Media file extensions
 const IMAGE_EXTENSIONS = [".png", ".jpg", ".jpeg", ".gif", ".webp"];
+const VIDEO_EXTENSIONS = [".mp4", ".mov", ".webm"];
 
 function isImageFile(filePath: string): boolean {
   const ext = path.extname(filePath).toLowerCase();
   return IMAGE_EXTENSIONS.includes(ext);
 }
 
-function fileToBase64(filePath: string): string | null {
+function isVideoFile(filePath: string): boolean {
+  const ext = path.extname(filePath).toLowerCase();
+  return VIDEO_EXTENSIONS.includes(ext);
+}
+
+function fileToBase64(filePath: string, type: "image" | "video"): string | null {
   try {
     const buffer = fs.readFileSync(filePath);
     const ext = path.extname(filePath).toLowerCase().replace(".", "");
-    const mimeType = ext === "jpg" ? "jpeg" : ext;
-    return `data:image/${mimeType};base64,${buffer.toString("base64")}`;
+    const mimeType = type === "image"
+      ? (ext === "jpg" ? "jpeg" : ext)
+      : ext;
+    const mimePrefix = type === "image" ? "image" : "video";
+    return `data:${mimePrefix}/${mimeType};base64,${buffer.toString("base64")}`;
   } catch {
     return null;
   }
@@ -75,9 +125,9 @@ function getClipboardImageAsBase64(): string | null {
     const result = execSync(`osascript -e '${script}'`, { encoding: "utf-8" }).trim();
 
     if (result === "success" && fs.existsSync(tempPath)) {
-      const base64 = fileToBase64(tempPath);
+      const base64 = fileToBase64(tempPath, "image");
       // Clean up temp file
-      try { fs.unlinkSync(tempPath); } catch {}
+      try { fs.unlinkSync(tempPath); } catch { /* ignore */ }
       return base64;
     }
     return null;
@@ -91,11 +141,38 @@ function looksLikeImagePlaceholder(text: string): boolean {
   return /^Image\s*\(\d+x\d+\)$/i.test(text.trim());
 }
 
+interface MediaItem {
+  data: string;
+  name: string;
+  type: "image" | "video";
+}
+
 export default function CaptureCommand() {
+  const preferences = getPreferenceValues<Preferences>();
+
   const [content, setContent] = useState("");
-  const [imageBase64, setImageBase64] = useState<string | null>(null);
-  const [imageName, setImageName] = useState<string | null>(null);
+  const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedProject, setSelectedProject] = useState("");
+  const [projects, setProjects] = useState<ProjectItem[]>(FALLBACK_PROJECTS);
+
+  // Fetch projects from API
+  useEffect(() => {
+    async function fetchProjects() {
+      try {
+        const response = await fetch(`${preferences.captureApiUrl}/api/capture/projects`);
+        if (response.ok) {
+          const data = (await response.json()) as { projects: ProjectItem[] };
+          if (data.projects && data.projects.length > 0) {
+            setProjects(data.projects);
+          }
+        }
+      } catch {
+        // Use fallback projects
+      }
+    }
+    fetchProjects();
+  }, [preferences.captureApiUrl]);
 
   // Auto-fill from clipboard (text or image)
   useEffect(() => {
@@ -105,10 +182,13 @@ export default function CaptureCommand() {
 
         // Check for image file first
         if (clipboardContent.file && isImageFile(clipboardContent.file)) {
-          const base64 = fileToBase64(clipboardContent.file);
+          const base64 = fileToBase64(clipboardContent.file, "image");
           if (base64) {
-            setImageBase64(base64);
-            setImageName(path.basename(clipboardContent.file));
+            setMediaItems([{
+              data: base64,
+              name: path.basename(clipboardContent.file),
+              type: "image",
+            }]);
             setContent("");
             return;
           }
@@ -119,8 +199,11 @@ export default function CaptureCommand() {
           // Try to extract actual image data from clipboard
           const base64 = getClipboardImageAsBase64();
           if (base64) {
-            setImageBase64(base64);
-            setImageName("Clipboard image");
+            setMediaItems([{
+              data: base64,
+              name: "Clipboard image",
+              type: "image",
+            }]);
             setContent("");
             return;
           }
@@ -140,14 +223,22 @@ export default function CaptureCommand() {
   }, []);
 
   async function handleSubmit(values: FormValues) {
-    const preferences = getPreferenceValues<Preferences>();
-
-    // Validate - need either text content or image
-    if (!values.content?.trim() && !imageBase64) {
+    // Validate - need either text content or media
+    if (!values.content?.trim() && !values.note?.trim() && mediaItems.length === 0) {
       showToast({
         style: Toast.Style.Failure,
         title: "Content Required",
-        message: "Please enter some content or copy an image",
+        message: "Please enter some content, a note, or add media",
+      });
+      return;
+    }
+
+    // Validate custom project if selected
+    if (values.project === CUSTOM_PROJECT_VALUE && !values.customProject?.trim()) {
+      showToast({
+        style: Toast.Style.Failure,
+        title: "Project Slug Required",
+        message: "Please enter a project slug or select a different project",
       });
       return;
     }
@@ -157,7 +248,7 @@ export default function CaptureCommand() {
     try {
       // Detect if content is a URL
       let url: string | undefined;
-      let text: string | undefined;
+      let noteContent: string | undefined;
 
       const trimmedContent = values.content?.trim() || "";
       if (trimmedContent) {
@@ -165,26 +256,49 @@ export default function CaptureCommand() {
           new URL(trimmedContent);
           url = trimmedContent;
         } catch {
-          text = trimmedContent;
+          // Not a URL, treat as note content
+          noteContent = trimmedContent;
         }
       }
+
+      // Combine note field with any non-URL content
+      const fullNote = [noteContent, values.note?.trim()]
+        .filter(Boolean)
+        .join("\n\n") || undefined;
 
       // Parse tags
       const tags = values.tags
         ? values.tags.split(",").map((t) => t.trim().toLowerCase()).filter(Boolean)
         : undefined;
 
-      // Build request body
+      // Build images and videos arrays
+      const images = mediaItems
+        .filter((m) => m.type === "image")
+        .map((m) => ({ data: m.data }));
+
+      const videos = mediaItems
+        .filter((m) => m.type === "video")
+        .map((m) => ({ data: m.data }));
+
+      // Determine project slug
+      const projectSlug = values.project === CUSTOM_PROJECT_VALUE
+        ? values.customProject?.trim()
+        : values.project || undefined;
+
+      // Build request body matching CaptureIngestPayload
       const body: Record<string, unknown> = {
         source: "raycast",
-        comment: values.comment || undefined,
+        note: fullNote,
         tags,
-        project: values.project || undefined,
+        project: projectSlug,
+        activityType: values.activityType || undefined,
       };
 
       if (url) body.url = url;
-      if (text) body.text = text;
-      if (imageBase64) body.imageBase64 = imageBase64;
+      if (images.length > 0) body.images = images;
+      if (videos.length > 0) body.videos = videos;
+      if (values.code?.trim()) body.code = values.code.trim();
+      if (values.codeLanguage) body.codeLanguage = values.codeLanguage;
 
       // Send to capture API
       const response = await fetch(`${preferences.captureApiUrl}/api/capture/ingest`, {
@@ -205,7 +319,9 @@ export default function CaptureCommand() {
       showToast({
         style: Toast.Style.Success,
         title: "Captured!",
-        message: imageBase64 ? "Image captured" : "Review at /admin/review",
+        message: mediaItems.length > 0
+          ? `${mediaItems.length} media file(s) captured`
+          : "Review at /admin/review",
       });
 
       popToRoot();
@@ -220,10 +336,46 @@ export default function CaptureCommand() {
     }
   }
 
-  function clearImage() {
-    setImageBase64(null);
-    setImageName(null);
+  function handleFilesSelected(files: string[]) {
+    const newMedia: MediaItem[] = [];
+
+    for (const file of files) {
+      if (isImageFile(file)) {
+        const base64 = fileToBase64(file, "image");
+        if (base64) {
+          newMedia.push({
+            data: base64,
+            name: path.basename(file),
+            type: "image",
+          });
+        }
+      } else if (isVideoFile(file)) {
+        const base64 = fileToBase64(file, "video");
+        if (base64) {
+          newMedia.push({
+            data: base64,
+            name: path.basename(file),
+            type: "video",
+          });
+        }
+      }
+    }
+
+    if (newMedia.length > 0) {
+      setMediaItems((prev) => [...prev, ...newMedia]);
+    }
   }
+
+  function clearMedia() {
+    setMediaItems([]);
+  }
+
+  const mediaDescription = mediaItems.length > 0
+    ? mediaItems.map((m) => `${m.type === "image" ? "📷" : "🎬"} ${m.name}`).join(", ")
+    : null;
+
+  const isProjectSelected = selectedProject && selectedProject !== "";
+  const isCustomProject = selectedProject === CUSTOM_PROJECT_VALUE;
 
   return (
     <Form
@@ -231,66 +383,109 @@ export default function CaptureCommand() {
       actions={
         <ActionPanel>
           <Action.SubmitForm title="Capture" onSubmit={handleSubmit} />
-          {imageBase64 && (
-            <Action title="Clear Image" onAction={clearImage} shortcut={{ modifiers: ["cmd"], key: "d" }} />
+          {mediaItems.length > 0 && (
+            <Action
+              title="Clear All Media"
+              onAction={clearMedia}
+              shortcut={{ modifiers: ["cmd"], key: "d" }}
+            />
           )}
         </ActionPanel>
       }
     >
-      {imageBase64 ? (
+      {mediaDescription && (
         <Form.Description
-          title="Image"
-          text={`📷 ${imageName || "Clipboard image"} (Cmd+D to clear)`}
+          title="Media"
+          text={`${mediaDescription} (Cmd+D to clear)`}
         />
-      ) : (
-        <>
-          <Form.TextArea
-            id="content"
-            title="Content"
-            placeholder="URL or text to capture"
-            value={content}
-            onChange={setContent}
-            info="Paste a URL or enter text. Or select an image file below."
-          />
-          <Form.FilePicker
-            id="imageFile"
-            title="Image File"
-            allowMultipleSelection={false}
-            canChooseDirectories={false}
-            canChooseFiles={true}
-            onChange={(files) => {
-              if (files.length > 0 && isImageFile(files[0])) {
-                const base64 = fileToBase64(files[0]);
-                if (base64) {
-                  setImageBase64(base64);
-                  setImageName(path.basename(files[0]));
-                }
-              }
-            }}
-          />
-        </>
       )}
+
       <Form.TextArea
-        id="comment"
-        title="Comment"
-        placeholder="Optional: Add your thoughts..."
-        info="Your commentary about this content"
+        id="content"
+        title="Content"
+        placeholder="URL or text to capture"
+        value={content}
+        onChange={setContent}
+        info="Paste a URL or enter text. URLs are auto-detected."
       />
+
+      <Form.FilePicker
+        id="mediaFiles"
+        title="Add Media"
+        allowMultipleSelection={true}
+        canChooseDirectories={false}
+        canChooseFiles={true}
+        onChange={handleFilesSelected}
+      />
+
+      <Form.TextArea
+        id="note"
+        title="Note"
+        placeholder="Your thoughts about this..."
+        info="Commentary that will be included with the capture"
+      />
+
+      <Form.Separator />
+
       <Form.Dropdown
         id="project"
         title="Project"
-        info="Select a project if this is a project update"
+        info="Select if this is a project update"
+        value={selectedProject}
+        onChange={setSelectedProject}
       >
-        {PROJECTS.map((p) => (
-          <Form.Dropdown.Item key={p.value} value={p.value} title={p.title} />
+        <Form.Dropdown.Item value="" title="None (not a project update)" />
+        {projects.map((p) => (
+          <Form.Dropdown.Item key={p.slug} value={p.slug} title={p.title} />
         ))}
+        <Form.Dropdown.Item value={CUSTOM_PROJECT_VALUE} title="Custom (enter slug)..." />
       </Form.Dropdown>
+
+      {isCustomProject && (
+        <Form.TextField
+          id="customProject"
+          title="Project Slug"
+          placeholder="my-project-slug"
+          info="Enter the project slug (folder name in src/content/projects/)"
+        />
+      )}
+
+      {isProjectSelected && (
+        <Form.Dropdown
+          id="activityType"
+          title="Activity Type"
+          info="Type of project activity"
+        >
+          {ACTIVITY_TYPES.map((t) => (
+            <Form.Dropdown.Item key={t.value} value={t.value} title={t.title} />
+          ))}
+        </Form.Dropdown>
+      )}
+
       <Form.TextField
         id="tags"
         title="Tags"
         placeholder="ai, productivity, web-dev"
-        info="Comma-separated tags (optional)"
+        info="Comma-separated tags"
       />
+
+      <Form.Separator />
+
+      <Form.TextArea
+        id="code"
+        title="Code Snippet"
+        placeholder="Paste code here..."
+        info="Optional code to include"
+      />
+
+      <Form.Dropdown
+        id="codeLanguage"
+        title="Code Language"
+      >
+        {CODE_LANGUAGES.map((l) => (
+          <Form.Dropdown.Item key={l.value} value={l.value} title={l.title} />
+        ))}
+      </Form.Dropdown>
     </Form>
   );
 }
