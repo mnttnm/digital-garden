@@ -12,26 +12,30 @@ Create a TIL entry about: $ARGUMENTS
 
 1. Generate a short slug from the topic (max 5 words, lowercase, hyphens)
 2. Use today's date
-3. Create at: `src/content/til/YYYY-MM-DD-slug.md`
+3. Create at: `src/content/discoveries/YYYY-MM-DD-slug.md`
 
 ## File Template
 
 ```markdown
 ---
-title: "[Concise title capturing the learning]"
+title: "[Short title — what you noticed or learned]"
 date: [Today's date YYYY-MM-DD]
-tags: [[Infer 1-2 relevant tags from the topic]]
+kind: learning
+tags: [[1-2 relevant tags]]
 draft: false
+images: []
+videos: []
+prompts: []
 ---
 
-[Write 1-3 short paragraphs explaining the learning based on what the user provided. Keep it concise and practical. Include a code example if relevant.]
+[Write 1-3 short sentences. Keep it raw and observational — just say what happened or what you noticed. Skip the takeaway wrap-up.]
 ```
 
-## Guidelines
+## Voice
 
-- TILs are SHORT - 1-3 paragraphs max
-- Focus on the practical insight
-- Include code snippets when applicable
-- Use simple, direct language
+- First person — "I noticed...", "Ran into...", "Turns out..."
+- Short and punchy — 2-4 sentences max
+- Dev journal style, not tutorial style
+- Mention surprises or gotchas if relevant
 
 Create immediately without asking questions.
