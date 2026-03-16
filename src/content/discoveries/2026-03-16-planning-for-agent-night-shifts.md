@@ -8,11 +8,10 @@ tags:
   - Workflow Planning
   - Night Shift
 images:
-
+  - src: "/captures/2026-03-16-mmsrw1hx-5j8q.png"
+    alt: "Planning for Agent Night Shifts"
 videos: []
 prompts: []
-image: "/captures/2026-03-16-mmsrw1hx-5j8q.png"
-imageAlt: "Planning for Agent Night Shifts"
 draft: false
 url: "https://jamon.dev/night-shift"
 linkTitle: Night Shift
