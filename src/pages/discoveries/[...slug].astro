@@ -54,7 +54,11 @@ function getKindLabel(kind: string) {
 }
 
 const base = import.meta.env.BASE_URL;
-const hasImages = discovery.data.images && discovery.data.images.length > 0;
+// Check if frontmatter images are already used inline in the markdown body
+const rawBody = discovery.body || '';
+const frontmatterImages = discovery.data.images || [];
+const hasInlineImages = frontmatterImages.length > 0 && frontmatterImages.every(img => rawBody.includes(img.src));
+const hasImages = frontmatterImages.length > 0 && !hasInlineImages;
 const hasVideos = discovery.data.videos && discovery.data.videos.length > 0;
 const hasPrompts = discovery.data.prompts && discovery.data.prompts.length > 0;
 ---
