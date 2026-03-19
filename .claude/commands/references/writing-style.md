@@ -45,6 +45,11 @@ Bad: "This AI workflow hack will 10x your productivity"
 - Your actual experience — what you tried, what surprised you, what the outcome was
 - Links to docs or resources when relevant, naturally placed
 
+## Punctuation
+
+- **Limit em dashes.** Use 1-2 per post at most. Vary with periods, commas, parentheses, or conjunctions instead. AI-generated writing leans heavily on em dashes; actively avoid this.
+- **Quote YAML frontmatter values.** Always wrap `title` and other string fields in double quotes, especially when they contain colons. Unquoted colons break YAML parsing.
+
 ## What to Avoid
 
 - **Lecture tone** — "You should...", "The key insight here is...", "It's important to note..."

@@ -1,5 +1,5 @@
 ---
-title: The night shift pattern — let agents build while you sleep
+title: "The night shift pattern: let agents build while you sleep"
 date: 2026-03-16
 kind: resource
 tags:
@@ -17,4 +17,4 @@ url: "https://jamon.dev/night-shift"
 linkTitle: Night Shift
 ---
 
-When agents take the night shift and do the grinding, you need to make sure you've planned the shift as best as you can.
+The premise is simple: your time and energy are expensive, agent tokens are cheap and plentiful. So plan the work, hand it off, and let agents grind through it while you sleep. This post walks through how to structure those handoffs so you stay in control with minimum effort.
