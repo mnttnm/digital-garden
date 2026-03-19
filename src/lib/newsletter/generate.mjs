@@ -233,9 +233,9 @@ function renderItemHtml(item, isFirst) {
 
   const kindBadge = item.kind === 'project'
     ? '<span style="display: inline-block; background: #f0f9ff; color: #0369a1; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Project</span>'
-    : item.kind === 'til'
-    ? '<span style="display: inline-block; background: #fef3c7; color: #92400e; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 12px; text-transform: uppercase; letter-spacing: 0.5px;">TIL</span>'
-    : '<span style="display: inline-block; background: #f3f4f6; color: #4b5563; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Note</span>';
+    : item.kind === 'resource'
+    ? '<span style="display: inline-block; background: #fef3c7; color: #92400e; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Resource</span>'
+    : '<span style="display: inline-block; background: #f3f4f6; color: #4b5563; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Learning</span>';
 
   return `
     <div style="margin-bottom: 32px; padding-bottom: 32px; border-bottom: 1px solid #f0f0f0;">
@@ -320,11 +320,11 @@ function renderText({ subject, window, items, variant }) {
   return `${header}\n${lines.join('\n\n')}`;
 }
 
-function collectNotes(window) {
-  const files = listMarkdownFiles(path.join(CONTENT_ROOT, 'notes'));
+function collectDiscoveries(window) {
+  const files = listMarkdownFiles(path.join(CONTENT_ROOT, 'discoveries'));
   const items = [];
   for (const filePath of files) {
-    const slug = relativeSlug(filePath, 'notes');
+    const slug = relativeSlug(filePath, 'discoveries');
     const parsed = splitFrontmatter(readFile(filePath));
     const draft = parseBoolean(parseFrontmatterValue(parsed.frontmatter, 'draft'));
     if (draft) continue;
@@ -333,43 +333,16 @@ function collectNotes(window) {
     const title = parseFrontmatterValue(parsed.frontmatter, 'title') || slug;
     if (!dateRaw) continue;
 
-    const date = parseDateOrThrow(dateRaw, `note date (${slug})`);
+    const date = parseDateOrThrow(dateRaw, `discovery date (${slug})`);
     if (!inWindow(date, window)) continue;
 
-    const takeaway = parseFrontmatterValue(parsed.frontmatter, 'takeaway');
+    const kind = parseFrontmatterValue(parsed.frontmatter, 'kind') || 'learning';
     items.push({
-      kind: 'note',
-      date,
-      title,
-      summary: takeaway || firstSentence(parsed.body),
-      url: `/notes/${slug}/`,
-    });
-  }
-  return items;
-}
-
-function collectTils(window) {
-  const files = listMarkdownFiles(path.join(CONTENT_ROOT, 'til'));
-  const items = [];
-  for (const filePath of files) {
-    const slug = relativeSlug(filePath, 'til');
-    const parsed = splitFrontmatter(readFile(filePath));
-    const draft = parseBoolean(parseFrontmatterValue(parsed.frontmatter, 'draft'));
-    if (draft) continue;
-
-    const dateRaw = parseFrontmatterValue(parsed.frontmatter, 'date');
-    const title = parseFrontmatterValue(parsed.frontmatter, 'title') || slug;
-    if (!dateRaw) continue;
-
-    const date = parseDateOrThrow(dateRaw, `til date (${slug})`);
-    if (!inWindow(date, window)) continue;
-
-    items.push({
-      kind: 'til',
+      kind,
       date,
       title,
       summary: firstSentence(parsed.body),
-      url: `/til/${slug}/`,
+      url: `/discoveries/${slug}/`,
     });
   }
   return items;
@@ -445,9 +418,8 @@ export function generateNewsletterBundle({ type, dateInput, siteUrl }) {
   const window = getNewsletterWindow(type, dateInput);
 
   const projects = collectProjects(window);
-  const notes = collectNotes(window);
-  const tils = collectTils(window);
-  const all = [...projects, ...notes, ...tils];
+  const discoveries = collectDiscoveries(window);
+  const all = [...projects, ...discoveries];
 
   const subject = buildSubject(window.type, window.anchorDate);
   const normalizedSiteUrl = (siteUrl || '').replace(/\/$/, '');
@@ -473,8 +445,7 @@ export function generateNewsletterBundle({ type, dateInput, siteUrl }) {
 
   const projectsVariant = buildVariant(subject, window, 'projects', projects);
   const allVariant = buildVariant(subject, window, 'all', all);
-  const insightsItems = [...notes, ...tils]; // notes + TILs, excluding projects
-  const insightsVariant = buildVariant(subject, window, 'insights', insightsItems);
+  const insightsVariant = buildVariant(subject, window, 'insights', discoveries);
 
   return {
     type: window.type,
