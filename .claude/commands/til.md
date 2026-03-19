@@ -8,6 +8,10 @@ allowed-tools:
 
 Create a TIL entry about: $ARGUMENTS
 
+## Writing Style
+
+Read and follow [references/writing-style.md](references/writing-style.md) for voice, title, and structure guidelines.
+
 ## Instructions
 
 1. Generate a short slug from the topic (max 5 words, lowercase, hyphens)
@@ -18,7 +22,7 @@ Create a TIL entry about: $ARGUMENTS
 
 ```markdown
 ---
-title: "[Short title — what you noticed or learned]"
+title: "[What you noticed or learned — straightforward, no clickbait]"
 date: [Today's date YYYY-MM-DD]
 kind: learning
 tags: [[1-2 relevant tags]]
@@ -28,14 +32,15 @@ videos: []
 prompts: []
 ---
 
-[Write 1-3 short sentences. Keep it raw and observational — just say what happened or what you noticed. Skip the takeaway wrap-up.]
+[Write 2-5 short paragraphs. Lead with what it is, share your experience, include practical details (tool names, commands, flags). Skip preamble and takeaway wrap-ups. Prose over bullets unless the content is genuinely a list.]
 ```
 
-## Voice
+## Voice Quick Reference
 
-- First person — "I noticed...", "Ran into...", "Turns out..."
-- Short and punchy — 2-4 sentences max
-- Dev journal style, not tutorial style
-- Mention surprises or gotchas if relevant
+- First person — "I tried...", "The standout was...", "Worth knowing:"
+- Calm and genuine — enthusiastic without hype
+- Value density — every sentence earns its place
+- Title says what the post is about, not how to feel about it
+- Generalize internal details — reader doesn't need your project names or people names
 
 Create immediately without asking questions.

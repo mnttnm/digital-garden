@@ -1,5 +1,5 @@
 ---
-title: Planning for Agent Night Shifts
+title: The night shift pattern — let agents build while you sleep
 date: 2026-03-16
 kind: resource
 tags:

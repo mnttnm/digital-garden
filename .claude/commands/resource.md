@@ -9,6 +9,10 @@ allowed-tools:
 
 Add this resource to my collection: $ARGUMENTS
 
+## Writing Style
+
+Read and follow [references/writing-style.md](references/writing-style.md) for voice, title, and structure guidelines.
+
 ## Instructions
 
 1. If argument is a URL:
@@ -24,7 +28,7 @@ Add this resource to my collection: $ARGUMENTS
 
 ```markdown
 ---
-title: "[Short title describing the resource]"
+title: "[What this resource is about — straightforward, no clickbait]"
 date: [Today's date YYYY-MM-DD]
 kind: resource
 tags: [[1-3 relevant tags]]
@@ -36,13 +40,14 @@ videos: []
 prompts: []
 ---
 
-[1-2 sentences on why it's worth checking out. Keep it casual — "Came across this...", "Worth bookmarking."]
+[1-2 sentences on why it's worth checking out. Not a review — just why you're sharing it. Keep it genuine.]
 ```
 
-## Voice
+## Voice Quick Reference
 
-- Brief and casual — not a review, just a nudge
-- Why you're sharing it, not what's in it
-- Skip formal descriptions
+- Brief and genuine — a nudge, not a pitch
+- Why you're sharing it, not a summary of what's in it
+- Title describes the topic, not your reaction to it
+- No superlatives or emotional bait
 
 Create immediately. Fetch the page to get the actual title.
