@@ -105,16 +105,24 @@ function stripMarkdown(markdown: string): string {
     .trim();
 }
 
-function firstSentenceOrExcerpt(markdown: string): string {
+function firstSentenceOrExcerpt(markdown: string, maxLength = 180): string {
   const clean = stripMarkdown(markdown);
   if (!clean) return '';
 
-  const sentenceMatch = clean.match(/[^.!?]+[.!?]/);
-  if (sentenceMatch?.[0]) {
-    return truncate(sentenceMatch[0].trim(), 180);
+  const sentences = clean.match(/[^.!?]+[.!?]+/g);
+  if (!sentences) return truncate(clean, maxLength);
+
+  let result = '';
+  for (const sentence of sentences) {
+    const candidate = result ? `${result} ${sentence.trim()}` : sentence.trim();
+    if (candidate.length > maxLength) break;
+    result = candidate;
   }
 
-  return truncate(clean, 180);
+  if (!result) return truncate(sentences[0].trim(), maxLength);
+
+  const hasMore = result.length < clean.trim().length;
+  return hasMore ? `${result} …` : result;
 }
 
 function getDomain(url: string): string {
